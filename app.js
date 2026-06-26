@@ -82,7 +82,7 @@ var FRAKTION = {
 var VOLUMEN = [120,240,660,1100];
 var STATUS = ['neu','kontaktiert','angebot','gewonnen','verloren'];
 var STATUS_LBL = { neu:'Neu', kontaktiert:'Kontakt', angebot:'Angebot', gewonnen:'Gewonnen', verloren:'Verloren' };
-var APP_VERSION = 'v25 · Löschen-Sync + Angebot';
+var APP_VERSION = 'v26 · Sync-Keys robust';
 var WD = ['Sonntag','Montag','Dienstag','Mittwoch','Donnerstag','Freitag','Samstag'];
 var WD_WORK = ['Montag','Dienstag','Mittwoch','Donnerstag','Freitag'];
 // Places-Typen, die fast nie Gewerbekunden mit Tonne sind -> aus Route ausblenden
@@ -400,10 +400,14 @@ async function processOutbox(){
 }
 
 /* ---------- Supabase: zentraler Team-Sync (push + pull) ---------- */
-function supaOn(){ return !!(S.keys.supaUrl && S.keys.supaKey); }
-function supaBase(){ return S.keys.supaUrl.replace(/\/$/,''); }
+function supaKeyClean(){ return (S.keys.supaKey||'').replace(/\s+/g,''); }  // Copy-Paste-Müll raus
+function supaOn(){ return !!((S.keys.supaUrl||'').replace(/\s+/g,'') && supaKeyClean()); }
+function supaBase(){
+  return (S.keys.supaUrl||'').replace(/\s+/g,'').replace(/\/+$/,'').replace(/^(?!https?:\/\/)/i,'https://');
+}
 function supaHeaders(extra){
-  var h={ 'apikey':S.keys.supaKey, 'Authorization':'Bearer '+S.keys.supaKey };
+  var key=supaKeyClean();
+  var h={ 'apikey':key, 'Authorization':'Bearer '+key };
   if(extra) for(var k in extra) h[k]=extra[k];
   return h;
 }
@@ -498,7 +502,7 @@ async function syncAll(opts){
   var stillPending=S.leads.filter(function(l){ return l.sync_state!=='synced'; }).length;
   var pushed=pend.length-stillPending;
   var added=0;
-  try{ added=await pullLeads(); }catch(e){ S.lastSyncError='Pull: '+(e&&e.message||'Fehler'); }
+  try{ added=await pullLeads(); }catch(e){ S.lastSyncError='Pull fehlgeschlagen ('+(e&&e.message||'Fehler')+') — URL + Anon-Key in Setup prüfen (sauber einfügen, keine Leerzeichen).'; }
   safeRender();
   if(opts&&opts.toast){
     toast('▲ '+pushed+' hochgeladen'+(stillPending?(' · '+stillPending+' Fehler!'):'')+' · ▼ '+added+' geladen');
@@ -1207,7 +1211,7 @@ document.querySelector('nav').addEventListener('click',function(e){
 document.addEventListener('input',function(e){
   var t=e.target;
   if(t.dataset.act==='note'){ if(S.draft) S.draft.notiz=t.value; }
-  if(t.dataset.key){ S.keys[t.dataset.key]=t.value.trim(); }
+  if(t.dataset.key){ S.keys[t.dataset.key]=t.value.replace(/\s+/g,''); }  // Keys/URLs haben nie Leerzeichen
   if(t.dataset.edit){ var le=S.leads.find(function(x){return x.id===t.dataset.id;}); if(le){ le[t.dataset.edit]=t.value; } }
 });
 // Photo
@@ -1240,7 +1244,7 @@ document.addEventListener('change',async function(e){
 });
 
 function collectKeys(){
-  document.querySelectorAll('[data-key]').forEach(function(i){ S.keys[i.dataset.key]=i.value.trim(); });
+  document.querySelectorAll('[data-key]').forEach(function(i){ S.keys[i.dataset.key]=i.value.replace(/\s+/g,''); });
 }
 async function setStatus(id,v){
   var l=S.leads.find(function(x){return x.id===id;}); if(!l) return;
