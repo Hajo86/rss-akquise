@@ -74,7 +74,9 @@ function kalkulation(x){
     rss_kosten_monat:kostenBest, kunde_zahlt_monat:kundeZahltMt,
     option:optionBest, braucht1100Papier:braucht1100Papier,
     margeA_monat:margeA, margeA_jahr:margeA*12, margeB_monat:margeB, margeB_jahr:margeB*12,
-    ek_unvollstaendig:unbekannteEK, privat:privat
+    ek_unvollstaendig:unbekannteEK, privat:privat,
+    // Einzelposten für die aufklappbare Rechnung:
+    pflicht_monat:pflicht, ek_rest_monat:ekRest, ek_pap_monat:ekPapVoll, unlock_monat:unlock
   };
 }
 
@@ -87,7 +89,7 @@ var FRAKTION = {
 var VOLUMEN = [120,240,660,1100];
 var STATUS = ['neu','kontaktiert','angebot','gewonnen','verloren'];
 var STATUS_LBL = { neu:'Neu', kontaktiert:'Kontakt', angebot:'Angebot', gewonnen:'Gewonnen', verloren:'Verloren' };
-var APP_VERSION = 'v20 · Kundenrabatt verstellbar';
+var APP_VERSION = 'v21 · Rechnung im Detail aufklappbar';
 var WD = ['Sonntag','Montag','Dienstag','Mittwoch','Donnerstag','Freitag','Samstag'];
 var WD_WORK = ['Montag','Dienstag','Mittwoch','Donnerstag','Freitag'];
 // Places-Typen, die fast nie Gewerbekunden mit Tonne sind -> aus Route ausblenden
@@ -111,7 +113,8 @@ var S = {
   routeDay: null,     // angezeigter Wochentag (Default = heute)
   stops: {},          // strukturID -> [places]  (Betriebe je Ortsteil, on demand)
   stopsLoading: {},   // strukturID -> bool
-  lastSaved: null     // {id,score,hot} -> Bestätigungsbanner nach dem Speichern
+  lastSaved: null,    // {id,score,hot} -> Bestätigungsbanner nach dem Speichern
+  calcOpen: false     // aufklappbare Detail-Rechnung im Lead-Sheet
 };
 function freshDraft(){
   return { photoBlob:null, lat:null, lng:null, accuracy:null, gpsState:'wait', gpsMsg:'',
@@ -1009,7 +1012,39 @@ function offerBox(l){
     '<div class="kv" style="border:0"><span class="k" style="font-weight:800;color:#000">RSS-Marge</span>'+
       '<span class="v" style="font-size:18px">'+eur(k.rss_marge_monat)+'/Mt · '+eur(k.rss_marge_jahr)+'/J</span></div>'+
     opt+warn+
+    '<button class="cta ghost" style="margin-top:10px" data-act="calctoggle">'+(S.calcOpen?'Rechnung verbergen ▴':'📊 Rechnung im Detail ▾')+'</button>'+
+    (S.calcOpen?calcBreakdown(l,k):'')+
   '</div></div>';
+}
+function calcBreakdown(l,k){
+  var rest = k.rss_kosten_monat - k.pflicht_monat;  // Remondis-Anteil der gewählten Option
+  var papZeile, restZeile, pflichtZeile;
+  if(k.option==='B'){
+    pflichtZeile = 'Kommunale Restmülltonne 240 L (statt 40 L) — hält die Papiertonne gratis: <b>'+eur(k.unlock_monat)+'/Mt</b>';
+    restZeile    = 'Privater Remondis-Restmüll: <b>'+eur(k.ek_rest_monat)+'/Mt</b>';
+    papZeile     = '1.100-L-Papier bleibt <b>kommunal gratis</b> (0 €) — erlaubt, weil Restmüll groß genug (4×-Regel §22(5))';
+  } else {
+    pflichtZeile = 'Kleinste Pflicht-Restmülltonne 40 L (4-wö) — gesetzlich Pflicht, bleibt immer: <b>'+eur(k.pflicht_monat)+'/Mt</b>';
+    restZeile    = 'Privater Remondis-Restmüll: <b>'+eur(k.ek_rest_monat)+'/Mt</b>';
+    papZeile     = k.braucht1100Papier
+      ? 'Privates Remondis-Papier (1.100 L): <b>'+eur(k.ek_pap_monat)+'/Mt</b> — kommunal nicht gedeckt, weil Restmüll klein'
+      : 'Papiertonne (240 L) bleibt <b>kommunal gratis</b> (0 €)';
+  }
+  var pct=Math.round((k.rabatt||0.10)*100);
+  return '<div class="note" style="border:1.5px solid var(--ink);padding:12px;margin-top:8px;line-height:1.6">'+
+    '<b style="text-transform:uppercase">So entsteht die Marge (Option '+k.option+')</b><br><br>'+
+    '<b>① Kunde zahlt heute</b> (kommunal): '+eur(k.kosten_monat)+'/Mt<br><br>'+
+    '<b>② RSS-Lösung — die Kosten für euch:</b><br>'+
+    '· '+pflichtZeile+'<br>'+
+    '· '+restZeile+'<br>'+
+    '· '+papZeile+'<br>'+
+    '= RSS-Kosten gesamt: <b>'+eur(k.rss_kosten_monat)+'/Mt</b><br><br>'+
+    '<b>③ Kunde bekommt '+pct+' % Rabatt</b> → zahlt '+eur(k.kunde_zahlt_monat)+'/Mt (spart '+eur(k.ersparnis_monat)+'/Mt)<br><br>'+
+    '<b>④ RSS-Marge = Kunde zahlt − RSS-Kosten</b><br>'+
+    eur(k.kunde_zahlt_monat)+' − '+eur(k.rss_kosten_monat)+' = <b>'+eur(k.rss_marge_monat)+'/Mt</b> ('+eur(k.rss_marge_jahr)+'/Jahr)<br><br>'+
+    '<span style="color:var(--muted)">Pflichttonne (kleinste kommunale Restmülltonne) zählt immer mit. '+
+    'Die 240-L-Papiertonne ist kommunal gratis; eine 1.100-L-Papiertonne gibt es kommunal nur, wenn Restmüll+Bio groß genug sind (max. 4×).</span>'+
+  '</div>';
 }
 function photoGallery(l){
   var u=photoURL(l), extras=extraPhotoURLs(l), html='';
@@ -1078,6 +1113,7 @@ document.addEventListener('click',function(e){
   else if(act==='open'){ S.modal=id; renderSheet(); }
   else if(act==='close'||act==='closebg'&&e.target.id==='mbg'){ S.modal=null; renderSheet(); }
   else if(act==='status'){ setStatus(id,v); }
+  else if(act==='calctoggle'){ S.calcOpen=!S.calcOpen; renderSheet(); }
   else if(act==='rhythmus' || act==='rabatt'){
     var lr=S.leads.find(function(x){return x.id===id;});
     if(lr){
