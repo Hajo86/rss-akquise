@@ -82,7 +82,7 @@ var FRAKTION = {
 var VOLUMEN = [120,240,660,1100];
 var STATUS = ['neu','kontaktiert','angebot','gewonnen','verloren'];
 var STATUS_LBL = { neu:'Neu', kontaktiert:'Kontakt', angebot:'Angebot', gewonnen:'Gewonnen', verloren:'Verloren' };
-var APP_VERSION = 'v24 · Sync-Fix (Rundung)';
+var APP_VERSION = 'v25 · Löschen-Sync + Angebot';
 var WD = ['Sonntag','Montag','Dienstag','Mittwoch','Donnerstag','Freitag','Samstag'];
 var WD_WORK = ['Montag','Dienstag','Mittwoch','Donnerstag','Freitag'];
 // Places-Typen, die fast nie Gewerbekunden mit Tonne sind -> aus Route ausblenden
@@ -479,6 +479,14 @@ async function pullLeads(){
     if(local){ for(var k in merged){ if(k!=='photoBlob'&&k!=='photos') local[k]=merged[k]; } }
     else { S.leads.push(merged); added++; }
   }
+  // woanders gelöschte Leads auch hier entfernen: synchronisierte Leads, die in der Cloud fehlen
+  var remoteIds={}; rows.forEach(function(r){ remoteIds[r.id]=1; });
+  var removed=[];
+  S.leads=S.leads.filter(function(l){
+    if(l.sync_state==='synced' && !remoteIds[l.id]){ removed.push(l.id); return false; }
+    return true;
+  });
+  removed.forEach(function(id){ if(S.modal===id) S.modal=null; dbDel(id); });
   S.leads.sort(function(a,b){ return (b.created_at||0)-(a.created_at||0); });
   return added;
 }
@@ -969,6 +977,7 @@ function renderSheet(){
       '<input class="txt" style="margin-bottom:8px" data-edit="website" data-id="'+l.id+'" inputmode="url" value="'+esc(l.website||'')+'" placeholder="Website (optional)"/>'+
       '<button class="cta" data-act="saveedit" data-id="'+l.id+'" style="margin-top:0">Firma speichern</button>'+
       offerBox(l)+
+      ((kalkulation(l).ersparnis_jahr>0)?'<button class="cta" data-act="angebot" data-id="'+l.id+'">📄 Angebot für Kunden erstellen</button>':'')+
 
       ((l._candidates&&l._candidates.length>1)?
         '<button class="cta ghost" data-act="pick" data-id="'+l.id+'">Anderen Betrieb wählen ('+l._candidates.length+')</button>':'')+
@@ -1014,6 +1023,50 @@ function offerBox(l){
     '<button class="cta ghost" style="margin-top:10px" data-act="calctoggle">'+(S.calcOpen?'Rechnung verbergen ▴':'📊 Rechnung im Detail ▾')+'</button>'+
     (S.calcOpen?calcBreakdown(l,k):'')+
   '</div></div>';
+}
+// Kundendokument: druck-/teilbares Angebot (ohne interne Marge!)
+function buildAngebot(l){
+  var k=kalkulation(l);
+  var pct=Math.round((k.rabatt||0.10)*100);
+  var datum=new Date().toLocaleDateString('de-DE',{day:'2-digit',month:'long',year:'numeric'});
+  var firma=esc(l.firmenname||'Ihr Betrieb');
+  var adr=esc(l.adresse||'');
+  return '<!DOCTYPE html><html lang="de"><head><meta charset="utf-8"/>'+
+  '<meta name="viewport" content="width=device-width,initial-scale=1"/><title>Angebot '+firma+'</title>'+
+  '<style>*{box-sizing:border-box}body{font-family:Helvetica,Arial,sans-serif;color:#000;max-width:720px;margin:0 auto;padding:28px;line-height:1.5}'+
+  '.mark{display:inline-flex;width:46px;height:46px;border:2.5px solid #000;align-items:center;justify-content:center;font-weight:800;font-size:14px}'+
+  'h1{font-size:24px;font-weight:800;text-transform:uppercase;letter-spacing:-.5px;margin:18px 0 2px}'+
+  '.sub{color:#555;font-size:13px;margin-bottom:24px}'+
+  'table{width:100%;border-collapse:collapse;margin:18px 0}td{padding:10px 8px;border-bottom:1px solid #ddd;font-size:15px}'+
+  '.big{background:#000;color:#fff;padding:18px;text-align:center;margin:18px 0}'+
+  '.big .e{font-size:30px;font-weight:800}.big .l{font-size:11px;letter-spacing:.1em;text-transform:uppercase}'+
+  '.note{font-size:11px;color:#777;margin-top:24px;line-height:1.6}'+
+  '.btn{background:#000;color:#fff;border:0;padding:12px 18px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;cursor:pointer}'+
+  '@media print{.btn{display:none}body{padding:0}}</style></head><body>'+
+  '<div class="mark">RSS</div>'+
+  '<h1>Angebot zur<br>Abfallentsorgung</h1>'+
+  '<div class="sub">RSS – Recycling Solution Service · Landkreis Harburg · '+datum+'</div>'+
+  '<div style="margin-bottom:8px"><b>An:</b> '+firma+(adr?(' · '+adr):'')+'</div>'+
+  '<p>vielen Dank für Ihr Interesse. Auf Basis Ihrer aktuellen kommunalen Abfallgebühren haben wir folgendes Einsparpotenzial für Sie ermittelt:</p>'+
+  '<table>'+
+    '<tr><td>Ihre Kosten heute (kommunal)</td><td style="text-align:right;font-weight:800">'+eur(k.kosten_monat)+' / Monat</td></tr>'+
+    '<tr><td>Mit RSS (inkl. gesetzlicher Pflichttonne)</td><td style="text-align:right;font-weight:800">'+eur(k.neu_gesamt_monat)+' / Monat</td></tr>'+
+    '<tr><td>Erfasste Behälter</td><td style="text-align:right">'+esc(behaelterSummary(l))+'</td></tr>'+
+  '</table>'+
+  '<div class="big"><div class="l">Ihre Ersparnis</div><div class="e">'+eur(k.ersparnis_jahr)+' / Jahr</div>'+
+    '<div class="l" style="margin-top:4px">'+eur(k.ersparnis_monat)+' pro Monat · '+pct+' % günstiger</div></div>'+
+  '<p>Sie behalten Ihre gesetzlich vorgeschriebene Pflichttonne beim Landkreis; Ihre gewerbliche Restabfallentsorgung übernehmen wir über unseren Partner Remondis. Kein Aufwand für Sie – wir kümmern uns um die Umstellung.</p>'+
+  '<p style="margin-top:18px"><b>Nächster Schritt:</b> Antworten Sie einfach auf dieses Angebot oder rufen Sie uns an – wir richten alles ein.</p>'+
+  '<button class="btn" onclick="window.print()">Als PDF speichern / Drucken</button>'+
+  '<div class="note">Unverbindliches Angebot, freibleibend. Ersparnis bezogen auf die Abfallgebührensatzung des Landkreises Harburg (Stand 2026) und einen Abfuhrrhythmus '+(k.rhythmus==='woe'?'wöchentlich':'14-täglich')+'. Tatsächliche Werte je nach Vertrag und Rhythmus. Keine Rechtsberatung.</div>'+
+  '</body></html>';
+}
+function openAngebot(id){
+  var l=S.leads.find(function(x){return x.id===id;}); if(!l) return;
+  var blob=new Blob([buildAngebot(l)],{type:'text/html'});
+  var url=URL.createObjectURL(blob);
+  var w=window.open(url,'_blank');
+  if(!w){ location.href=url; }   // Popup blockiert -> im selben Tab öffnen
 }
 function calcBreakdown(l,k){
   var pct=Math.round((k.rabatt||0.10)*100);
@@ -1106,6 +1159,7 @@ document.addEventListener('click',function(e){
   else if(act==='close'||act==='closebg'&&e.target.id==='mbg'){ S.modal=null; renderSheet(); }
   else if(act==='status'){ setStatus(id,v); }
   else if(act==='calctoggle'){ S.calcOpen=!S.calcOpen; renderSheet(); }
+  else if(act==='angebot'){ openAngebot(id); }
   else if(act==='rhythmus' || act==='rabatt'){
     var lr=S.leads.find(function(x){return x.id===id;});
     if(lr){
