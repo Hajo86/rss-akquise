@@ -188,10 +188,10 @@ async function analyzePhoto(){
     '{"behaelter":[{"fraktion":"restmuell","volumen":1100,"anzahl":2},{"fraktion":"papier","volumen":240,"anzahl":1}],"entsorger_logo":true,"hinweis":"kurz"}';
   try{
     var b64=await blobToB64(d.photoBlob);
-    var r=await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key='+encodeURIComponent(S.keys.gemini),{
+    var r=await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key='+encodeURIComponent(S.keys.gemini),{
       method:'POST', headers:{'Content-Type':'application/json'},
       body:JSON.stringify({ contents:[{parts:[{inlineData:{mimeType:'image/jpeg',data:b64}},{text:prompt}]}],
-        generationConfig:{temperature:0.1,maxOutputTokens:600} })
+        generationConfig:{temperature:0.1,maxOutputTokens:600,thinkingConfig:{thinkingBudget:0}} })
     });
     if(!r.ok){ var e=await r.json().catch(function(){return{};}); throw new Error((e.error&&e.error.message)||('HTTP '+r.status)); }
     var dd=await r.json();
