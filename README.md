@@ -9,6 +9,19 @@ Mobile-first **PWA** als Feld-Akquise-Tool für RSS (Recycling Solution Service,
 Gegenstück zum bestehenden Street-View-Scanner [`../rss-leads.html`](../rss-leads.html):
 dort _remote_ erkannt, hier _real vor Ort_ erfasst.
 
+## 🔗 Live
+
+**https://hajo86.github.io/rss-akquise/** — am Handy öffnen → „Zum Home-Bildschirm" → als App installiert.
+
+**Passcode (Zugangsschutz):** `rss-harburg` — beim ersten Öffnen eingeben.
+Ändern: neuen Hash erzeugen mit `printf '%s' 'DEIN-CODE' | shasum -a 256`, dann
+`GATE_HASH` oben in `app.js` ersetzen, committen, pushen.
+
+> ⚠️ Der Passcode ist ein **clientseitiger** Schutz (hält Zufallsbesucher der öffentlichen
+> URL ab). Es ist keine kryptografische Server-Sperre — im Repo liegen aber **keine
+> Geheimnisse** (API-Keys gibst du lokal ein, Lead-Daten bleiben auf dem Gerät / in Supabase).
+> Für *echte* Absicherung: **Cloudflare Access** (kostenlos) vor die Seite hängen.
+
 ## Stack
 
 - **Vanilla JS PWA** (kein Build-Schritt) — `index.html` + `app.js`
