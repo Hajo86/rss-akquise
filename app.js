@@ -30,7 +30,7 @@ var FRAKTION = {
 var VOLUMEN = [120,240,660,1100];
 var STATUS = ['neu','kontaktiert','angebot','gewonnen','verloren'];
 var STATUS_LBL = { neu:'Neu', kontaktiert:'Kontakt', angebot:'Angebot', gewonnen:'Gewonnen', verloren:'Verloren' };
-var APP_VERSION = 'v8 · Bilderkennung gemini-2.5-flash (genauer)';
+var APP_VERSION = 'v9 · GPS-Hilfe + Bilderkennung 2.5-flash';
 var WD = ['Sonntag','Montag','Dienstag','Mittwoch','Donnerstag','Freitag','Samstag'];
 var WD_WORK = ['Montag','Dienstag','Mittwoch','Donnerstag','Freitag'];
 // Places-Typen, die fast nie Gewerbekunden mit Tonne sind -> aus Route ausblenden
@@ -421,7 +421,15 @@ function renderErfassen(){
         (d.analyzing?'🔍 Bild wird analysiert…':'🔍 Tonnen aus Foto erkennen')+'</button>') : '')+
 
     '<div class="gps '+gpsCls+'" data-act="gps"><span class="dot"></span>'+esc(gpsTxt)+
-      (d.gpsState!=='ok'?' · Tippen zum Wiederholen':'')+'</div>'+
+      (d.gpsState!=='ok'?' · TIPPEN zum Aktivieren':'')+'</div>'+
+    (d.gpsState==='err' ?
+      ('<div class="note" style="border:1.5px solid var(--hot);padding:10px 12px;margin-top:0">'+
+        '<b>Standort freigeben:</b><br>'+
+        '• <b>iPhone:</b> Einstellungen → Datenschutz &amp; Sicherheit → Ortungsdienste <b>AN</b>; '+
+        'dann runter zu <b>Safari</b> → „Beim Verwenden" + „Genauer Standort" <b>AN</b>. App schließen &amp; neu öffnen.<br>'+
+        '• <b>Android:</b> Standort <b>AN</b>; im Browser bei Nachfrage <b>Zulassen</b>.<br>'+
+        '• Klappt die Home-Bildschirm-App nicht: einmal direkt in <b>Safari</b> öffnen (hajo86.github.io/rss-akquise), dort Standort erlauben.<br>'+
+        'Danach oben auf die GPS-Leiste tippen. (Speichern geht auch ohne GPS — aber Firma/Adresse braucht den Standort.)</div>') : '')+
 
     '<span class="lab">Tonnen vor Ort'+(d.behaelter.length>1?(' · '+totalAnzahl(d)+' gesamt'):'')+'</span>'+
     d.behaelter.map(binBlock).join('')+
