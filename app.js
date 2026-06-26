@@ -30,7 +30,7 @@ var FRAKTION = {
 var VOLUMEN = [120,240,660,1100];
 var STATUS = ['neu','kontaktiert','angebot','gewonnen','verloren'];
 var STATUS_LBL = { neu:'Neu', kontaktiert:'Kontakt', angebot:'Angebot', gewonnen:'Gewonnen', verloren:'Verloren' };
-var APP_VERSION = 'v15 · UX, Mehr-Fotos, Schild-Scan, Entsorger';
+var APP_VERSION = 'v16 · Team-Sync (zentral)';
 var WD = ['Sonntag','Montag','Dienstag','Mittwoch','Donnerstag','Freitag','Samstag'];
 var WD_WORK = ['Montag','Dienstag','Mittwoch','Donnerstag','Freitag'];
 // Places-Typen, die fast nie Gewerbekunden mit Tonne sind -> aus Route ausblenden
@@ -152,9 +152,9 @@ function compressPhoto(file){
   });
 }
 function photoURL(lead){
-  if(!lead.photoBlob) return null;
-  if(!lead._url) lead._url=URL.createObjectURL(lead.photoBlob);
-  return lead._url;
+  if(lead.photoBlob){ if(!lead._url) lead._url=URL.createObjectURL(lead.photoBlob); return lead._url; }
+  if(lead.foto_url) return lead.foto_url;   // von anderen Nutzern gesynct (Supabase Storage)
+  return null;
 }
 function extraPhotoURLs(lead){
   if(!lead.photos||!lead.photos.length) return [];
@@ -351,30 +351,42 @@ async function processOutbox(){
   if(pend.length||unsynced.length) render();
 }
 
-/* ---------- Supabase (optional, additiv) ---------- */
+/* ---------- Supabase: zentraler Team-Sync (push + pull) ---------- */
 function supaOn(){ return !!(S.keys.supaUrl && S.keys.supaKey); }
+function supaBase(){ return S.keys.supaUrl.replace(/\/$/,''); }
+function supaHeaders(extra){
+  var h={ 'apikey':S.keys.supaKey, 'Authorization':'Bearer '+S.keys.supaKey };
+  if(extra) for(var k in extra) h[k]=extra[k];
+  return h;
+}
+// rendert nur, wenn der Nutzer nicht gerade in einem Eingabefeld tippt
+function safeRender(){
+  var a=document.activeElement;
+  if(a && a.dataset && (a.dataset.edit||a.dataset.act==='note'||a.dataset.key)) return;
+  render();
+}
 async function syncLead(lead){
-  if(!supaOn() || !S.online){ if(supaOn()) lead.sync_state='pending'; return; }
+  lead.updated_at = Date.now();                         // letzte Änderung (für Konfliktauflösung)
+  if(!supaOn()){ lead.sync_state='local'; await dbPut(stripRuntime(lead)); return; }
+  if(!S.online){ lead.sync_state='pending'; await dbPut(stripRuntime(lead)); return; }
   try{
-    var base=S.keys.supaUrl.replace(/\/$/,'');
+    var base=supaBase();
     if(lead.photoBlob && !lead.foto_url){
       var path=lead.id+'.jpg';
       var up=await fetch(base+'/storage/v1/object/lead-photos/'+path,{
-        method:'POST', headers:{ 'Authorization':'Bearer '+S.keys.supaKey, 'apikey':S.keys.supaKey,
-          'Content-Type':'image/jpeg','x-upsert':'true' }, body:lead.photoBlob });
+        method:'POST', headers:supaHeaders({'Content-Type':'image/jpeg','x-upsert':'true'}), body:lead.photoBlob });
       if(up.ok) lead.foto_url=base+'/storage/v1/object/public/lead-photos/'+path;
     }
-    var row=toRow(lead);
     var res=await fetch(base+'/rest/v1/leads?on_conflict=id',{
-      method:'POST', headers:{ 'Authorization':'Bearer '+S.keys.supaKey, 'apikey':S.keys.supaKey,
-        'Content-Type':'application/json','Prefer':'resolution=merge-duplicates,return=minimal' },
-      body:JSON.stringify([row]) });
+      method:'POST', headers:supaHeaders({'Content-Type':'application/json','Prefer':'resolution=merge-duplicates,return=minimal'}),
+      body:JSON.stringify([toRow(lead)]) });
     lead.sync_state = res.ok ? 'synced' : 'pending';
   }catch(e){ lead.sync_state='pending'; }
   await dbPut(stripRuntime(lead));
 }
 function toRow(l){
-  return { id:l.id, created_at:new Date(l.created_at).toISOString(), abfuhrtag:l.abfuhrtag,
+  return { id:l.id, created_at:new Date(l.created_at).toISOString(),
+    updated_at:new Date(l.updated_at||l.created_at).toISOString(), abfuhrtag:l.abfuhrtag,
     lat:l.lat, lng:l.lng, accuracy:l.accuracy, foto_url:l.foto_url||null,
     fraktion:l.fraktion, volumen:l.volumen, anzahl:l.anzahl, entsorger_logo:l.entsorger_logo, entsorger:l.entsorger||null,
     behaelter:l.behaelter||null,
@@ -382,6 +394,52 @@ function toRow(l){
     place_id:l.place_id||null, adresse:l.adresse||null, notiz:l.notiz||null,
     status:l.status, score:l.score, hot_lead:l.hot_lead,
     kosten_monat:l.kosten_monat, ersparnis_monat:l.ersparnis_monat, ersparnis_jahr:l.ersparnis_jahr };
+}
+function fromRow(rl, local){
+  return {
+    id:rl.id,
+    created_at: rl.created_at?Date.parse(rl.created_at):Date.now(),
+    updated_at: rl.updated_at?Date.parse(rl.updated_at):Date.now(),
+    abfuhrtag:rl.abfuhrtag, lat:rl.lat, lng:rl.lng, accuracy:rl.accuracy,
+    foto_url:rl.foto_url||null, photoBlob:(local&&local.photoBlob)||null, photos:(local&&local.photos)||[],
+    behaelter:rl.behaelter||null, fraktion:rl.fraktion, volumen:rl.volumen, anzahl:rl.anzahl,
+    entsorger_logo:rl.entsorger_logo, entsorger:rl.entsorger||'',
+    firmenname:rl.firmenname||'', telefon:rl.telefon||'', website:rl.website||'',
+    place_id:rl.place_id||'', adresse:rl.adresse||'', notiz:rl.notiz||'',
+    status:rl.status||'neu', score:rl.score, hot_lead:rl.hot_lead,
+    kosten_monat:rl.kosten_monat, ersparnis_monat:rl.ersparnis_monat, ersparnis_jahr:rl.ersparnis_jahr,
+    enriched:true, sync_state:'synced', duplikat:false
+  };
+}
+// alle Leads vom Server holen und in die lokale Liste mergen (Team-Pool)
+async function pullLeads(){
+  if(!supaOn() || !S.online) return 0;
+  var r=await fetch(supaBase()+'/rest/v1/leads?select=*', { headers:supaHeaders() });
+  if(!r.ok) throw new Error('pull '+r.status);
+  var rows=await r.json(), added=0;
+  for(var i=0;i<rows.length;i++){
+    var rl=rows[i];
+    var local=S.leads.find(function(x){return x.id===rl.id;});
+    var rU=rl.updated_at?Date.parse(rl.updated_at):0;
+    var lU=local?(local.updated_at||local.created_at||0):0;
+    if(local && lU>=rU) continue;           // lokale Version ist neuer/gleich -> behalten
+    var merged=fromRow(rl, local);
+    await dbPut(stripRuntime(merged));
+    if(local){ for(var k in merged){ if(k!=='photoBlob'&&k!=='photos') local[k]=merged[k]; } }
+    else { S.leads.push(merged); added++; }
+  }
+  S.leads.sort(function(a,b){ return (b.created_at||0)-(a.created_at||0); });
+  return added;
+}
+// kompletter Abgleich: erst lokale Änderungen hoch, dann Team-Leads runter
+async function syncAll(opts){
+  if(!supaOn() || !S.online) return;
+  var pend=S.leads.filter(function(l){ return l.sync_state!=='synced'; });
+  for(var i=0;i<pend.length;i++){ await syncLead(pend[i]); }
+  var added=0;
+  try{ added=await pullLeads(); }catch(e){}
+  safeRender();
+  if(opts&&opts.toast) toast(added?(added+' neue Team-Leads geladen'):'Synchronisiert');
 }
 function stripRuntime(l){
   var c={}; for(var k in l){ if(k.charAt(0)!=='_') c[k]=l[k]; } return c;  // alle _runtime-Felder raus
@@ -396,7 +454,7 @@ async function saveDraft(){
   var dom=dominantContainer(d);   // Primärfelder = teuerster Behälter (Abwärtskompatibilität)
   var lead={
     id:'lead-'+Date.now()+'-'+Math.floor(Math.random()*1e4),
-    created_at:Date.now(), abfuhrtag:new Date().toISOString().slice(0,10),
+    created_at:Date.now(), updated_at:Date.now(), abfuhrtag:new Date().toISOString().slice(0,10),
     lat:d.lat, lng:d.lng, accuracy:d.accuracy, photoBlob:d.photoBlob, photos:[],
     behaelter:d.behaelter.map(function(c){return {fraktion:c.fraktion,volumen:c.volumen,anzahl:c.anzahl||1};}),
     fraktion:dom.fraktion, volumen:dom.volumen, anzahl:totalAnzahl(d), entsorger_logo:d.entsorger_logo, entsorger:d.entsorger||'',
@@ -790,8 +848,10 @@ function renderSettings(){
         '<input class="txt" type="password" data-key="gemini" value="'+esc(k.gemini||'')+'" placeholder="AIza…"/></div>'+
     '</div>'+
 
-    '<div class="section"><h3>Supabase (optional)</h3>'+
-      '<div class="note">Cloud-Sync für Multi-Device + Foto-Backup. Leer lassen = nur lokal (IndexedDB).</div>'+
+    '<div class="section"><h3>Team-Sync (Supabase)</h3>'+
+      '<div class="note">Zentrale Datenbank: ALLE Nutzer sehen denselben Lead-Pool (laden + schreiben). '+
+      'Auf jedem Gerät dieselbe URL + denselben Anon-Key eintragen. Leer = nur lokal auf diesem Gerät.</div>'+
+      (supaOn()?('<div class="note" style="color:#1a7d34;font-weight:800">✓ Team-Sync aktiv · '+S.leads.filter(function(l){return l.sync_state==='synced';}).length+' synchronisiert</div>'):'')+
       '<div class="fld" style="margin-top:10px"><label>Project URL</label>'+
         '<input class="txt" type="text" data-key="supaUrl" value="'+esc(k.supaUrl||'')+'" placeholder="https://xxx.supabase.co"/></div>'+
       '<div class="fld"><label>Anon Key</label>'+
@@ -959,8 +1019,8 @@ document.addEventListener('click',function(e){
       dbClear().then(function(){ S.leads=[]; render(); toast('Alle Leads gelöscht'); });
     }
   }
-  else if(act==='savekeys'){ collectKeys(); saveKeys(S.keys); toast('Gespeichert'); render(); processOutbox(); }
-  else if(act==='sync'){ toast('Synchronisiere…'); processOutbox(); }
+  else if(act==='savekeys'){ collectKeys(); saveKeys(S.keys); toast('Gespeichert'); render(); processOutbox(); syncAll(); }
+  else if(act==='sync'){ toast('Synchronisiere…'); processOutbox().then(function(){ syncAll({toast:true}); }); }
   else if(act==='export'){ doExport(v); }
 },false);
 
@@ -1017,6 +1077,9 @@ async function setStatus(id,v){
 }
 async function delLead(id){
   await dbDel(id); S.leads=S.leads.filter(function(l){return l.id!==id;}); S.modal=null; render();
+  if(supaOn() && S.online){   // auch zentral löschen, sonst kommt er beim nächsten Pull zurück
+    fetch(supaBase()+'/rest/v1/leads?id=eq.'+encodeURIComponent(id),{ method:'DELETE', headers:supaHeaders() }).catch(function(){});
+  }
 }
 function setCompany(id,i){
   var l=S.leads.find(function(x){return x.id===id;}); if(!l||!l._candidates) return;
@@ -1076,7 +1139,7 @@ function doExport(fmt){
 }
 
 /* ---------- Online / Offline ---------- */
-window.addEventListener('online',function(){ S.online=true; render(); toast('Online – synchronisiere'); processOutbox(); });
+window.addEventListener('online',function(){ S.online=true; render(); toast('Online – synchronisiere'); processOutbox().then(function(){ syncAll(); }); });
 window.addEventListener('offline',function(){ S.online=false; render(); });
 
 /* ---------- Passcode-Gate ----------
@@ -1111,7 +1174,9 @@ async function boot(){
   catch(e){ console.error(e); toast('Lokaler Speicher nicht verfügbar'); }
   getGPS(S.draft);
   loadRoute().then(render);
-  if(S.online) processOutbox();
+  if(S.online){ processOutbox().then(function(){ syncAll(); }); }
+  // regelmäßig Team-Leads nachladen (alle 90 s), ohne Tipp-Eingaben zu stören
+  setInterval(function(){ if(supaOn() && S.online) syncAll(); }, 90000);
 }
 
 if(localStorage.getItem('rss_unlocked')==='1'){
