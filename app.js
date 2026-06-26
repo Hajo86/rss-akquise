@@ -30,7 +30,7 @@ var FRAKTION = {
 var VOLUMEN = [120,240,660,1100];
 var STATUS = ['neu','kontaktiert','angebot','gewonnen','verloren'];
 var STATUS_LBL = { neu:'Neu', kontaktiert:'Kontakt', angebot:'Angebot', gewonnen:'Gewonnen', verloren:'Verloren' };
-var APP_VERSION = 'v7 · Bilderkennung gemini-2.5-flash (verbessert)';
+var APP_VERSION = 'v8 · Bilderkennung gemini-2.5-flash (genauer)';
 var WD = ['Sonntag','Montag','Dienstag','Mittwoch','Donnerstag','Freitag','Samstag'];
 var WD_WORK = ['Montag','Dienstag','Mittwoch','Donnerstag','Freitag'];
 // Places-Typen, die fast nie Gewerbekunden mit Tonne sind -> aus Route ausblenden
@@ -182,13 +182,15 @@ async function analyzePhoto(){
   d.analyzing=true; render();
   var prompt=
     'Du analysierst ein Foto von Mülltonnen vor einem deutschen Gewerbebetrieb am Abfuhrtag.\n'+
-    'Zähle SEHR sorgfältig ALLE Tonnen – auch kleine, teilweise verdeckte oder im Hintergrund. Übersieh keine einzige.\n'+
-    'Fraktion nach Deckel-/Korpusfarbe: schwarz/anthrazit/grau = restmuell, blau = papier, braun ODER grün = bio, gelb/gelber Deckel = gelb.\n'+
-    'Volumen bei 2-Rad-Tonnen: schmal/niedrig = 120, normal/breiter = 240. Große 4-Rad-Container = 660 oder 1100.\n'+
-    'Runde immer auf 120, 240, 660 oder 1100. Fasse gleiche Fraktion+Größe zu einem Eintrag mit anzahl zusammen.\n'+
-    'Achte besonders auf kleine 120-L-Biotonnen (braun/grün) – die werden oft übersehen.\n'+
+    'Zähle GENAU die tatsächlich im Bild sichtbaren Tonnen: übersieh keine echte, aber erfinde auch keine.\n'+
+    'Melde NUR Objekte, die klar als Mülltonne/Container erkennbar sind. Nimm NICHT automatisch an, dass eine Restmülltonne dabei ist. '+
+    'Wenn du unsicher bist, ob etwas eine Tonne ist (Kiste, Sack, Schatten, anderes Objekt), lass es weg.\n'+
+    'Fraktion nach Deckel-/Korpusfarbe: schwarz/anthrazit/grau = restmuell, blau = papier, braun ODER grün = bio, gelb/gelber Deckel = gelb. '+
+    'Ordne die Fraktion nach der sichtbaren Farbe zu, nicht nach Vermutung.\n'+
+    'Volumen bei 2-Rad-Tonnen: schmal/niedrig = 120, normal/breiter = 240. Große 4-Rad-Container = 660 oder 1100. Runde auf 120, 240, 660 oder 1100.\n'+
+    'Fasse gleiche Fraktion+Größe zu einem Eintrag mit anzahl zusammen. Kleine 120-L-Biotonnen (braun/grün) nicht übersehen.\n'+
     'Entsorger-Logo sichtbar (Remondis, Veolia, Alba, PreZero, kommunal)? -> entsorger_logo true/false.\n'+
-    'Im Zweifel lieber eine Tonne zu viel als eine zu wenig melden.\n'+
+    'Wenn KEINE Tonne klar erkennbar ist, gib "behaelter":[] zurück.\n'+
     'Antworte NUR als JSON, kein Text davor/danach:\n'+
     '{"behaelter":[{"fraktion":"restmuell","volumen":1100,"anzahl":2},{"fraktion":"bio","volumen":120,"anzahl":1}],"entsorger_logo":true,"hinweis":"kurz"}';
   try{
