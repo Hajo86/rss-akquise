@@ -30,7 +30,7 @@ var FRAKTION = {
 var VOLUMEN = [120,240,660,1100];
 var STATUS = ['neu','kontaktiert','angebot','gewonnen','verloren'];
 var STATUS_LBL = { neu:'Neu', kontaktiert:'Kontakt', angebot:'Angebot', gewonnen:'Gewonnen', verloren:'Verloren' };
-var APP_VERSION = 'v6 · Bilderkennung gemini-2.5-flash';
+var APP_VERSION = 'v7 · Bilderkennung gemini-2.5-flash (verbessert)';
 var WD = ['Sonntag','Montag','Dienstag','Mittwoch','Donnerstag','Freitag','Samstag'];
 var WD_WORK = ['Montag','Dienstag','Mittwoch','Donnerstag','Freitag'];
 // Places-Typen, die fast nie Gewerbekunden mit Tonne sind -> aus Route ausblenden
@@ -138,13 +138,13 @@ function compressPhoto(file){
   return new Promise(function(res){
     var img=new Image(); var url=URL.createObjectURL(file);
     img.onload=function(){
-      var max=1280, w=img.width, h=img.height;
+      var max=1568, w=img.width, h=img.height;   // höhere Auflösung -> kleine Tonnen bleiben erkennbar
       if(w>h && w>max){ h=Math.round(h*max/w); w=max; }
       else if(h>=w && h>max){ w=Math.round(w*max/h); h=max; }
       var c=document.createElement('canvas'); c.width=w; c.height=h;
       c.getContext('2d').drawImage(img,0,0,w,h);
       URL.revokeObjectURL(url);
-      c.toBlob(function(b){ res(b); },'image/jpeg',0.62);
+      c.toBlob(function(b){ res(b); },'image/jpeg',0.72);
     };
     img.onerror=function(){ URL.revokeObjectURL(url); res(file); };
     img.src=url;
@@ -182,18 +182,21 @@ async function analyzePhoto(){
   d.analyzing=true; render();
   var prompt=
     'Du analysierst ein Foto von Mülltonnen vor einem deutschen Gewerbebetrieb am Abfuhrtag.\n'+
-    'Erkenne ALLE sichtbaren Tonnen/Container. Fasse gleiche Größe+Fraktion zu einem Eintrag mit Anzahl zusammen.\n'+
-    'Fraktion nach Deckel-/Tonnenfarbe: schwarz/grau/dunkel=restmuell, blau=papier, braun oder grün=bio, gelb=gelb.\n'+
-    'Volumen schätzen und auf 120, 240, 660 oder 1100 Liter runden (kleine 2-Rad-Tonne=120/240, großer 4-Rad-Container=660/1100).\n'+
-    'Ist ein Entsorger-Logo sichtbar (Remondis, Veolia, Alba, PreZero oder kommunal)? -> entsorger_logo true/false.\n'+
+    'Zähle SEHR sorgfältig ALLE Tonnen – auch kleine, teilweise verdeckte oder im Hintergrund. Übersieh keine einzige.\n'+
+    'Fraktion nach Deckel-/Korpusfarbe: schwarz/anthrazit/grau = restmuell, blau = papier, braun ODER grün = bio, gelb/gelber Deckel = gelb.\n'+
+    'Volumen bei 2-Rad-Tonnen: schmal/niedrig = 120, normal/breiter = 240. Große 4-Rad-Container = 660 oder 1100.\n'+
+    'Runde immer auf 120, 240, 660 oder 1100. Fasse gleiche Fraktion+Größe zu einem Eintrag mit anzahl zusammen.\n'+
+    'Achte besonders auf kleine 120-L-Biotonnen (braun/grün) – die werden oft übersehen.\n'+
+    'Entsorger-Logo sichtbar (Remondis, Veolia, Alba, PreZero, kommunal)? -> entsorger_logo true/false.\n'+
+    'Im Zweifel lieber eine Tonne zu viel als eine zu wenig melden.\n'+
     'Antworte NUR als JSON, kein Text davor/danach:\n'+
-    '{"behaelter":[{"fraktion":"restmuell","volumen":1100,"anzahl":2},{"fraktion":"papier","volumen":240,"anzahl":1}],"entsorger_logo":true,"hinweis":"kurz"}';
+    '{"behaelter":[{"fraktion":"restmuell","volumen":1100,"anzahl":2},{"fraktion":"bio","volumen":120,"anzahl":1}],"entsorger_logo":true,"hinweis":"kurz"}';
   try{
     var b64=await blobToB64(d.photoBlob);
     var r=await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key='+encodeURIComponent(S.keys.gemini),{
       method:'POST', headers:{'Content-Type':'application/json'},
       body:JSON.stringify({ contents:[{parts:[{inlineData:{mimeType:'image/jpeg',data:b64}},{text:prompt}]}],
-        generationConfig:{temperature:0.1,maxOutputTokens:600,thinkingConfig:{thinkingBudget:0}} })
+        generationConfig:{temperature:0.1,maxOutputTokens:1200} })
     });
     if(!r.ok){ var e=await r.json().catch(function(){return{};}); throw new Error((e.error&&e.error.message)||('HTTP '+r.status)); }
     var dd=await r.json();
