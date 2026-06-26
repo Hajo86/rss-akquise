@@ -30,7 +30,7 @@ var FRAKTION = {
 var VOLUMEN = [120,240,660,1100];
 var STATUS = ['neu','kontaktiert','angebot','gewonnen','verloren'];
 var STATUS_LBL = { neu:'Neu', kontaktiert:'Kontakt', angebot:'Angebot', gewonnen:'Gewonnen', verloren:'Verloren' };
-var APP_VERSION = 'v17 · Heute = Gebiet + Navigieren';
+var APP_VERSION = 'v18 · Diktat-Verbesserung';
 var WD = ['Sonntag','Montag','Dienstag','Mittwoch','Donnerstag','Freitag','Samstag'];
 var WD_WORK = ['Montag','Dienstag','Mittwoch','Donnerstag','Freitag'];
 // Places-Typen, die fast nie Gewerbekunden mit Tonne sind -> aus Route ausblenden
@@ -564,8 +564,11 @@ function renderErfassen(){
 
     '<span class="lab">Notiz</span>'+
     '<textarea data-act="note" placeholder="Freitext oder Sprachnotiz…">'+esc(d.notiz)+'</textarea>'+
-    '<button class="mic" data-act="mic">🎤 Sprachnotiz aufnehmen</button>'+
-    '<div class="note">Geht der Knopf nicht? Ins Notizfeld tippen und das <b>🎤 auf deiner Tastatur</b> nutzen (Diktat) – das funktioniert auf jedem Handy.</div>'+
+    '<div class="row two" style="margin-top:8px">'+
+      '<button class="mic" style="margin-top:0" data-act="mic">🎤 In App aufnehmen</button>'+
+      '<button class="mic" style="margin-top:0" data-act="dictate">⌨️ Tastatur-Diktat</button>'+
+    '</div>'+
+    '<div class="note"><b>Am zuverlässigsten</b> (jedes Handy): „Tastatur-Diktat" tippen → dann das <b>🎤 auf der Handy-Tastatur</b> drücken und sprechen. „In App aufnehmen" geht nur, wo der Browser es unterstützt (v. a. Android).</div>'+
 
     '<div class="preview">'+
       '<div class="ph"><span>Live-Bewertung</span>'+(hot?'<span class="hotflag">🔥 Hot Lead</span>':'')+'</div>'+
@@ -981,6 +984,7 @@ document.addEventListener('click',function(e){
   else if(act==='analyze'){ analyzePhoto(); }
   else if(act==='logo'){ S.draft.entsorger_logo=!S.draft.entsorger_logo; render(); }
   else if(act==='mic'){ startMic(t); }
+  else if(act==='dictate'){ focusNote(); toast('Jetzt das 🎤 auf deiner Tastatur drücken'); }
   else if(act==='clearpreset'){ S.draft.preset=null; render(); }
   else if(act==='openlast'){ if(S.lastSaved){ S.modal=S.lastSaved.id; S.lastSaved=null; render(); renderSheet(); } }
   else if(act==='dismisslast'){ S.lastSaved=null; render(); }
@@ -1094,28 +1098,33 @@ function focusNote(){
 function startMic(btn){
   var SR=window.SpeechRecognition||window.webkitSpeechRecognition;
   if(!SR){
-    // z.B. Chrome auf iPhone: Web Speech fehlt -> auf Tastatur-Diktat verweisen
+    // z.B. Chrome auf iPhone: Web Speech fehlt -> Tastatur-Diktat (geht immer)
     focusNote();
-    toast('Tipp: 🎤 auf deiner Tastatur nutzen (Diktat)');
+    toast('Tastatur öffnet sich – tippe das 🎤 darauf (Diktat)');
     return;
   }
-  if(_rec){ _rec.stop(); _rec=null; btn.classList.remove('rec'); return; }
-  _rec=new SR(); _rec.lang='de-DE'; _rec.interimResults=false; _rec.continuous=false;
+  if(_rec){ try{ _rec.stop(); }catch(e){} return; }     // zweiter Tipp = Stop
+  var ta=document.querySelector('textarea[data-act="note"]');
+  var basis=(S.draft.notiz||'');
+  _rec=new SR(); _rec.lang='de-DE'; _rec.interimResults=true; _rec.continuous=true;
   btn.classList.add('rec'); btn.innerHTML='⏹ Aufnahme läuft… (zum Stoppen tippen)';
   _rec.onresult=function(ev){
-    var txt=ev.results[0][0].transcript;
-    S.draft.notiz=(S.draft.notiz?S.draft.notiz+' ':'')+txt;
+    var full=''; for(var i=0;i<ev.results.length;i++){ full+=ev.results[i][0].transcript; }
+    var combined=(basis?basis+' ':'')+full;
+    S.draft.notiz=combined;
+    if(ta){ ta.value=combined; }                        // Live-Text ohne Re-Render
   };
   _rec.onend=function(){ _rec=null; render(); };
   _rec.onerror=function(e){
     _rec=null;
     var c=e&&e.error;
-    if(c==='not-allowed'||c==='service-not-allowed'){ toast('Mikrofon-Freigabe fehlt – in Chrome erlauben'); }
-    else if(c==='no-speech'){ toast('Nichts gehört – nochmal tippen'); }
-    else { focusNote(); toast('Sprache geht hier nicht – 🎤 der Tastatur nutzen'); }
+    if(c==='not-allowed'||c==='service-not-allowed'){ focusNote(); toast('Mikro-Freigabe fehlt – in Chrome erlauben, oder 🎤 der Tastatur nutzen'); }
+    else if(c==='no-speech'){ toast('Nichts gehört – nochmal tippen oder Tastatur-🎤'); }
+    else if(c==='aborted'){ /* normal beim Stoppen */ }
+    else { focusNote(); toast('Sprache hier nicht möglich – 🎤 der Tastatur nutzen'); }
     render();
   };
-  try{ _rec.start(); }catch(err){ _rec=null; focusNote(); toast('Sprache geht hier nicht – 🎤 der Tastatur nutzen'); render(); }
+  try{ _rec.start(); }catch(err){ _rec=null; focusNote(); toast('🎤 der Tastatur nutzen (Diktat)'); render(); }
 }
 
 /* ---------- Export ---------- */
