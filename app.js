@@ -30,7 +30,7 @@ var FRAKTION = {
 var VOLUMEN = [120,240,660,1100];
 var STATUS = ['neu','kontaktiert','angebot','gewonnen','verloren'];
 var STATUS_LBL = { neu:'Neu', kontaktiert:'Kontakt', angebot:'Angebot', gewonnen:'Gewonnen', verloren:'Verloren' };
-var APP_VERSION = 'v16 · Team-Sync (zentral)';
+var APP_VERSION = 'v17 · Heute = Gebiet + Navigieren';
 var WD = ['Sonntag','Montag','Dienstag','Mittwoch','Donnerstag','Freitag','Samstag'];
 var WD_WORK = ['Montag','Dienstag','Mittwoch','Donnerstag','Freitag'];
 // Places-Typen, die fast nie Gewerbekunden mit Tonne sind -> aus Route ausblenden
@@ -752,6 +752,24 @@ function startStop(p, o, frak){
   render();
 }
 
+function haversine(a,b,c,d){
+  var R=6371, dx=(c-a)*Math.PI/180, dy=(d-b)*Math.PI/180,
+    s=Math.sin(dx/2)*Math.sin(dx/2)+Math.cos(a*Math.PI/180)*Math.cos(c*Math.PI/180)*Math.sin(dy/2)*Math.sin(dy/2);
+  return 2*R*Math.asin(Math.sqrt(s));
+}
+// Ortsteile nach Basisnamen gruppieren (Fleestedt ost/west -> ein "Fleestedt")
+function routeGroups(){
+  var g={};
+  S.route.ortsteile.forEach(function(o){
+    var base=o.name.split(' (')[0];
+    if(!g[base]) g[base]={ name:base, lat:o.lat, lng:o.lng, restDays:{}, papDays:{} };
+    if(g[base].lat==null && o.lat!=null){ g[base].lat=o.lat; g[base].lng=o.lng; }
+    if(o.restmuell_wochentag) g[base].restDays[o.restmuell_wochentag]=true;
+    if(o.papier_wochentag)    g[base].papDays[o.papier_wochentag]=true;
+  });
+  return Object.keys(g).map(function(k){ return g[k]; });
+}
+
 function renderHeute(){
   var today=WD[new Date().getDay()];
   var day=S.routeDay||today;
@@ -764,14 +782,12 @@ function renderHeute(){
     loadRoute().then(render); return;
   }
 
-  var due=S.route.ortsteile.filter(function(o){
-    return o.restmuell_wochentag===day || o.papier_wochentag===day;
-  });
-  // sortiere: Restmüll-Tage zuerst
-  due.sort(function(a,b){ return (b.restmuell_wochentag===day) - (a.restmuell_wochentag===day); });
+  var groups=routeGroups();
+  var due=groups.filter(function(g){ return g.restDays[day]||g.papDays[day]; });
+  due.sort(function(a,b){ return (b.restDays[day]?1:0)-(a.restDays[day]?1:0) || a.name.localeCompare(b.name); });
 
   var chips='<div class="bar">'+ WD_WORK.map(function(wd){
-    var n=S.route.ortsteile.filter(function(o){return o.restmuell_wochentag===wd||o.papier_wochentag===wd;}).length;
+    var n=groups.filter(function(g){return g.restDays[wd]||g.papDays[wd];}).length;
     return '<button class="'+(day===wd?'on':'')+'" data-act="day" data-v="'+wd+'">'+
       wd.slice(0,2)+(wd===today?' •':'')+' '+n+'</button>';
   }).join('')+'</div>';
@@ -781,54 +797,37 @@ function renderHeute(){
     body='<div class="empty"><div class="big">'+esc(day)+': keine Abfuhr</div>'+
       '<div class="sm">Wähle oben einen Tag mit Restmüll-/Papier-Abfuhr.</div></div>';
   } else {
-    body=due.map(function(o){ return ortsteilCard(o,day); }).join('');
+    body=due.map(function(g){ return gebietCard(g,day); }).join('');
   }
 
-  var rN=due.filter(function(o){return o.restmuell_wochentag===day;}).length;
-  var pN=due.filter(function(o){return o.papier_wochentag===day;}).length;
+  var rN=due.filter(function(g){return g.restDays[day];}).length;
+  var pN=due.filter(function(g){return g.papDays[day];}).length;
 
   $app.innerHTML='<div class="screen">'+
     '<h1 class="t">Heute</h1>'+
     '<div class="sub">'+esc(S.route.gemeinde)+' · '+esc(day)+(day===today?' (heute)':'')+
       ' · '+rN+'× Restmüll · '+pN+'× Papier</div>'+
     chips+
-    '<div class="note" style="margin:0 0 12px">Tipp: Am Restmüll-/Papier-Tag stehen die Tonnen draußen. '+
-      'Betriebe laden = nur Gewerbe-Adressen (Wohnhäuser sind nicht dabei).</div>'+
+    '<div class="note" style="margin:0 0 12px">An diesen Tagen stehen die Tonnen draußen — hinfahren und die Gewerbe-Tonnen einfach per „Erfassen" aufnehmen. '+
+      '<b>An Feiertagen verschiebt sich die Abfuhr um 1–2 Tage.</b></div>'+
     body+'</div>';
 }
 
-function ortsteilCard(o,day){
-  var rest=o.restmuell_wochentag===day, pap=o.papier_wochentag===day;
-  var loading=S.stopsLoading[o.strukturID], stops=S.stops[o.strukturID];
-  var frakToday = rest?'restmuell':'papier';
-
-  var head='<div style="display:flex;justify-content:space-between;align-items:center;'+
-      'border:1.5px solid var(--ink);border-bottom:none;padding:12px 14px">'+
-    '<b style="font-size:16px;text-transform:uppercase">'+esc(o.name.split(' (')[0])+'</b>'+
-    '<span>'+(rest?'<span class="tag hot">Restmüll</span> ':'')+
-             (pap?'<span class="tag fill">Papier</span>':'')+'</span></div>';
-
-  var inner;
-  if(loading){
-    inner='<div style="padding:14px;text-align:center;font-weight:700">Betriebe werden geladen…</div>';
-  } else if(!stops){
-    inner='<button class="cta ghost" style="margin:0;border-top:none" data-act="loadstops" data-sid="'+o.strukturID+'">Betriebe laden ▸</button>';
-  } else if(!stops.length){
-    inner='<div style="padding:14px;font-weight:600;color:var(--muted)">Keine Betriebe gefunden (Radius 1,6 km).</div>';
-  } else {
-    inner=stops.map(function(p){
-      var done=leadHasPlace(p.place_id);
-      return '<div class="lead" style="margin:0;border-top:none" data-act="stop" data-sid="'+o.strukturID+'" data-pid="'+esc(p.place_id)+'" data-frak="'+frakToday+'">'+
-        '<div class="bd" style="padding:11px 12px">'+
-          '<div class="co">'+(done?'✓ ':'')+esc(p.firmenname)+'</div>'+
-          '<div class="ad">'+esc(p.adresse||'')+'</div>'+
-          '<div class="meta">'+(p.typ?'<span class="tag">'+esc(p.typ)+'</span>':'')+
-            (done?'<span class="tag fill">erfasst</span>':'<span class="tag">tippen → erfassen</span>')+'</div>'+
-        '</div></div>';
-    }).join('')+
-    '<div class="note" style="padding:8px 12px;border:1.5px solid var(--ink);border-top:none">Max. 20 nächste Betriebe je Ortsteil.</div>';
-  }
-  return '<div style="margin-bottom:14px">'+head+inner+'</div>';
+function gebietCard(g,day){
+  var rest=!!g.restDays[day], pap=!!g.papDays[day];
+  var near = g.lat!=null ? S.leads.filter(function(l){ return l.lat!=null && haversine(l.lat,l.lng,g.lat,g.lng)<2.5; }).length : 0;
+  var nav = g.lat!=null
+    ? '<a class="cta ghost" style="margin:0;text-decoration:none;flex:none;padding:12px 16px" href="https://www.google.com/maps/dir/?api=1&destination='+g.lat+','+g.lng+'" target="_blank">Navigieren ▸</a>'
+    : '<span style="font-size:12px;color:var(--muted)">kein Standort</span>';
+  return '<div style="border:1.5px solid var(--ink);margin-bottom:12px">'+
+    '<div style="display:flex;justify-content:space-between;align-items:center;padding:12px 14px;border-bottom:1.5px solid var(--ink)">'+
+      '<b style="font-size:16px;text-transform:uppercase">'+esc(g.name)+'</b>'+
+      '<span>'+(rest?'<span class="tag hot">Restmüll</span> ':'')+(pap?'<span class="tag fill">Papier</span>':'')+'</span>'+
+    '</div>'+
+    '<div style="padding:10px 14px;display:flex;align-items:center;gap:10px">'+
+      '<span style="font-size:12px;font-weight:700;color:var(--muted);flex:1">'+near+' Lead'+(near===1?'':'s')+' hier erfasst</span>'+
+      nav+
+    '</div></div>';
 }
 
 function renderSettings(){
