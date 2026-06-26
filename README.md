@@ -105,26 +105,59 @@ Kostenschätzung aus `CONFIG.markt` (€/Monat je Behälter, geerdet in echten
 Remondis-/LK-Harburg-Werten: 1100 L Restmüll Markt ~150–300 €/Mt.). Angebot = 10 % unter Markt.
 Realistische Ersparnis-Spanne laut RSS-Playbook: **200–1.500 €/Jahr**.
 
-## Supabase-Schema (optional)
+## Team-Sync: zentrale Supabase-Datenbank (Multi-User)
 
+Damit alle Außendienstler **denselben Lead-Pool** sehen (laden + schreiben). Ohne Supabase
+bleibt die App rein lokal pro Gerät.
+
+**1. Projekt anlegen:** [supabase.com](https://supabase.com) → neues Projekt (Free Tier).
+
+**2. Tabelle + Rechte (SQL Editor):**
 ```sql
 create table leads (
   id text primary key,
   created_at timestamptz,
+  updated_at timestamptz,                 -- Konfliktauflösung (last-write-wins)
   abfuhrtag date,
   lat double precision, lng double precision, accuracy int,
   foto_url text,
-  fraktion text, volumen int, anzahl int, entsorger_logo bool,
+  fraktion text, volumen int, anzahl int,
+  entsorger_logo bool, entsorger text,
+  behaelter jsonb,                        -- mehrere Tonnen je Lead
   firmenname text, telefon text, website text, place_id text, adresse text,
   notiz text, status text,
   score real, hot_lead bool,
   kosten_monat int, ersparnis_monat int, ersparnis_jahr int
 );
 alter table leads enable row level security;
--- MVP (Single-User, anon): einfache Policy. Für Multi-User: Auth + user_id ergänzen.
-create policy "anon all" on leads for all using (true) with check (true);
+-- Team-intern: Anon-Key darf alles. (Schärfer später: Supabase Auth + user_id.)
+create policy "team read"   on leads for select using (true);
+create policy "team insert" on leads for insert with check (true);
+create policy "team update" on leads for update using (true) with check (true);
+create policy "team delete" on leads for delete using (true);
 ```
-Storage: öffentlichen Bucket **`lead-photos`** anlegen (oder signierte URLs nutzen).
+
+**3. Foto-Speicher:** Storage → neuer Bucket **`lead-photos`**, als **Public** markieren. Dann
+Storage-Policies für den Anon-Upload (SQL Editor):
+```sql
+create policy "photos anon insert" on storage.objects for insert to anon
+  with check (bucket_id = 'lead-photos');
+create policy "photos anon read"   on storage.objects for select to anon
+  using (bucket_id = 'lead-photos');
+```
+
+**4. Keys verteilen:** Supabase → Project Settings → API → **Project URL** + **anon public key**.
+Auf **jedem** Gerät in der App unter **Setup → Team-Sync** eintragen. Fertig – alle teilen sich
+die Leads.
+
+**Sync-Verhalten:** Beim Speichern/Ändern wird hochgeladen; alle 90 s (und bei „Jetzt
+synchronisieren", App-Start, Online-Wechsel) werden fremde Leads heruntergeladen und gemergt
+(`updated_at` entscheidet bei Konflikten). Löschen entfernt auch zentral. Offline gespeicherte
+Leads syncen automatisch nach, sobald wieder Netz da ist.
+
+> **Sicherheit:** Der Anon-Key + offene Policies bedeuten: Wer URL+Key hat, kann alle Leads lesen/schreiben.
+> Für ein internes Team okay (App ist zusätzlich passcode-geschützt). Vor breiterem Einsatz:
+> Supabase Auth pro Nutzer + RLS nach `user_id`.
 
 ## Offline-Verhalten
 
