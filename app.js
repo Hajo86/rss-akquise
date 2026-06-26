@@ -30,7 +30,7 @@ var FRAKTION = {
 var VOLUMEN = [120,240,660,1100];
 var STATUS = ['neu','kontaktiert','angebot','gewonnen','verloren'];
 var STATUS_LBL = { neu:'Neu', kontaktiert:'Kontakt', angebot:'Angebot', gewonnen:'Gewonnen', verloren:'Verloren' };
-var APP_VERSION = 'v9 · GPS-Hilfe + Bilderkennung 2.5-flash';
+var APP_VERSION = 'v10 · GPS- + Sprache-Hilfe (Chrome)';
 var WD = ['Sonntag','Montag','Dienstag','Mittwoch','Donnerstag','Freitag','Samstag'];
 var WD_WORK = ['Montag','Dienstag','Mittwoch','Donnerstag','Freitag'];
 // Places-Typen, die fast nie Gewerbekunden mit Tonne sind -> aus Route ausblenden
@@ -424,11 +424,11 @@ function renderErfassen(){
       (d.gpsState!=='ok'?' · TIPPEN zum Aktivieren':'')+'</div>'+
     (d.gpsState==='err' ?
       ('<div class="note" style="border:1.5px solid var(--hot);padding:10px 12px;margin-top:0">'+
-        '<b>Standort freigeben:</b><br>'+
-        '• <b>iPhone:</b> Einstellungen → Datenschutz &amp; Sicherheit → Ortungsdienste <b>AN</b>; '+
-        'dann runter zu <b>Safari</b> → „Beim Verwenden" + „Genauer Standort" <b>AN</b>. App schließen &amp; neu öffnen.<br>'+
-        '• <b>Android:</b> Standort <b>AN</b>; im Browser bei Nachfrage <b>Zulassen</b>.<br>'+
-        '• Klappt die Home-Bildschirm-App nicht: einmal direkt in <b>Safari</b> öffnen (hajo86.github.io/rss-akquise), dort Standort erlauben.<br>'+
+        '<b>Standort in Chrome freigeben:</b><br>'+
+        '• Beim ersten Mal fragt Chrome „Standort zulassen?" → <b>Zulassen</b>.<br>'+
+        '• Schon abgelehnt? Oben in der Adressleiste auf <b>🔒 / ⋮ → Berechtigungen → Standort → Zulassen</b>, Seite neu laden.<br>'+
+        '• <b>iPhone:</b> zusätzlich Einstellungen → Datenschutz → Ortungsdienste <b>AN</b> und für <b>Chrome</b> „Beim Verwenden".<br>'+
+        '• <b>Android:</b> Einstellungen → Standort <b>AN</b>; App-Berechtigung für Chrome auf „Zulassen".<br>'+
         'Danach oben auf die GPS-Leiste tippen. (Speichern geht auch ohne GPS — aber Firma/Adresse braucht den Standort.)</div>') : '')+
 
     '<span class="lab">Tonnen vor Ort'+(d.behaelter.length>1?(' · '+totalAnzahl(d)+' gesamt'):'')+'</span>'+
@@ -442,6 +442,7 @@ function renderErfassen(){
     '<span class="lab">Notiz</span>'+
     '<textarea data-act="note" placeholder="Freitext oder Sprachnotiz…">'+esc(d.notiz)+'</textarea>'+
     '<button class="mic" data-act="mic">🎤 Sprachnotiz aufnehmen</button>'+
+    '<div class="note">Geht der Knopf nicht? Ins Notizfeld tippen und das <b>🎤 auf deiner Tastatur</b> nutzen (Diktat) – das funktioniert auf jedem Handy.</div>'+
 
     '<div class="preview">'+
       '<div class="ph"><span>Live-Bewertung</span>'+(hot?'<span class="hotflag">🔥 Hot Lead</span>':'')+'</div>'+
@@ -890,21 +891,36 @@ function setCompany(id,i){
   S.picker=null; renderSheet(); render();
 }
 
-/* ---------- Voice (Web Speech API) ---------- */
+/* ---------- Voice (Web Speech API, mit Tastatur-Diktat als Fallback) ---------- */
 var _rec;
+function focusNote(){
+  var ta=document.querySelector('textarea[data-act="note"]'); if(ta){ ta.focus(); }
+}
 function startMic(btn){
   var SR=window.SpeechRecognition||window.webkitSpeechRecognition;
-  if(!SR){ toast('Spracherkennung nicht unterstützt'); return; }
+  if(!SR){
+    // z.B. Chrome auf iPhone: Web Speech fehlt -> auf Tastatur-Diktat verweisen
+    focusNote();
+    toast('Tipp: 🎤 auf deiner Tastatur nutzen (Diktat)');
+    return;
+  }
   if(_rec){ _rec.stop(); _rec=null; btn.classList.remove('rec'); return; }
   _rec=new SR(); _rec.lang='de-DE'; _rec.interimResults=false; _rec.continuous=false;
-  btn.classList.add('rec'); btn.innerHTML='⏹ Aufnahme läuft…';
+  btn.classList.add('rec'); btn.innerHTML='⏹ Aufnahme läuft… (zum Stoppen tippen)';
   _rec.onresult=function(ev){
     var txt=ev.results[0][0].transcript;
     S.draft.notiz=(S.draft.notiz?S.draft.notiz+' ':'')+txt;
   };
   _rec.onend=function(){ _rec=null; render(); };
-  _rec.onerror=function(){ _rec=null; toast('Sprachfehler'); render(); };
-  _rec.start();
+  _rec.onerror=function(e){
+    _rec=null;
+    var c=e&&e.error;
+    if(c==='not-allowed'||c==='service-not-allowed'){ toast('Mikrofon-Freigabe fehlt – in Chrome erlauben'); }
+    else if(c==='no-speech'){ toast('Nichts gehört – nochmal tippen'); }
+    else { focusNote(); toast('Sprache geht hier nicht – 🎤 der Tastatur nutzen'); }
+    render();
+  };
+  try{ _rec.start(); }catch(err){ _rec=null; focusNote(); toast('Sprache geht hier nicht – 🎤 der Tastatur nutzen'); render(); }
 }
 
 /* ---------- Export ---------- */
