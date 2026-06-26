@@ -82,7 +82,7 @@ var FRAKTION = {
 var VOLUMEN = [120,240,660,1100];
 var STATUS = ['neu','kontaktiert','angebot','gewonnen','verloren'];
 var STATUS_LBL = { neu:'Neu', kontaktiert:'Kontakt', angebot:'Angebot', gewonnen:'Gewonnen', verloren:'Verloren' };
-var APP_VERSION = 'v22 · Pflichttonne schmälert Ersparnis';
+var APP_VERSION = 'v23 · Sync-Fehler sichtbar';
 var WD = ['Sonntag','Montag','Dienstag','Mittwoch','Donnerstag','Freitag','Samstag'];
 var WD_WORK = ['Montag','Dienstag','Mittwoch','Donnerstag','Freitag'];
 // Places-Typen, die fast nie Gewerbekunden mit Tonne sind -> aus Route ausblenden
@@ -107,7 +107,8 @@ var S = {
   stops: {},          // strukturID -> [places]  (Betriebe je Ortsteil, on demand)
   stopsLoading: {},   // strukturID -> bool
   lastSaved: null,    // {id,score,hot} -> Bestätigungsbanner nach dem Speichern
-  calcOpen: false     // aufklappbare Detail-Rechnung im Lead-Sheet
+  calcOpen: false,    // aufklappbare Detail-Rechnung im Lead-Sheet
+  lastSyncError: null // letzter Sync-Fehler (sichtbar in Setup)
 };
 function freshDraft(){
   return { photoBlob:null, lat:null, lng:null, accuracy:null, gpsState:'wait', gpsMsg:'',
@@ -427,8 +428,9 @@ async function syncLead(lead){
     var res=await fetch(base+'/rest/v1/leads?on_conflict=id',{
       method:'POST', headers:supaHeaders({'Content-Type':'application/json','Prefer':'resolution=merge-duplicates,return=minimal'}),
       body:JSON.stringify([toRow(lead)]) });
-    lead.sync_state = res.ok ? 'synced' : 'pending';
-  }catch(e){ lead.sync_state='pending'; }
+    if(res.ok){ lead.sync_state='synced'; S.lastSyncError=null; }
+    else { lead.sync_state='pending'; var et=await res.text(); S.lastSyncError='Push '+res.status+': '+(et||'').slice(0,160); }
+  }catch(e){ lead.sync_state='pending'; S.lastSyncError='Netzwerk: '+(e&&e.message||'Fehler'); }
   await dbPut(stripRuntime(lead));
 }
 function toRow(l){
@@ -483,10 +485,14 @@ async function syncAll(opts){
   if(!supaOn() || !S.online) return;
   var pend=S.leads.filter(function(l){ return l.sync_state!=='synced'; });
   for(var i=0;i<pend.length;i++){ await syncLead(pend[i]); }
+  var stillPending=S.leads.filter(function(l){ return l.sync_state!=='synced'; }).length;
+  var pushed=pend.length-stillPending;
   var added=0;
-  try{ added=await pullLeads(); }catch(e){}
+  try{ added=await pullLeads(); }catch(e){ S.lastSyncError='Pull: '+(e&&e.message||'Fehler'); }
   safeRender();
-  if(opts&&opts.toast) toast(added?(added+' neue Team-Leads geladen'):'Synchronisiert');
+  if(opts&&opts.toast){
+    toast('▲ '+pushed+' hochgeladen'+(stillPending?(' · '+stillPending+' Fehler!'):'')+' · ▼ '+added+' geladen');
+  }
 }
 function stripRuntime(l){
   var c={}; for(var k in l){ if(k.charAt(0)!=='_') c[k]=l[k]; } return c;  // alle _runtime-Felder raus
@@ -902,7 +908,8 @@ function renderSettings(){
     '<div class="section"><h3>Team-Sync (Supabase)</h3>'+
       '<div class="note">Zentrale Datenbank: ALLE Nutzer sehen denselben Lead-Pool (laden + schreiben). '+
       'Auf jedem Gerät dieselbe URL + denselben Anon-Key eintragen. Leer = nur lokal auf diesem Gerät.</div>'+
-      (supaOn()?('<div class="note" style="color:#1a7d34;font-weight:800">✓ Team-Sync aktiv · '+S.leads.filter(function(l){return l.sync_state==='synced';}).length+' synchronisiert</div>'):'')+
+      (supaOn()?('<div class="note" style="color:#1a7d34;font-weight:800">✓ Team-Sync aktiv · '+S.leads.filter(function(l){return l.sync_state==='synced';}).length+' synchronisiert · '+S.leads.filter(function(l){return l.sync_state!=='synced';}).length+' offen</div>'):'')+
+      (S.lastSyncError?('<div class="note" style="border:1.5px solid var(--hot);color:var(--hot);font-weight:700;padding:8px 10px">Sync-Fehler: '+esc(S.lastSyncError)+'</div>'):'')+
       '<div class="fld" style="margin-top:10px"><label>Project URL</label>'+
         '<input class="txt" type="text" data-key="supaUrl" value="'+esc(k.supaUrl||'')+'" placeholder="https://xxx.supabase.co"/></div>'+
       '<div class="fld"><label>Anon Key</label>'+
