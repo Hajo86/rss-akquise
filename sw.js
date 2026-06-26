@@ -1,5 +1,5 @@
 /* RSS Akquise — Service Worker: App-Shell-Cache für Offline-Start */
-var CACHE = 'rss-akquise-v5';
+var CACHE = 'rss-akquise-v6';
 var SHELL = [
   './',
   './index.html',
@@ -30,17 +30,32 @@ self.addEventListener('fetch', function(e){
   if(/googleapis|google\.com\/maps|supabase|tile\.openstreetmap/.test(url)) return;
   if(e.request.method !== 'GET') return;
 
-  // App-Shell: cache-first, sonst Netzwerk und nachladen
-  e.respondWith(
-    caches.match(e.request).then(function(hit){
-      return hit || fetch(e.request).then(function(res){
+  var sameOrigin = url.indexOf(self.location.origin) === 0;
+
+  if(sameOrigin){
+    // App-Code (index.html, app.js, Daten): NETWORK-FIRST -> online immer aktuell,
+    // offline aus Cache. Verhindert, dass alte App-Versionen hängen bleiben.
+    e.respondWith(
+      fetch(e.request).then(function(res){
         var copy = res.clone();
         caches.open(CACHE).then(function(c){ c.put(e.request, copy).catch(function(){}); });
         return res;
       }).catch(function(){
-        // Offline-Fallback auf App-Shell
-        if(e.request.mode === 'navigate') return caches.match('./index.html');
-      });
-    })
-  );
+        return caches.match(e.request).then(function(hit){
+          return hit || (e.request.mode === 'navigate' ? caches.match('./index.html') : undefined);
+        });
+      })
+    );
+  } else {
+    // CDN (Leaflet): cache-first (ändert sich nicht)
+    e.respondWith(
+      caches.match(e.request).then(function(hit){
+        return hit || fetch(e.request).then(function(res){
+          var copy = res.clone();
+          caches.open(CACHE).then(function(c){ c.put(e.request, copy).catch(function(){}); });
+          return res;
+        });
+      })
+    );
+  }
 });

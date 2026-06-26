@@ -277,8 +277,15 @@ nav button.on{color:var(--ink);border-top-color:var(--ink)}
 <script src="app.js"></script>
 <script>
 if('serviceWorker' in navigator){
+  var _refreshing=false;
+  navigator.serviceWorker.addEventListener('controllerchange',function(){
+    if(_refreshing) return; _refreshing=true; location.reload();   // neuer Stand -> einmal neu laden
+  });
   window.addEventListener('load',function(){
-    navigator.serviceWorker.register('sw.js').catch(function(){});
+    navigator.serviceWorker.register('sw.js').then(function(reg){
+      reg.update();
+      setInterval(function(){ reg.update(); }, 60*60*1000);  // stündlich auf Updates prüfen
+    }).catch(function(){});
   });
 }
 </script>
