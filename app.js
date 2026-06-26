@@ -30,7 +30,7 @@ var FRAKTION = {
 var VOLUMEN = [120,240,660,1100];
 var STATUS = ['neu','kontaktiert','angebot','gewonnen','verloren'];
 var STATUS_LBL = { neu:'Neu', kontaktiert:'Kontakt', angebot:'Angebot', gewonnen:'Gewonnen', verloren:'Verloren' };
-var APP_VERSION = 'v13 · GPS-Diagnose';
+var APP_VERSION = 'v14 · Firma manuell editierbar';
 var WD = ['Sonntag','Montag','Dienstag','Mittwoch','Donnerstag','Freitag','Samstag'];
 var WD_WORK = ['Montag','Dienstag','Mittwoch','Donnerstag','Freitag'];
 // Places-Typen, die fast nie Gewerbekunden mit Tonne sind -> aus Route ausblenden
@@ -780,14 +780,19 @@ function renderSheet(){
       (u?'<img class="sh-photo" src="'+u+'"/>':'')+
       (l.hot_lead?'<div style="margin:12px 0 0"><span class="tag hot">🔥 Hot Lead</span></div>':'')+
       '<div style="margin-top:14px">'+
-        kv('Adresse', l.adresse||'—')+
-        kv('Telefon', l.telefon||'—')+
         kv('Tonnen', behaelterSummary(l))+
         kv('Entsorger-Logo', l.entsorger_logo?'Ja':'Nein')+
         kv('Lead-Score', String(l.score))+
         kv('Erfasst', new Date(l.created_at).toLocaleString('de-DE'))+
         (l.notiz?kv('Notiz', l.notiz):'')+
       '</div>'+
+
+      '<span class="lab">Firma / Kontakt (manuell editierbar)</span>'+
+      '<input class="txt" style="margin-bottom:8px" data-edit="firmenname" data-id="'+l.id+'" value="'+esc(l.firmenname||'')+'" placeholder="Firmenname"/>'+
+      '<input class="txt" style="margin-bottom:8px" data-edit="telefon" data-id="'+l.id+'" inputmode="tel" value="'+esc(l.telefon||'')+'" placeholder="Telefon"/>'+
+      '<input class="txt" style="margin-bottom:8px" data-edit="adresse" data-id="'+l.id+'" value="'+esc(l.adresse||'')+'" placeholder="Adresse (Straße, Ort)"/>'+
+      '<input class="txt" style="margin-bottom:8px" data-edit="website" data-id="'+l.id+'" inputmode="url" value="'+esc(l.website||'')+'" placeholder="Website (optional)"/>'+
+      '<button class="cta" data-act="saveedit" data-id="'+l.id+'" style="margin-top:0">Firma speichern</button>'+
       '<div class="offerbox"><div class="oh">Angebot · 10 % unter Markt</div><div class="ob">'+
         '<div class="kv"><span class="k">Aktuelle Kosten / Monat</span><span class="v">'+eur(l.kosten_monat)+'</span></div>'+
         '<div class="kv"><span class="k">RSS-Preis / Monat</span><span class="v">'+eur(l.kosten_monat-l.ersparnis_monat)+'</span></div>'+
@@ -861,6 +866,11 @@ document.addEventListener('click',function(e){
   else if(act==='open'){ S.modal=id; renderSheet(); }
   else if(act==='close'||act==='closebg'&&e.target.id==='mbg'){ S.modal=null; renderSheet(); }
   else if(act==='status'){ setStatus(id,v); }
+  else if(act==='saveedit'){
+    var le=S.leads.find(function(x){return x.id===id;});
+    if(le){ le.firmenname=(le.firmenname||'').trim(); le.enriched=true; dedupeFlag(le);
+      dbPut(stripRuntime(le)).then(function(){ syncLead(le); toast('Firma gespeichert'); render(); }); }
+  }
   else if(act==='del'){ if(confirm('Lead löschen?')) delLead(id); }
   else if(act==='delquick'){
     var dl=S.leads.find(function(x){return x.id===id;});
@@ -894,6 +904,7 @@ document.addEventListener('input',function(e){
   var t=e.target;
   if(t.dataset.act==='note'){ if(S.draft) S.draft.notiz=t.value; }
   if(t.dataset.key){ S.keys[t.dataset.key]=t.value.trim(); }
+  if(t.dataset.edit){ var le=S.leads.find(function(x){return x.id===t.dataset.id;}); if(le){ le[t.dataset.edit]=t.value; } }
 });
 // Photo
 document.addEventListener('change',async function(e){
