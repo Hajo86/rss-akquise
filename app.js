@@ -55,8 +55,9 @@ var S = {
   stopsLoading: {}    // strukturID -> bool
 };
 function freshDraft(){
-  return { photoBlob:null, lat:null, lng:null, accuracy:null, gpsState:'wait',
-           fraktion:'restmuell', volumen:1100, anzahl:1, entsorger_logo:true, notiz:'',
+  return { photoBlob:null, lat:null, lng:null, accuracy:null, gpsState:'wait', gpsMsg:'',
+           behaelter:[{fraktion:'restmuell',volumen:1100,anzahl:1}],
+           entsorger_logo:true, notiz:'', analyzing:false,
            preset:null };  // preset = { firmenname, adresse, telefon, website, place_id, ortsteil }
 }
 
@@ -98,18 +99,36 @@ async function loadLeads(){
 }
 
 /* ---------- Scoring + Kosten ---------- */
-function scoreLead(d){
-  var vf = CONFIG.volFaktor[d.volumen]||1;
-  var ff = CONFIG.fraktFaktor[d.fraktion]||0.2;
-  return Math.round(vf * (d.anzahl||1) * ff * 10)/10;
+// Liste der Behälter eines Drafts/Leads (abwärtskompatibel zu Alt-Leads mit Einzelfeldern)
+function containersOf(x){
+  if(x && x.behaelter && x.behaelter.length) return x.behaelter;
+  return [{ fraktion:(x&&x.fraktion)||'restmuell', volumen:(x&&x.volumen)||1100, anzahl:(x&&x.anzahl)||1 }];
 }
-function isHot(d){ return d.volumen===1100 && d.fraktion==='restmuell'; }
+function scoreLead(d){
+  var s=containersOf(d).reduce(function(a,c){
+    return a + (CONFIG.volFaktor[c.volumen]||1) * (c.anzahl||1) * (CONFIG.fraktFaktor[c.fraktion]||0.2);
+  },0);
+  return Math.round(s*10)/10;
+}
+function isHot(d){ return containersOf(d).some(function(c){ return c.volumen===1100 && c.fraktion==='restmuell'; }); }
 function costEstimate(d){
-  var per = (CONFIG.markt[d.fraktion]||{})[d.volumen] || 0;
-  var monat = per * (d.anzahl||1);
+  var monat=containersOf(d).reduce(function(a,c){
+    return a + (((CONFIG.markt[c.fraktion]||{})[c.volumen])||0) * (c.anzahl||1);
+  },0);
   var rss = Math.round(monat*(1-CONFIG.rssRabatt));
-  var erspMonat = monat - rss;
-  return { kosten_monat:monat, rss_monat:rss, ersparnis_monat:erspMonat, ersparnis_jahr:erspMonat*12 };
+  return { kosten_monat:monat, rss_monat:rss, ersparnis_monat:monat-rss, ersparnis_jahr:(monat-rss)*12 };
+}
+function totalAnzahl(d){ return containersOf(d).reduce(function(a,c){ return a+(c.anzahl||1); },0); }
+// dominanter Behälter (höchste Einzelkosten) -> für kompatible Primärfelder + Karte
+function dominantContainer(d){
+  var list=containersOf(d), best=list[0], bv=-1;
+  list.forEach(function(c){ var v=(((CONFIG.markt[c.fraktion]||{})[c.volumen])||0)*(c.anzahl||1); if(v>bv){bv=v;best=c;} });
+  return best;
+}
+function behaelterSummary(d){
+  return containersOf(d).map(function(c){
+    return (FRAKTION[c.fraktion]?FRAKTION[c.fraktion].label:c.fraktion)+' '+c.volumen+'L ×'+(c.anzahl||1);
+  }).join(' · ');
 }
 
 /* ---------- Photo ---------- */
@@ -134,16 +153,85 @@ function photoURL(lead){
   if(!lead._url) lead._url=URL.createObjectURL(lead.photoBlob);
   return lead._url;
 }
+function blobToB64(blob){
+  return new Promise(function(res,rej){
+    var r=new FileReader(); r.onloadend=function(){ res(String(r.result).split(',')[1]); }; r.onerror=rej;
+    r.readAsDataURL(blob);
+  });
+}
+
+/* ---------- Bilderkennung (Gemini Vision) ---------- */
+function snapVol(v){ var o=[120,240,660,1100]; v=parseInt(v,10)||1100;
+  return o.reduce(function(a,b){ return Math.abs(b-v)<Math.abs(a-v)?b:a; }); }
+function normBin(c){
+  var fr=String(c.fraktion||'').toLowerCase();
+  if(fr.indexOf('rest')>=0||fr.indexOf('haus')>=0||fr.indexOf('schwarz')>=0||fr.indexOf('grau')>=0) fr='restmuell';
+  else if(fr.indexOf('pap')>=0||fr.indexOf('blau')>=0) fr='papier';
+  else if(fr.indexOf('bio')>=0||fr.indexOf('braun')>=0) fr='bio';
+  else if(fr.indexOf('gelb')>=0) fr='gelb';
+  else fr='restmuell';
+  return { fraktion:fr, volumen:snapVol(c.volumen), anzahl:Math.max(1,parseInt(c.anzahl,10)||1) };
+}
+async function analyzePhoto(){
+  var d=S.draft;
+  if(!d.photoBlob){ toast('Erst Foto aufnehmen'); return; }
+  if(!S.keys.gemini){ toast('Erst Gemini-Key in Setup eintragen'); return; }
+  if(d.analyzing) return;
+  d.analyzing=true; render();
+  var prompt=
+    'Du analysierst ein Foto von Mülltonnen vor einem deutschen Gewerbebetrieb am Abfuhrtag.\n'+
+    'Erkenne ALLE sichtbaren Tonnen/Container. Fasse gleiche Größe+Fraktion zu einem Eintrag mit Anzahl zusammen.\n'+
+    'Fraktion nach Deckel-/Tonnenfarbe: schwarz/grau/dunkel=restmuell, blau=papier, braun oder grün=bio, gelb=gelb.\n'+
+    'Volumen schätzen und auf 120, 240, 660 oder 1100 Liter runden (kleine 2-Rad-Tonne=120/240, großer 4-Rad-Container=660/1100).\n'+
+    'Ist ein Entsorger-Logo sichtbar (Remondis, Veolia, Alba, PreZero oder kommunal)? -> entsorger_logo true/false.\n'+
+    'Antworte NUR als JSON, kein Text davor/danach:\n'+
+    '{"behaelter":[{"fraktion":"restmuell","volumen":1100,"anzahl":2},{"fraktion":"papier","volumen":240,"anzahl":1}],"entsorger_logo":true,"hinweis":"kurz"}';
+  try{
+    var b64=await blobToB64(d.photoBlob);
+    var r=await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key='+encodeURIComponent(S.keys.gemini),{
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({ contents:[{parts:[{inlineData:{mimeType:'image/jpeg',data:b64}},{text:prompt}]}],
+        generationConfig:{temperature:0.1,maxOutputTokens:600} })
+    });
+    if(!r.ok){ var e=await r.json().catch(function(){return{};}); throw new Error((e.error&&e.error.message)||('HTTP '+r.status)); }
+    var dd=await r.json();
+    var txt=dd.candidates&&dd.candidates[0]&&dd.candidates[0].content&&dd.candidates[0].content.parts&&
+            dd.candidates[0].content.parts[0]&&dd.candidates[0].content.parts[0].text;
+    var m=txt&&txt.match(/\{[\s\S]*\}/);
+    if(!m) throw new Error('keine Tonnen erkannt');
+    var res=JSON.parse(m[0]);
+    var bins=(res.behaelter||[]).map(normBin);
+    if(bins.length){ d.behaelter=bins; }
+    if(typeof res.entsorger_logo==='boolean') d.entsorger_logo=res.entsorger_logo;
+    if(res.hinweis && !d.notiz) d.notiz=String(res.hinweis);
+    d.analyzing=false; render();
+    toast(bins.length?('Erkannt: '+behaelterSummary(d)):'Keine Tonnen erkannt – manuell setzen');
+  }catch(err){ d.analyzing=false; render(); toast('Analyse: '+(err.message||'Fehler')); }
+}
 
 /* ---------- GPS ---------- */
 function getGPS(draft){
-  if(!navigator.geolocation){ draft.gpsState='err'; render(); return; }
+  if(!navigator.geolocation){ draft.gpsState='err'; draft.gpsMsg='Gerät ohne Standort'; render(); return; }
+  if(!window.isSecureContext){ draft.gpsState='err'; draft.gpsMsg='Nur über https (nicht file://)'; render(); return; }
   draft.gpsState='wait'; render();
-  navigator.geolocation.getCurrentPosition(function(p){
+  function ok(p){
     draft.lat=p.coords.latitude; draft.lng=p.coords.longitude;
-    draft.accuracy=Math.round(p.coords.accuracy); draft.gpsState='ok'; render();
-  },function(){ draft.gpsState='err'; render(); },
-  { enableHighAccuracy:true, timeout:12000, maximumAge:10000 });
+    draft.accuracy=Math.round(p.coords.accuracy); draft.gpsState='ok'; draft.gpsMsg=''; render();
+  }
+  function fail(e){
+    draft.gpsState='err';
+    draft.gpsMsg = e && e.code===1 ? 'Standort-Freigabe verweigert – im Browser/Handy erlauben'
+                 : e && e.code===2 ? 'Standort nicht verfügbar'
+                 : 'Zeitüberschreitung – Pille antippen für neuen Versuch';
+    render();
+  }
+  // 1. Versuch: hohe Genauigkeit; bei Timeout/Unavailable 2. Versuch ohne HighAccuracy
+  navigator.geolocation.getCurrentPosition(ok, function(e){
+    if(e && (e.code===3 || e.code===2)){
+      navigator.geolocation.getCurrentPosition(ok, fail,
+        { enableHighAccuracy:false, timeout:15000, maximumAge:60000 });
+    } else { fail(e); }
+  }, { enableHighAccuracy:true, timeout:15000, maximumAge:8000 });
 }
 
 /* ---------- Google APIs ---------- */
@@ -231,6 +319,7 @@ function toRow(l){
   return { id:l.id, created_at:new Date(l.created_at).toISOString(), abfuhrtag:l.abfuhrtag,
     lat:l.lat, lng:l.lng, accuracy:l.accuracy, foto_url:l.foto_url||null,
     fraktion:l.fraktion, volumen:l.volumen, anzahl:l.anzahl, entsorger_logo:l.entsorger_logo,
+    behaelter:l.behaelter||null,
     firmenname:l.firmenname||null, telefon:l.telefon||null, website:l.website||null,
     place_id:l.place_id||null, adresse:l.adresse||null, notiz:l.notiz||null,
     status:l.status, score:l.score, hot_lead:l.hot_lead,
@@ -246,11 +335,13 @@ async function saveDraft(){
   if(!d.photoBlob){ toast('Bitte zuerst ein Foto aufnehmen'); return; }
   var cost=costEstimate(d);
   var pre=d.preset;
+  var dom=dominantContainer(d);   // Primärfelder = teuerster Behälter (Abwärtskompatibilität)
   var lead={
     id:'lead-'+Date.now()+'-'+Math.floor(Math.random()*1e4),
     created_at:Date.now(), abfuhrtag:new Date().toISOString().slice(0,10),
     lat:d.lat, lng:d.lng, accuracy:d.accuracy, photoBlob:d.photoBlob,
-    fraktion:d.fraktion, volumen:d.volumen, anzahl:d.anzahl, entsorger_logo:d.entsorger_logo,
+    behaelter:d.behaelter.map(function(c){return {fraktion:c.fraktion,volumen:c.volumen,anzahl:c.anzahl||1};}),
+    fraktion:dom.fraktion, volumen:dom.volumen, anzahl:totalAnzahl(d), entsorger_logo:d.entsorger_logo,
     firmenname:pre?pre.firmenname:'', telefon:pre?pre.telefon:'', website:pre?pre.website:'',
     place_id:pre?pre.place_id:'', adresse:pre?pre.adresse:'', typ:'', ortsteil:pre?pre.ortsteil:'',
     notiz:d.notiz, status:'neu', score:scoreLead(d), hot_lead:isHot(d),
@@ -295,7 +386,7 @@ function renderErfassen(){
 
   var gpsCls = d.gpsState==='ok'?'ok':(d.gpsState==='err'?'err':'');
   var gpsTxt = d.gpsState==='ok' ? ('GPS ±'+d.accuracy+' m erfasst')
-            : d.gpsState==='err' ? 'GPS nicht verfügbar – manuell prüfen'
+            : d.gpsState==='err' ? ('GPS: '+(d.gpsMsg||'nicht verfügbar'))
             : 'GPS wird ermittelt…';
 
   var preBanner = d.preset ?
@@ -318,23 +409,16 @@ function renderErfassen(){
       '<input type="file" accept="image/*" capture="environment" data-act="photo"/>'+
     '</div>'+
 
+    (d.photoBlob && S.keys.gemini ?
+      ('<button class="mic'+(d.analyzing?' rec':'')+'" data-act="analyze"'+(d.analyzing?' disabled':'')+'>'+
+        (d.analyzing?'🔍 Bild wird analysiert…':'🔍 Tonnen aus Foto erkennen')+'</button>') : '')+
+
     '<div class="gps '+gpsCls+'" data-act="gps"><span class="dot"></span>'+esc(gpsTxt)+
       (d.gpsState!=='ok'?' · Tippen zum Wiederholen':'')+'</div>'+
 
-    '<span class="lab">Fraktion</span>'+
-    '<div class="row">'+ VOLUMEN_FRAK() +'</div>'+
-
-    '<span class="lab">Volumen (Liter)</span>'+
-    '<div class="row">'+ VOLUMEN.map(function(v){
-        return '<button class="chip'+(d.volumen===v?' on':'')+'" data-act="vol" data-v="'+v+'">'+v+'</button>';
-      }).join('') +'</div>'+
-
-    '<span class="lab">Anzahl Tonnen</span>'+
-    '<div class="step">'+
-      '<button data-act="anz" data-v="-1">−</button>'+
-      '<div class="val">'+d.anzahl+'</div>'+
-      '<button data-act="anz" data-v="1">+</button>'+
-    '</div>'+
+    '<span class="lab">Tonnen vor Ort'+(d.behaelter.length>1?(' · '+totalAnzahl(d)+' gesamt'):'')+'</span>'+
+    d.behaelter.map(binBlock).join('')+
+    '<button class="cta ghost" data-act="addbin" style="margin-top:0">+ Weitere Tonne (andere Größe)</button>'+
 
     '<span class="lab">Kommunaler / teurer Entsorger erkennbar?</span>'+
     '<div class="toggle'+(d.entsorger_logo?' on':'')+'" data-act="logo">'+
@@ -356,6 +440,28 @@ function renderErfassen(){
     '<button class="cta" data-act="save">Lead speichern ▸</button>'+
   '</div>';
   $app.innerHTML=html;
+}
+function binBlock(c,i){
+  var d=S.draft, multi=d.behaelter.length>1;
+  var head = multi ?
+    ('<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">'+
+      '<b style="font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase">Tonne '+(i+1)+'</b>'+
+      '<button data-act="delbin" data-i="'+i+'" style="border:1.5px solid var(--hot);color:var(--hot);font-size:10px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;padding:4px 8px">Entfernen</button>'+
+    '</div>') : '';
+  var frakChips='<div class="row">'+ Object.keys(FRAKTION).map(function(k){
+      var f=FRAKTION[k];
+      return '<button class="chip'+(c.fraktion===k?' on':'')+'" data-act="frak" data-i="'+i+'" data-v="'+k+'">'+
+        '<span class="swatch" style="background:'+f.sw+'"></span>'+f.label+'</button>';
+    }).join('')+'</div>';
+  var volChips='<div class="row" style="margin-top:8px">'+ VOLUMEN.map(function(v){
+      return '<button class="chip'+(c.volumen===v?' on':'')+'" data-act="vol" data-i="'+i+'" data-v="'+v+'">'+v+'</button>';
+    }).join('')+'</div>';
+  var stepper='<div class="step" style="margin-top:8px">'+
+      '<button data-act="anz" data-i="'+i+'" data-v="-1">−</button>'+
+      '<div class="val">'+(c.anzahl||1)+'×</div>'+
+      '<button data-act="anz" data-i="'+i+'" data-v="1">+</button>'+
+    '</div>';
+  return '<div style="border:1.5px solid var(--ink);padding:12px;margin-bottom:10px">'+head+frakChips+volChips+stepper+'</div>';
 }
 function VOLUMEN_FRAK(){
   var d=S.draft;
@@ -413,10 +519,11 @@ function leadCard(l){
       '<div class="ad">'+esc(ad)+'</div>'+
       '<div class="meta">'+
         '<span class="tag">'+esc(f.label)+'</span>'+
-        '<span class="tag">'+l.volumen+'L ×'+l.anzahl+'</span>'+
+        '<span class="tag">'+(containersOf(l).length>1 ? (containersOf(l).length+' Größen · '+l.anzahl+' Tonnen') : (l.volumen+'L ×'+l.anzahl))+'</span>'+
         (l.hot_lead?'<span class="tag hot">Hot</span>':'')+
         (l.duplikat?'<span class="tag">Dublette</span>':'')+
         '<span class="tag fill">'+STATUS_LBL[l.status]+'</span>'+
+        '<button class="tag" data-act="delquick" data-id="'+l.id+'" style="border-color:var(--hot);color:var(--hot)">✕</button>'+
         '<div class="scorebox"><div class="n">'+l.score+'</div><div class="l">Score</div></div>'+
       '</div>'+
       '<div class="sync">'+syncTxt+' · '+eur(l.ersparnis_jahr)+'/Jahr</div>'+
@@ -574,6 +681,12 @@ function renderSettings(){
         '<input class="txt" type="password" data-key="google" value="'+esc(k.google||'')+'" placeholder="AIza…"/></div>'+
     '</div>'+
 
+    '<div class="section"><h3>Gemini Bilderkennung (optional)</h3>'+
+      '<div class="note">Erkennt Tonnen (Fraktion/Größe/Anzahl) + Entsorger-Logo automatisch aus dem Foto. Leer = manuell.</div>'+
+      '<div class="fld" style="margin-top:10px"><label>Gemini API-Key</label>'+
+        '<input class="txt" type="password" data-key="gemini" value="'+esc(k.gemini||'')+'" placeholder="AIza…"/></div>'+
+    '</div>'+
+
     '<div class="section"><h3>Supabase (optional)</h3>'+
       '<div class="note">Cloud-Sync für Multi-Device + Foto-Backup. Leer lassen = nur lokal (IndexedDB).</div>'+
       '<div class="fld" style="margin-top:10px"><label>Project URL</label>'+
@@ -613,7 +726,7 @@ function renderSheet(){
       '<div style="margin-top:14px">'+
         kv('Adresse', l.adresse||'—')+
         kv('Telefon', l.telefon||'—')+
-        kv('Fraktion / Volumen', f.label+' · '+l.volumen+'L × '+l.anzahl)+
+        kv('Tonnen', behaelterSummary(l))+
         kv('Entsorger-Logo', l.entsorger_logo?'Ja':'Nein')+
         kv('Lead-Score', String(l.score))+
         kv('Erfasst', new Date(l.created_at).toLocaleString('de-DE'))+
@@ -669,9 +782,12 @@ document.addEventListener('click',function(e){
 
   if(act==='gps'){ getGPS(S.draft); }
   else if(act==='retake'){ S.draft.photoBlob=null; render(); }
-  else if(act==='frak'){ S.draft.fraktion=v; render(); }
-  else if(act==='vol'){ S.draft.volumen=parseInt(v,10); render(); }
-  else if(act==='anz'){ S.draft.anzahl=Math.max(1,S.draft.anzahl+parseInt(v,10)); render(); }
+  else if(act==='frak'){ S.draft.behaelter[+t.dataset.i].fraktion=v; render(); }
+  else if(act==='vol'){ S.draft.behaelter[+t.dataset.i].volumen=parseInt(v,10); render(); }
+  else if(act==='anz'){ var bc=S.draft.behaelter[+t.dataset.i]; bc.anzahl=Math.max(1,(bc.anzahl||1)+parseInt(v,10)); render(); }
+  else if(act==='addbin'){ S.draft.behaelter.push({fraktion:'restmuell',volumen:240,anzahl:1}); render(); }
+  else if(act==='delbin'){ S.draft.behaelter.splice(+t.dataset.i,1); if(!S.draft.behaelter.length) S.draft.behaelter.push({fraktion:'restmuell',volumen:1100,anzahl:1}); render(); }
+  else if(act==='analyze'){ analyzePhoto(); }
   else if(act==='logo'){ S.draft.entsorger_logo=!S.draft.entsorger_logo; render(); }
   else if(act==='mic'){ startMic(t); }
   else if(act==='clearpreset'){ S.draft.preset=null; render(); }
@@ -690,6 +806,10 @@ document.addEventListener('click',function(e){
   else if(act==='close'||act==='closebg'&&e.target.id==='mbg'){ S.modal=null; renderSheet(); }
   else if(act==='status'){ setStatus(id,v); }
   else if(act==='del'){ if(confirm('Lead löschen?')) delLead(id); }
+  else if(act==='delquick'){
+    var dl=S.leads.find(function(x){return x.id===id;});
+    if(dl && confirm('Lead löschen?\n'+(dl.firmenname||dl.adresse||'')+'\n'+behaelterSummary(dl))) delLead(id);
+  }
   else if(act==='pick'){ S.picker=id; renderSheet(); }
   else if(act==='pickclose'||act==='pickbg'&&e.target.id==='mbg'){ S.picker=null; renderSheet(); }
   else if(act==='setco'){ setCompany(id,parseInt(t.dataset.i,10)); }
@@ -721,6 +841,7 @@ document.addEventListener('change',async function(e){
     S.draft.photoBlob=await compressPhoto(t.files[0]);
     if(S.draft.gpsState!=='ok') getGPS(S.draft);
     render();
+    if(S.keys.gemini) analyzePhoto();  // Tonnen automatisch erkennen
   }
 });
 
@@ -765,9 +886,9 @@ function doExport(fmt){
     blob=new Blob([JSON.stringify(S.leads.map(toRow),null,2)],{type:'application/json'});
     name='rss-leads.json';
   } else {
-    var cols=['firmenname','adresse','telefon','fraktion','volumen','anzahl','score','hot_lead','status','kosten_monat','ersparnis_jahr','abfuhrtag','lat','lng'];
+    var cols=['firmenname','adresse','telefon','tonnen','anzahl','score','hot_lead','status','kosten_monat','ersparnis_jahr','abfuhrtag','lat','lng'];
     var rows=[cols.join(';')].concat(S.leads.map(function(l){
-      return cols.map(function(c){ var x=l[c]; return '"'+String(x==null?'':x).replace(/"/g,'""')+'"'; }).join(';');
+      return cols.map(function(c){ var x = c==='tonnen' ? behaelterSummary(l) : l[c]; return '"'+String(x==null?'':x).replace(/"/g,'""')+'"'; }).join(';');
     }));
     blob=new Blob(['﻿'+rows.join('\n')],{type:'text/csv'});
     name='rss-leads.csv';
