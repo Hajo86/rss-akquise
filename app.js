@@ -136,13 +136,6 @@ function getGPS(draft){
 }
 
 /* ---------- Google APIs ---------- */
-async function reverseGeocode(lat,lng){
-  var key=S.keys.google; if(!key) throw new Error('Kein Google-Key');
-  var u='https://maps.googleapis.com/maps/api/geocode/json?latlng='+lat+','+lng+'&language=de&key='+key;
-  var r=await fetch(u); var d=await r.json();
-  if(d.status!=='OK'||!d.results.length) throw new Error(d.error_message||d.status||'Geocoding fehlgeschlagen');
-  return d.results[0].formatted_address;
-}
 async function placesNearby(lat,lng){
   var key=S.keys.google; if(!key) throw new Error('Kein Google-Key');
   var r=await fetch('https://places.googleapis.com/v1/places:searchNearby',{
@@ -165,14 +158,13 @@ async function placesNearby(lat,lng){
 async function enrich(lead){
   if(!S.online || !S.keys.google) return;
   try{
+    // Places-only: die Nearby-Antwort liefert Firma UND formatierte Adresse.
+    // (Die klassische Geocoding-API akzeptiert keine referrer-beschränkten Keys.)
     var cands = await placesNearby(lead.lat,lead.lng);
-    var addr=null; try{ addr=await reverseGeocode(lead.lat,lead.lng); }catch(e){}
-    lead.adresse = addr || (cands[0] && cands[0].adresse) || lead.adresse;
     lead._candidates = cands;
-    if(cands.length===1){ applyCompany(lead,cands[0]); }
-    else if(cands.length>1 && !lead.firmenname){
-      // Auto-Übernahme des nächsten Treffers, Auswahl bleibt im Detail möglich
-      applyCompany(lead,cands[0]);
+    if(cands.length){
+      lead.adresse = cands[0].adresse || lead.adresse;
+      if(!lead.firmenname) applyCompany(lead,cands[0]);  // nächster Treffer auto, im Detail änderbar
     }
     lead.enriched = true;
     dedupeFlag(lead);
@@ -437,7 +429,7 @@ function renderSettings(){
     '<h1 class="t">Setup</h1><div class="sub">Keys nur lokal im Browser – nie an einen Server</div>'+
 
     '<div class="section"><h3>Google Maps Platform</h3>'+
-      '<div class="note">Für Reverse Geocoding (Adresse) + Places (Firma/Telefon). $200 Gratis-Guthaben/Monat.</div>'+
+      '<div class="note">Für Places Nearby (Firma + Adresse + Telefon). $200 Gratis-Guthaben/Monat.</div>'+
       '<div class="fld" style="margin-top:10px"><label>API-Key</label>'+
         '<input class="txt" type="password" data-key="google" value="'+esc(k.google||'')+'" placeholder="AIza…"/></div>'+
     '</div>'+
