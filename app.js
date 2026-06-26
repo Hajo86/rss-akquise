@@ -30,7 +30,7 @@ var FRAKTION = {
 var VOLUMEN = [120,240,660,1100];
 var STATUS = ['neu','kontaktiert','angebot','gewonnen','verloren'];
 var STATUS_LBL = { neu:'Neu', kontaktiert:'Kontakt', angebot:'Angebot', gewonnen:'Gewonnen', verloren:'Verloren' };
-var APP_VERSION = 'v14 · Firma manuell editierbar';
+var APP_VERSION = 'v15 · UX, Mehr-Fotos, Schild-Scan, Entsorger';
 var WD = ['Sonntag','Montag','Dienstag','Mittwoch','Donnerstag','Freitag','Samstag'];
 var WD_WORK = ['Montag','Dienstag','Mittwoch','Donnerstag','Freitag'];
 // Places-Typen, die fast nie Gewerbekunden mit Tonne sind -> aus Route ausblenden
@@ -53,12 +53,13 @@ var S = {
   route: null,        // geladene Abfuhr-/Routendaten (Gemeinde + Ortsteile)
   routeDay: null,     // angezeigter Wochentag (Default = heute)
   stops: {},          // strukturID -> [places]  (Betriebe je Ortsteil, on demand)
-  stopsLoading: {}    // strukturID -> bool
+  stopsLoading: {},   // strukturID -> bool
+  lastSaved: null     // {id,score,hot} -> Bestätigungsbanner nach dem Speichern
 };
 function freshDraft(){
   return { photoBlob:null, lat:null, lng:null, accuracy:null, gpsState:'wait', gpsMsg:'',
            behaelter:[{fraktion:'restmuell',volumen:1100,anzahl:1}],
-           entsorger_logo:true, notiz:'', analyzing:false,
+           entsorger_logo:true, entsorger:'', notiz:'', analyzing:false,
            preset:null };  // preset = { firmenname, adresse, telefon, website, place_id, ortsteil }
 }
 
@@ -155,6 +156,11 @@ function photoURL(lead){
   if(!lead._url) lead._url=URL.createObjectURL(lead.photoBlob);
   return lead._url;
 }
+function extraPhotoURLs(lead){
+  if(!lead.photos||!lead.photos.length) return [];
+  lead._purls=lead._purls||[];
+  return lead.photos.map(function(b,i){ if(!lead._purls[i]) lead._purls[i]=URL.createObjectURL(b); return lead._purls[i]; });
+}
 function blobToB64(blob){
   return new Promise(function(res,rej){
     var r=new FileReader(); r.onloadend=function(){ res(String(r.result).split(',')[1]); }; r.onerror=rej;
@@ -189,10 +195,12 @@ async function analyzePhoto(){
     'Ordne die Fraktion nach der sichtbaren Farbe zu, nicht nach Vermutung.\n'+
     'Volumen bei 2-Rad-Tonnen: schmal/niedrig = 120, normal/breiter = 240. Große 4-Rad-Container = 660 oder 1100. Runde auf 120, 240, 660 oder 1100.\n'+
     'Fasse gleiche Fraktion+Größe zu einem Eintrag mit anzahl zusammen. Kleine 120-L-Biotonnen (braun/grün) nicht übersehen.\n'+
-    'Entsorger-Logo sichtbar (Remondis, Veolia, Alba, PreZero, kommunal)? -> entsorger_logo true/false.\n'+
+    'Lies das Entsorger-Logo/den Aufdruck auf der Tonne ab und gib den Namen in "entsorger" zurück '+
+    '(z.B. Remondis, Veolia, Alba, PreZero, Suez, oder den Namen des kommunalen Entsorgers). '+
+    'Unklar/keins -> "entsorger":"unbekannt". "entsorger_logo" = true, wenn überhaupt ein Logo/Aufdruck sichtbar ist.\n'+
     'Wenn KEINE Tonne klar erkennbar ist, gib "behaelter":[] zurück.\n'+
     'Antworte NUR als JSON, kein Text davor/danach:\n'+
-    '{"behaelter":[{"fraktion":"restmuell","volumen":1100,"anzahl":2},{"fraktion":"bio","volumen":120,"anzahl":1}],"entsorger_logo":true,"hinweis":"kurz"}';
+    '{"behaelter":[{"fraktion":"restmuell","volumen":1100,"anzahl":2},{"fraktion":"bio","volumen":120,"anzahl":1}],"entsorger":"Remondis","entsorger_logo":true,"hinweis":"kurz"}';
   try{
     var b64=await blobToB64(d.photoBlob);
     var r=await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key='+encodeURIComponent(S.keys.gemini),{
@@ -210,10 +218,43 @@ async function analyzePhoto(){
     var bins=(res.behaelter||[]).map(normBin);
     if(bins.length){ d.behaelter=bins; }
     if(typeof res.entsorger_logo==='boolean') d.entsorger_logo=res.entsorger_logo;
+    if(res.entsorger){ var en=String(res.entsorger).trim(); if(en && en.toLowerCase()!=='unbekannt'){ d.entsorger=en; d.entsorger_logo=true; } }
     if(res.hinweis && !d.notiz) d.notiz=String(res.hinweis);
     d.analyzing=false; render();
-    toast(bins.length?('Erkannt: '+behaelterSummary(d)):'Keine Tonnen erkannt – manuell setzen');
+    toast(bins.length?('Erkannt: '+behaelterSummary(d)+(d.entsorger?(' · '+d.entsorger):'')):'Keine Tonnen erkannt – manuell setzen');
   }catch(err){ d.analyzing=false; render(); toast('Analyse: '+(err.message||'Fehler')); }
+}
+
+// Firmenschild / Fassade auslesen -> Firma + Adresse in den Lead schreiben
+async function analyzeSign(lead, blob){
+  if(!S.keys.gemini){ toast('Erst Gemini-Key in Setup'); return; }
+  lead._scanning=true; renderSheet();
+  var prompt=
+    'Auf dem Foto ist ein Firmenschild, eine Hausfassade oder ein Eingang eines deutschen Gewerbebetriebs.\n'+
+    'Lies den Firmennamen und – falls sichtbar – die Adresse (Straße, Hausnummer, PLZ, Ort) und Telefonnummer ab.\n'+
+    'Nur ablesen, was wirklich im Bild steht. Felder leer lassen, wenn nicht lesbar.\n'+
+    'Antworte NUR als JSON: {"firmenname":"","adresse":"","telefon":""}';
+  try{
+    var b64=await blobToB64(blob);
+    var r=await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key='+encodeURIComponent(S.keys.gemini),{
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({ contents:[{parts:[{inlineData:{mimeType:'image/jpeg',data:b64}},{text:prompt}]}],
+        generationConfig:{temperature:0.1,maxOutputTokens:400} })
+    });
+    if(!r.ok){ var e=await r.json().catch(function(){return{};}); throw new Error((e.error&&e.error.message)||('HTTP '+r.status)); }
+    var dd=await r.json();
+    var txt=dd.candidates&&dd.candidates[0]&&dd.candidates[0].content&&dd.candidates[0].content.parts&&
+            dd.candidates[0].content.parts[0]&&dd.candidates[0].content.parts[0].text;
+    var m=txt&&txt.match(/\{[\s\S]*\}/);
+    if(!m) throw new Error('nichts lesbar');
+    var res=JSON.parse(m[0]);
+    if(res.firmenname) lead.firmenname=String(res.firmenname).trim();
+    if(res.adresse)    lead.adresse=String(res.adresse).trim();
+    if(res.telefon && !lead.telefon) lead.telefon=String(res.telefon).trim();
+    lead.enriched=true; lead._scanning=false; dedupeFlag(lead);
+    await dbPut(stripRuntime(lead)); syncLead(lead); renderSheet();
+    toast(res.firmenname?('Erkannt: '+res.firmenname):'Schild nicht lesbar – manuell eintragen');
+  }catch(err){ lead._scanning=false; renderSheet(); toast('Schild: '+(err.message||'Fehler')); }
 }
 
 /* ---------- GPS ---------- */
@@ -335,7 +376,7 @@ async function syncLead(lead){
 function toRow(l){
   return { id:l.id, created_at:new Date(l.created_at).toISOString(), abfuhrtag:l.abfuhrtag,
     lat:l.lat, lng:l.lng, accuracy:l.accuracy, foto_url:l.foto_url||null,
-    fraktion:l.fraktion, volumen:l.volumen, anzahl:l.anzahl, entsorger_logo:l.entsorger_logo,
+    fraktion:l.fraktion, volumen:l.volumen, anzahl:l.anzahl, entsorger_logo:l.entsorger_logo, entsorger:l.entsorger||null,
     behaelter:l.behaelter||null,
     firmenname:l.firmenname||null, telefon:l.telefon||null, website:l.website||null,
     place_id:l.place_id||null, adresse:l.adresse||null, notiz:l.notiz||null,
@@ -343,7 +384,7 @@ function toRow(l){
     kosten_monat:l.kosten_monat, ersparnis_monat:l.ersparnis_monat, ersparnis_jahr:l.ersparnis_jahr };
 }
 function stripRuntime(l){
-  var c={}; for(var k in l){ if(k!=='_url'&&k!=='_candidates') c[k]=l[k]; } return c;
+  var c={}; for(var k in l){ if(k.charAt(0)!=='_') c[k]=l[k]; } return c;  // alle _runtime-Felder raus
 }
 
 /* ---------- Lead speichern ---------- */
@@ -356,9 +397,9 @@ async function saveDraft(){
   var lead={
     id:'lead-'+Date.now()+'-'+Math.floor(Math.random()*1e4),
     created_at:Date.now(), abfuhrtag:new Date().toISOString().slice(0,10),
-    lat:d.lat, lng:d.lng, accuracy:d.accuracy, photoBlob:d.photoBlob,
+    lat:d.lat, lng:d.lng, accuracy:d.accuracy, photoBlob:d.photoBlob, photos:[],
     behaelter:d.behaelter.map(function(c){return {fraktion:c.fraktion,volumen:c.volumen,anzahl:c.anzahl||1};}),
-    fraktion:dom.fraktion, volumen:dom.volumen, anzahl:totalAnzahl(d), entsorger_logo:d.entsorger_logo,
+    fraktion:dom.fraktion, volumen:dom.volumen, anzahl:totalAnzahl(d), entsorger_logo:d.entsorger_logo, entsorger:d.entsorger||'',
     firmenname:pre?pre.firmenname:'', telefon:pre?pre.telefon:'', website:pre?pre.website:'',
     place_id:pre?pre.place_id:'', adresse:pre?pre.adresse:'', typ:'', ortsteil:pre?pre.ortsteil:'',
     notiz:d.notiz, status:'neu', score:scoreLead(d), hot_lead:isHot(d),
@@ -369,11 +410,16 @@ async function saveDraft(){
   S.leads.unshift(lead);
   var wasStop=!!pre;
   S.draft=freshDraft();
-  S.tab = wasStop ? 'heute' : 'leads';   // nach Route-Stop zurück zur Route
-  render();
-  toast(lead.hot_lead ? '🔥 Hot Lead gespeichert' : 'Lead gespeichert');
-  if(wasStop){ dedupeFlag(lead); syncLead(lead); }
-  else { enrich(lead).then(render); }
+  if(wasStop){
+    S.tab='heute';                                  // nach Route-Stop zurück zur Route
+    render(); toast(lead.hot_lead?'🔥 Hot Lead gespeichert':'Lead gespeichert');
+    dedupeFlag(lead); syncLead(lead);
+  } else {
+    S.tab='erfassen';                               // bereit für die nächste Tonne
+    S.lastSaved={ id:lead.id, score:lead.score, hot:lead.hot_lead };
+    render(); toast(lead.hot_lead?'🔥 Hot Lead gespeichert':'Lead gespeichert');
+    enrich(lead).then(render);
+  }
 }
 
 /* =====================================================================
@@ -414,10 +460,18 @@ function renderErfassen(){
       '<button data-act="clearpreset" style="margin-top:8px;background:var(--paper);color:var(--ink);font-size:10px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;padding:6px 10px">Stop entfernen</button>'+
     '</div>') : '';
 
+  var savedBanner = S.lastSaved ?
+    ('<div style="border:2px solid #1a7d34;background:#eafaef;padding:12px 14px;margin-bottom:14px;display:flex;align-items:center;gap:10px">'+
+      '<div style="font-weight:800;font-size:14px;flex:1">✓ Lead gespeichert'+(S.lastSaved.hot?' · 🔥 Hot':'')+' · Score '+S.lastSaved.score+'</div>'+
+      '<button data-act="openlast" style="background:#1a7d34;color:#fff;font-size:11px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;padding:8px 10px">Öffnen</button>'+
+      '<button data-act="dismisslast" style="border:1.5px solid #1a7d34;color:#1a7d34;font-size:13px;font-weight:800;padding:8px 11px">×</button>'+
+    '</div>') : '';
+
   var html=''+
   '<div class="screen">'+
     '<h1 class="t">Tonne<br>erfassen</h1>'+
-    '<div class="sub">Foto → GPS → Score in Sekunden</div>'+
+    '<div class="sub">Foto antippen → Tonnen prüfen → speichern. Firma trägst du danach im Lead nach.</div>'+
+    savedBanner+
     preBanner+
 
     '<div class="shot">'+
@@ -445,9 +499,10 @@ function renderErfassen(){
     d.behaelter.map(binBlock).join('')+
     '<button class="cta ghost" data-act="addbin" style="margin-top:0">+ Weitere Tonne (andere Größe)</button>'+
 
-    '<span class="lab">Kommunaler / teurer Entsorger erkennbar?</span>'+
+    '<span class="lab">Entsorger</span>'+
+    (d.entsorger?('<div class="toggle on" style="margin-bottom:8px"><span>Erkannt: '+esc(d.entsorger)+'</span><span style="font-size:11px">aus Foto</span></div>'):'')+
     '<div class="toggle'+(d.entsorger_logo?' on':'')+'" data-act="logo">'+
-      '<span>'+(d.entsorger_logo?'Ja – Logo sichtbar':'Nein / unklar')+'</span><span class="sw"><i></i></span></div>'+
+      '<span>'+(d.entsorger_logo?'Logo/Aufdruck sichtbar':'Kein Logo / unklar')+'</span><span class="sw"><i></i></span></div>'+
 
     '<span class="lab">Notiz</span>'+
     '<textarea data-act="note" placeholder="Freitext oder Sprachnotiz…">'+esc(d.notiz)+'</textarea>'+
@@ -777,11 +832,11 @@ function renderSheet(){
     '<div class="sh-head"><b style="text-transform:uppercase;font-size:16px">'+esc(l.firmenname||'Unbekannter Betrieb')+'</b>'+
       '<button class="x" data-act="close">×</button></div>'+
     '<div class="sh-body">'+
-      (u?'<img class="sh-photo" src="'+u+'"/>':'')+
+      photoGallery(l)+
       (l.hot_lead?'<div style="margin:12px 0 0"><span class="tag hot">🔥 Hot Lead</span></div>':'')+
       '<div style="margin-top:14px">'+
         kv('Tonnen', behaelterSummary(l))+
-        kv('Entsorger-Logo', l.entsorger_logo?'Ja':'Nein')+
+        kv('Entsorger', l.entsorger||(l.entsorger_logo?'erkennbar (Name?)':'unbekannt'))+
         kv('Lead-Score', String(l.score))+
         kv('Erfasst', new Date(l.created_at).toLocaleString('de-DE'))+
         (l.notiz?kv('Notiz', l.notiz):'')+
@@ -818,6 +873,22 @@ function renderSheet(){
   mount(html);
 }
 function kv(k,v){ return '<div class="kv"><span class="k">'+esc(k)+'</span><span class="v">'+esc(v)+'</span></div>'; }
+function photoGallery(l){
+  var u=photoURL(l), extras=extraPhotoURLs(l), html='';
+  if(u) html+='<img class="sh-photo" src="'+u+'" style="margin-bottom:8px"/>';
+  if(extras.length){
+    html+='<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px">'+
+      extras.map(function(src){ return '<img src="'+src+'" style="width:84px;height:84px;object-fit:cover;border:1.5px solid var(--ink)"/>'; }).join('')+'</div>';
+  }
+  html+='<label class="cta ghost" style="margin-top:0;cursor:pointer;display:flex">+ Foto hinzufügen (Doku)'+
+    '<input type="file" accept="image/*" capture="environment" data-act="addphoto" data-id="'+l.id+'" style="display:none"/></label>';
+  if(S.keys.gemini){
+    html+='<label class="cta'+(l._scanning?'':' ghost')+'" style="margin-top:8px;cursor:pointer;display:flex">'+
+      (l._scanning?'🏷️ Schild wird gelesen…':'🏷️ Firmenschild scannen → Firma/Adresse')+
+      '<input type="file" accept="image/*" capture="environment" data-act="scansign" data-id="'+l.id+'" style="display:none"/></label>';
+  }
+  return html;
+}
 function renderPicker(){
   var p=S.picker; var l=S.leads.find(function(x){return x.id===p;});
   if(!l||!l._candidates){ S.picker=null; renderSheet(); return; }
@@ -852,6 +923,8 @@ document.addEventListener('click',function(e){
   else if(act==='logo'){ S.draft.entsorger_logo=!S.draft.entsorger_logo; render(); }
   else if(act==='mic'){ startMic(t); }
   else if(act==='clearpreset'){ S.draft.preset=null; render(); }
+  else if(act==='openlast'){ if(S.lastSaved){ S.modal=S.lastSaved.id; S.lastSaved=null; render(); renderSheet(); } }
+  else if(act==='dismisslast'){ S.lastSaved=null; render(); }
   else if(act==='save'){ saveDraft(); }
 
   else if(act==='day'){ S.routeDay=v; render(); }
@@ -910,11 +983,28 @@ document.addEventListener('input',function(e){
 document.addEventListener('change',async function(e){
   var t=e.target;
   if(t.dataset.act==='photo' && t.files && t.files[0]){
+    S.lastSaved=null;
     toast('Foto wird verarbeitet…');
     S.draft.photoBlob=await compressPhoto(t.files[0]);
     if(S.draft.gpsState!=='ok') getGPS(S.draft);
     render();
     if(S.keys.gemini) analyzePhoto();  // Tonnen automatisch erkennen
+  }
+  // weiteres Foto zu einem bestehenden Lead (Doku)
+  else if(t.dataset.act==='addphoto' && t.files && t.files[0]){
+    var le=S.leads.find(function(x){return x.id===t.dataset.id;}); if(!le) return;
+    toast('Foto wird hinzugefügt…');
+    var b=await compressPhoto(t.files[0]);
+    le.photos=le.photos||[]; le.photos.push(b);
+    await dbPut(stripRuntime(le)); renderSheet(); toast('Foto hinzugefügt');
+  }
+  // Firmenschild scannen -> Firma/Adresse per Gemini auslesen
+  else if(t.dataset.act==='scansign' && t.files && t.files[0]){
+    var lz=S.leads.find(function(x){return x.id===t.dataset.id;}); if(!lz) return;
+    var bb=await compressPhoto(t.files[0]);
+    lz.photos=lz.photos||[]; lz.photos.push(bb);
+    await dbPut(stripRuntime(lz)); renderSheet();
+    analyzeSign(lz, bb);
   }
 });
 
