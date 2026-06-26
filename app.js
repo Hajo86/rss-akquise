@@ -54,7 +54,8 @@ function kalkulation(x){
     } // bio/gelb: kommunal inklusive -> 0
   });
   var pflicht=TARIF.pflichtJahr/12;                  // 40 L 4-wö = 6,49 €/Mt
-  var ersparnisMt=kommunal*RABATT;                   // Kunde spart 10 %
+  var rabatt=(x&&x.rabatt!=null)?x.rabatt:RABATT;    // Kundenrabatt – pro Lead verstellbar
+  var ersparnisMt=kommunal*rabatt;
   var kundeZahltMt=kommunal-ersparnisMt;
   var braucht1100Papier = paperVol>240;              // mehr als die gratis 240-L-Tonne
   // Option A: kleinste Pflichttonne + privates Remondis-Papier
@@ -67,7 +68,7 @@ function kalkulation(x){
   if(braucht1100Papier && margeB>margeA){ optionBest='B'; margeBest=margeB; kostenBest=kostenB; }
   else { optionBest='A'; margeBest=margeA; kostenBest=kostenA; }
   return {
-    rhythmus:rh, kosten_monat:kommunal,
+    rhythmus:rh, kosten_monat:kommunal, rabatt:rabatt,
     ersparnis_monat:ersparnisMt, ersparnis_jahr:ersparnisMt*12,
     rss_marge_monat:margeBest, rss_marge_jahr:margeBest*12,
     rss_kosten_monat:kostenBest, kunde_zahlt_monat:kundeZahltMt,
@@ -86,7 +87,7 @@ var FRAKTION = {
 var VOLUMEN = [120,240,660,1100];
 var STATUS = ['neu','kontaktiert','angebot','gewonnen','verloren'];
 var STATUS_LBL = { neu:'Neu', kontaktiert:'Kontakt', angebot:'Angebot', gewonnen:'Gewonnen', verloren:'Verloren' };
-var APP_VERSION = 'v19 · Echte Kalkulation (LK Harburg + Remondis)';
+var APP_VERSION = 'v20 · Kundenrabatt verstellbar';
 var WD = ['Sonntag','Montag','Dienstag','Mittwoch','Donnerstag','Freitag','Samstag'];
 var WD_WORK = ['Montag','Dienstag','Mittwoch','Donnerstag','Freitag'];
 // Places-Typen, die fast nie Gewerbekunden mit Tonne sind -> aus Route ausblenden
@@ -114,7 +115,7 @@ var S = {
 };
 function freshDraft(){
   return { photoBlob:null, lat:null, lng:null, accuracy:null, gpsState:'wait', gpsMsg:'',
-           behaelter:[{fraktion:'restmuell',volumen:1100,anzahl:1}], rhythmus:'14t',
+           behaelter:[{fraktion:'restmuell',volumen:1100,anzahl:1}], rhythmus:'14t', rabatt:0.10,
            entsorger_logo:true, entsorger:'', notiz:'', analyzing:false,
            preset:null };  // preset = { firmenname, adresse, telefon, website, place_id, ortsteil }
 }
@@ -510,7 +511,7 @@ async function saveDraft(){
     fraktion:dom.fraktion, volumen:dom.volumen, anzahl:totalAnzahl(d), entsorger_logo:d.entsorger_logo, entsorger:d.entsorger||'',
     firmenname:pre?pre.firmenname:'', telefon:pre?pre.telefon:'', website:pre?pre.website:'',
     place_id:pre?pre.place_id:'', adresse:pre?pre.adresse:'', typ:'', ortsteil:pre?pre.ortsteil:'',
-    notiz:d.notiz, status:'neu', score:scoreLead(d), hot_lead:isHot(d), rhythmus:d.rhythmus||'14t',
+    notiz:d.notiz, status:'neu', score:scoreLead(d), hot_lead:isHot(d), rhythmus:d.rhythmus||'14t', rabatt:(d.rabatt!=null?d.rabatt:0.10),
     kosten_monat:cost.kosten_monat, ersparnis_monat:cost.ersparnis_monat, ersparnis_jahr:cost.ersparnis_jahr,
     rss_marge_monat:cost.rss_marge_monat, rss_marge_jahr:cost.rss_marge_jahr,
     enriched:pre?true:false, sync_state: supaOn()?'pending':'local', duplikat:false
@@ -995,10 +996,16 @@ function offerBox(l){
       'B) 240-L kommunal, 1.100-L-Papier gratis → <b>'+eur(k.margeB_jahr)+'/Jahr</b></div>') : '';
   var warn = (k.ek_unvollstaendig?'<div class="note">⚠ EK nur für 1.100 L hinterlegt — kleinere Volumen unvollständig.</div>':'')+
              (k.privat?'<div class="note">⚠ 660 L hat keinen Kommunaltarif (private Größe).</div>':'');
+  var pct=Math.round((k.rabatt||0.10)*100);
+  var rabBtns='<div style="font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;margin:4px 0 6px">Kundenrabatt: '+pct+' %</div>'+
+    '<div class="row" style="grid-template-columns:repeat(5,1fr);margin-bottom:10px">'+
+    [5,10,15,20,25].map(function(p){
+      return '<button class="chip'+(pct===p?' on':'')+'" data-act="rabatt" data-id="'+l.id+'" data-v="'+p+'">'+p+'%</button>';
+    }).join('')+'</div>';
   return '<div class="offerbox"><div class="oh">Kalkulation (LK Harburg + Remondis)</div><div class="ob">'+
-    rhyBtns+
+    rhyBtns+ rabBtns+
     kv('Kommunalkosten heute / Mt', eur(k.kosten_monat))+
-    kv('Kunde spart (10 %)', eur(k.ersparnis_monat)+'/Mt · '+eur(k.ersparnis_jahr)+'/J')+
+    kv('Kunde spart ('+pct+' %)', eur(k.ersparnis_monat)+'/Mt · '+eur(k.ersparnis_jahr)+'/J')+
     '<div class="kv" style="border:0"><span class="k" style="font-weight:800;color:#000">RSS-Marge</span>'+
       '<span class="v" style="font-size:18px">'+eur(k.rss_marge_monat)+'/Mt · '+eur(k.rss_marge_jahr)+'/J</span></div>'+
     opt+warn+
@@ -1071,12 +1078,15 @@ document.addEventListener('click',function(e){
   else if(act==='open'){ S.modal=id; renderSheet(); }
   else if(act==='close'||act==='closebg'&&e.target.id==='mbg'){ S.modal=null; renderSheet(); }
   else if(act==='status'){ setStatus(id,v); }
-  else if(act==='rhythmus'){
+  else if(act==='rhythmus' || act==='rabatt'){
     var lr=S.leads.find(function(x){return x.id===id;});
-    if(lr){ lr.rhythmus=v; var kk=kalkulation(lr);
+    if(lr){
+      if(act==='rhythmus') lr.rhythmus=v; else lr.rabatt=parseInt(v,10)/100;
+      var kk=kalkulation(lr);
       lr.kosten_monat=kk.kosten_monat; lr.ersparnis_monat=kk.ersparnis_monat; lr.ersparnis_jahr=kk.ersparnis_jahr;
       lr.rss_marge_monat=kk.rss_marge_monat; lr.rss_marge_jahr=kk.rss_marge_jahr;
-      lr.updated_at=Date.now(); dbPut(stripRuntime(lr)).then(function(){ syncLead(lr); }); renderSheet(); }
+      lr.updated_at=Date.now(); dbPut(stripRuntime(lr)).then(function(){ syncLead(lr); }); renderSheet();
+    }
   }
   else if(act==='saveedit'){
     var le=S.leads.find(function(x){return x.id===id;});
