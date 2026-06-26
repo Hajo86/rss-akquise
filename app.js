@@ -30,7 +30,7 @@ var FRAKTION = {
 var VOLUMEN = [120,240,660,1100];
 var STATUS = ['neu','kontaktiert','angebot','gewonnen','verloren'];
 var STATUS_LBL = { neu:'Neu', kontaktiert:'Kontakt', angebot:'Angebot', gewonnen:'Gewonnen', verloren:'Verloren' };
-var APP_VERSION = 'v10 · GPS- + Sprache-Hilfe (Chrome)';
+var APP_VERSION = 'v11 · Google-Maps-Karte';
 var WD = ['Sonntag','Montag','Dienstag','Mittwoch','Donnerstag','Freitag','Samstag'];
 var WD_WORK = ['Montag','Dienstag','Mittwoch','Donnerstag','Freitag'];
 // Places-Typen, die fast nie Gewerbekunden mit Tonne sind -> aus Route ausblenden
@@ -547,29 +547,51 @@ function leadCard(l){
   '</div>';
 }
 
+/* Google Maps JS dynamisch laden (Key aus Setup) */
+var _gmapsP;
+function loadGoogleMaps(){
+  if(window.google && window.google.maps) return Promise.resolve();
+  if(_gmapsP) return _gmapsP;
+  if(!S.keys.google) return Promise.reject(new Error('Kein Google-Key (Setup)'));
+  _gmapsP=new Promise(function(res,rej){
+    window.__gmapsCb=function(){ res(); };
+    var s=document.createElement('script');
+    s.src='https://maps.googleapis.com/maps/api/js?key='+encodeURIComponent(S.keys.google)+'&language=de&region=DE&callback=__gmapsCb';
+    s.async=true; s.onerror=function(){ _gmapsP=null; rej(new Error('Google Maps Ladefehler')); };
+    document.head.appendChild(s);
+  });
+  return _gmapsP;
+}
 function renderKarte(){
   $app.innerHTML='<div class="screen"><h1 class="t">Karte</h1>'+
     '<div class="sub">'+S.leads.filter(function(l){return l.lat;}).length+' verortete Leads</div>'+
     '<div id="map"></div></div>';
-  setTimeout(initMap,30);
+  var el=document.getElementById('map');
+  if(!S.keys.google){ el.innerHTML='<div style="padding:20px;font-weight:700">Erst Google-Key in Setup eintragen.</div>'; return; }
+  if(!S.online && !(window.google&&window.google.maps)){ el.innerHTML='<div style="padding:20px;font-weight:700">Karte braucht Internet.</div>'; return; }
+  loadGoogleMaps().then(function(){ setTimeout(initMap,20); })
+    .catch(function(e){ el.innerHTML='<div style="padding:20px;font-weight:700">Karte nicht ladbar: '+esc(e.message)+'</div>'; });
 }
 function initMap(){
-  var el=document.getElementById('map'); if(!el||typeof L==='undefined') return;
+  var el=document.getElementById('map'); if(!el||!(window.google&&window.google.maps)) return;
   var pts=S.leads.filter(function(l){return l.lat!=null;});
-  var center=pts.length?[pts[0].lat,pts[0].lng]:[53.33,10.0]; // LK Harburg
-  var map=L.map(el,{zoomControl:true}).setView(center,pts.length?13:10);
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-    {maxZoom:19,attribution:'© OpenStreetMap'}).addTo(map);
-  var grp=[];
+  var center=pts.length?{lat:pts[0].lat,lng:pts[0].lng}:{lat:53.33,lng:10.0}; // LK Harburg
+  var map=new google.maps.Map(el,{ center:center, zoom:pts.length?13:10,
+    mapTypeControl:false, streetViewControl:false, fullscreenControl:false });
+  var bounds=new google.maps.LatLngBounds();
+  var iw=new google.maps.InfoWindow();
   pts.forEach(function(l){
     var color=l.hot_lead?'#ff2d2d':(l.status==='gewonnen'?'#3a7d2c':'#000');
-    var m=L.circleMarker([l.lat,l.lng],{radius:9,color:'#000',weight:2,fillColor:color,fillOpacity:1}).addTo(map);
-    m.bindPopup('<b>'+esc(l.firmenname||'Unbekannt')+'</b><br>'+esc(l.adresse||'')+
-      '<br>Score '+l.score+' · '+l.volumen+'L ×'+l.anzahl+'<br>'+eur(l.ersparnis_jahr)+'/Jahr');
-    m.on('click',function(){ /* popup */ });
-    grp.push([l.lat,l.lng]);
+    var m=new google.maps.Marker({ position:{lat:l.lat,lng:l.lng}, map:map, title:l.firmenname||'',
+      icon:{ path:google.maps.SymbolPath.CIRCLE, scale:8, fillColor:color, fillOpacity:1, strokeColor:'#fff', strokeWeight:2 } });
+    m.addListener('click',function(){
+      iw.setContent('<div style="font-family:Arial;font-size:13px"><b>'+esc(l.firmenname||'Unbekannt')+'</b><br>'+
+        esc(l.adresse||'')+'<br>Score '+l.score+' · '+esc(behaelterSummary(l))+'<br><b>'+eur(l.ersparnis_jahr)+'/Jahr</b></div>');
+      iw.open(map,m);
+    });
+    bounds.extend(m.getPosition());
   });
-  if(grp.length>1) map.fitBounds(grp,{padding:[40,40]});
+  if(pts.length>1) map.fitBounds(bounds);
 }
 
 /* ---------- Route / Heute ---------- */
