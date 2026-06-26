@@ -91,6 +91,7 @@ function openDB(){
 function tx(mode){ return DB.transaction('leads',mode).objectStore('leads'); }
 function dbPut(lead){ return new Promise(function(res,rej){ var rq=tx('readwrite').put(lead); rq.onsuccess=function(){res();}; rq.onerror=function(){rej(rq.error);}; }); }
 function dbDel(id){ return new Promise(function(res,rej){ var rq=tx('readwrite').delete(id); rq.onsuccess=function(){res();}; rq.onerror=function(){rej(rq.error);}; }); }
+function dbClear(){ return new Promise(function(res,rej){ var rq=tx('readwrite').clear(); rq.onsuccess=function(){res();}; rq.onerror=function(){rej(rq.error);}; }); }
 function dbAll(){ return new Promise(function(res,rej){ var rq=tx('readonly').getAll(); rq.onsuccess=function(){res(rq.result||[]);}; rq.onerror=function(){rej(rq.error);}; }); }
 
 async function loadLeads(){
@@ -704,6 +705,13 @@ function renderSettings(){
       '<button class="chip" data-act="export" data-v="json">JSON</button>'+
     '</div>'+
 
+    '<span class="lab">Konto / Daten</span>'+
+    '<div class="note" style="margin:0 0 8px">'+S.leads.length+' Leads auf diesem Gerät gespeichert.</div>'+
+    '<button class="cta ghost" data-act="logout" style="margin-top:0">Logout (App sperren)</button>'+
+    '<button class="cta" data-act="wipeleads" style="background:var(--hot);border-color:var(--hot)">Alle Leads löschen</button>'+
+    '<div class="note">„Logout" verlangt beim nächsten Öffnen wieder den Passcode (Leads bleiben). '+
+      '„Alle Leads löschen" macht einen sauberen Neustart und kann nicht rückgängig gemacht werden.</div>'+
+
     '<div class="note" style="margin-top:24px">DSGVO: Keine Personen / Kennzeichen mit fotografieren. '+
       'Ansprechpartner-Namen = personenbezogene Daten → Verarbeitungsverzeichnis pflegen.</div>'+
   '</div>';
@@ -814,6 +822,12 @@ document.addEventListener('click',function(e){
   else if(act==='pickclose'||act==='pickbg'&&e.target.id==='mbg'){ S.picker=null; renderSheet(); }
   else if(act==='setco'){ setCompany(id,parseInt(t.dataset.i,10)); }
 
+  else if(act==='logout'){ localStorage.removeItem('rss_unlocked'); location.reload(); }
+  else if(act==='wipeleads'){
+    if(confirm('ALLE '+S.leads.length+' Leads auf diesem Gerät löschen?\nKann nicht rückgängig gemacht werden.')){
+      dbClear().then(function(){ S.leads=[]; render(); toast('Alle Leads gelöscht'); });
+    }
+  }
   else if(act==='savekeys'){ collectKeys(); saveKeys(S.keys); toast('Gespeichert'); render(); processOutbox(); }
   else if(act==='sync'){ toast('Synchronisiere…'); processOutbox(); }
   else if(act==='export'){ doExport(v); }
