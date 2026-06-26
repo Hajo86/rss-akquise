@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover"/>
+<meta name="theme-color" content="#000000"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black"/>
+<meta name="apple-mobile-web-app-title" content="RSS Akquise"/>
+<link rel="manifest" href="manifest.json"/>
+<link rel="apple-touch-icon" href="icons/icon-192.png"/>
+<title>RSS Akquise</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+      integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+<style>
+/* ===== OMR-Style: schwarz/weiß, editorial, fette Grotesk ===== */
+:root{
+  --ink:#000; --paper:#fff; --line:#000; --muted:#6b6b6b; --faint:#e6e6e6;
+  --hot:#ff2d2d; --ok:#000;
+  --font:'Helvetica Neue',Helvetica,Arial,system-ui,sans-serif;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0;background:var(--paper);color:var(--ink);font-family:var(--font);
+  -webkit-font-smoothing:antialiased;overscroll-behavior-y:none}
+body{padding-bottom:calc(64px + env(safe-area-inset-bottom))}
+button{font-family:var(--font);cursor:pointer;border:none;background:none;color:inherit}
+input,select,textarea{font-family:var(--font);font-size:16px}
+a{color:inherit}
+.hidden{display:none!important}
+
+/* Header */
+header{position:sticky;top:0;z-index:40;background:var(--ink);color:var(--paper);
+  display:flex;align-items:center;justify-content:space-between;
+  padding:calc(10px + env(safe-area-inset-top)) 16px 10px}
+.brand{display:flex;align-items:center;gap:10px}
+.mark{width:34px;height:34px;border:2px solid var(--paper);display:flex;align-items:center;
+  justify-content:center;font-weight:800;font-size:12px;letter-spacing:-.5px}
+.brand b{font-size:15px;font-weight:800;letter-spacing:.04em;text-transform:uppercase}
+.net{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;
+  border:1px solid var(--paper);padding:3px 7px}
+.net.off{background:var(--paper);color:var(--ink)}
+
+/* Layout */
+main{max-width:680px;margin:0 auto;padding:16px}
+.screen{animation:fade .18s ease-out}
+@keyframes fade{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:none}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes up{from{transform:translateY(100%)}to{transform:none}}
+.spin{animation:spin .7s linear infinite}
+
+h1.t{font-size:30px;font-weight:800;letter-spacing:-1px;line-height:.95;margin:4px 0 2px;
+  text-transform:uppercase}
+.sub{font-size:12px;color:var(--muted);font-weight:600;margin-bottom:18px}
+.lab{font-size:11px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;
+  margin:18px 0 8px;display:block}
+
+/* Photo capture */
+.shot{position:relative;width:100%;aspect-ratio:4/3;border:2px solid var(--ink);
+  background:var(--paper);display:flex;flex-direction:column;align-items:center;
+  justify-content:center;gap:10px;overflow:hidden}
+.shot img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.shot .cam{width:54px;height:54px;border:2px solid var(--ink);border-radius:50%;
+  display:flex;align-items:center;justify-content:center;font-size:24px}
+.shot .ct{font-size:12px;font-weight:800;letter-spacing:.1em;text-transform:uppercase}
+.shot input{position:absolute;inset:0;opacity:0;cursor:pointer}
+.retake{position:absolute;top:8px;right:8px;background:var(--ink);color:var(--paper);
+  font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;
+  padding:6px 10px;z-index:2}
+
+/* GPS pill */
+.gps{display:flex;align-items:center;gap:8px;border:1.5px solid var(--ink);padding:9px 12px;
+  margin-top:10px;font-size:12px;font-weight:700}
+.gps .dot{width:9px;height:9px;border-radius:50%;background:var(--muted)}
+.gps.ok .dot{background:var(--ink)}
+.gps.ok{}
+.gps.err{border-color:var(--hot);color:var(--hot)}
+.gps.err .dot{background:var(--hot)}
+
+/* chips / segmented */
+.row{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.row.two{grid-template-columns:repeat(2,1fr)}
+.chip{border:1.5px solid var(--ink);padding:12px 6px;text-align:center;font-weight:800;
+  font-size:13px;background:var(--paper);color:var(--ink);text-transform:uppercase;
+  letter-spacing:.02em;line-height:1.1}
+.chip small{display:block;font-size:9px;font-weight:700;color:var(--muted);
+  letter-spacing:.06em;margin-top:3px}
+.chip.on{background:var(--ink);color:var(--paper)}
+.chip.on small{color:#bdbdbd}
+.chip .swatch{display:inline-block;width:10px;height:10px;border:1px solid currentColor;
+  margin-right:4px;vertical-align:middle}
+
+/* stepper */
+.step{display:flex;align-items:stretch;border:1.5px solid var(--ink)}
+.step button{width:56px;font-size:24px;font-weight:800;background:var(--paper)}
+.step button:active{background:var(--ink);color:var(--paper)}
+.step .val{flex:1;display:flex;align-items:center;justify-content:center;font-size:22px;
+  font-weight:800;border-left:1.5px solid var(--ink);border-right:1.5px solid var(--ink)}
+
+/* toggle */
+.toggle{display:flex;align-items:center;justify-content:space-between;
+  border:1.5px solid var(--ink);padding:12px 14px;font-weight:800;font-size:13px;
+  text-transform:uppercase;letter-spacing:.03em}
+.toggle .sw{width:50px;height:28px;border:1.5px solid var(--ink);position:relative;flex:none}
+.toggle .sw i{position:absolute;top:2px;left:2px;width:20px;height:20px;background:var(--ink);
+  transition:left .15s}
+.toggle.on .sw{background:var(--ink)}
+.toggle.on .sw i{left:26px;background:var(--paper)}
+
+textarea{width:100%;border:1.5px solid var(--ink);padding:12px;min-height:74px;resize:vertical}
+.mic{margin-top:8px;width:100%;border:1.5px solid var(--ink);padding:11px;font-weight:800;
+  font-size:12px;letter-spacing:.06em;text-transform:uppercase;background:var(--paper);
+  display:flex;align-items:center;justify-content:center;gap:8px}
+.mic.rec{background:var(--hot);color:#fff;border-color:var(--hot)}
+
+input.txt{width:100%;border:1.5px solid var(--ink);padding:12px}
+
+/* primary button */
+.cta{width:100%;background:var(--ink);color:var(--paper);padding:18px;font-weight:800;
+  font-size:15px;letter-spacing:.06em;text-transform:uppercase;margin-top:22px;
+  display:flex;align-items:center;justify-content:center;gap:10px}
+.cta:disabled{opacity:.35}
+.cta.ghost{background:var(--paper);color:var(--ink);border:2px solid var(--ink)}
+
+/* live score preview */
+.preview{border:2px solid var(--ink);margin-top:18px}
+.preview .ph{background:var(--ink);color:var(--paper);padding:8px 12px;font-size:10px;
+  font-weight:800;letter-spacing:.14em;text-transform:uppercase;display:flex;
+  justify-content:space-between}
+.preview .pb{padding:14px}
+.prow{display:flex;justify-content:space-between;align-items:baseline;padding:5px 0;
+  font-size:14px;font-weight:600}
+.prow b{font-weight:800;font-size:16px}
+.prow.big b{font-size:24px}
+.hotflag{background:var(--hot);color:#fff;font-size:10px;font-weight:800;letter-spacing:.1em;
+  padding:2px 6px;text-transform:uppercase}
+
+/* Leads list */
+.bar{display:flex;gap:8px;margin-bottom:14px;overflow-x:auto;padding-bottom:2px}
+.bar button{border:1.5px solid var(--ink);padding:7px 12px;font-size:11px;font-weight:800;
+  letter-spacing:.05em;text-transform:uppercase;white-space:nowrap;background:var(--paper)}
+.bar button.on{background:var(--ink);color:var(--paper)}
+.lead{border:1.5px solid var(--ink);margin-bottom:10px;display:flex;cursor:pointer}
+.lead .pic{width:96px;min-width:96px;background:var(--faint);position:relative;overflow:hidden}
+.lead .pic img{width:100%;height:100%;object-fit:cover}
+.lead .pic .ph{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  font-size:9px;font-weight:800;color:var(--muted);letter-spacing:.06em;text-transform:uppercase;text-align:center;padding:6px}
+.lead .bd{flex:1;padding:11px 12px;min-width:0}
+.lead .co{font-weight:800;font-size:15px;line-height:1.15;text-transform:uppercase;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lead .ad{font-size:11px;color:var(--muted);font-weight:600;margin:2px 0 6px;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lead .meta{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.tag{font-size:9px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;
+  border:1.2px solid var(--ink);padding:2px 6px}
+.tag.fill{background:var(--ink);color:var(--paper)}
+.tag.hot{background:var(--hot);color:#fff;border-color:var(--hot)}
+.scorebox{margin-left:auto;text-align:right;padding-left:8px}
+.scorebox .n{font-size:22px;font-weight:800;line-height:1}
+.scorebox .l{font-size:8px;font-weight:800;letter-spacing:.1em;color:var(--muted);text-transform:uppercase}
+.sync{font-size:8px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+
+#map{height:calc(100vh - 230px);min-height:340px;border:2px solid var(--ink)}
+
+/* empty */
+.empty{border:2px dashed var(--ink);padding:48px 20px;text-align:center}
+.empty .big{font-size:18px;font-weight:800;text-transform:uppercase;letter-spacing:-.3px}
+.empty .sm{font-size:12px;color:var(--muted);font-weight:600;margin-top:6px}
+
+/* Modal bottom sheet */
+#mbg{position:fixed;inset:0;z-index:80;background:rgba(0,0,0,.55);display:flex;
+  align-items:flex-end;justify-content:center}
+#sheet{width:100%;max-width:680px;max-height:92vh;background:var(--paper);
+  border-top:3px solid var(--ink);display:flex;flex-direction:column;animation:up .22s ease-out}
+.sh-head{display:flex;justify-content:space-between;align-items:center;padding:14px 16px;
+  border-bottom:2px solid var(--ink)}
+.sh-head .x{font-size:24px;font-weight:800;width:40px;height:40px;display:flex;
+  align-items:center;justify-content:center;border:1.5px solid var(--ink)}
+.sh-body{overflow-y:auto;padding:16px}
+.sh-photo{width:100%;aspect-ratio:4/3;object-fit:cover;border:1.5px solid var(--ink);background:var(--faint)}
+.kv{display:flex;justify-content:space-between;gap:12px;padding:9px 0;border-bottom:1px solid var(--faint);
+  font-size:14px}
+.kv .k{font-weight:600;color:var(--muted)}
+.kv .v{font-weight:800;text-align:right}
+.offerbox{border:2px solid var(--ink);margin:16px 0}
+.offerbox .oh{background:var(--ink);color:var(--paper);padding:8px 12px;font-size:10px;
+  font-weight:800;letter-spacing:.14em;text-transform:uppercase}
+.offerbox .ob{padding:14px}
+.actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
+.actions a,.actions button{border:2px solid var(--ink);padding:14px;font-weight:800;
+  font-size:13px;letter-spacing:.05em;text-transform:uppercase;text-align:center;
+  text-decoration:none;background:var(--paper)}
+.actions .pri{background:var(--ink);color:var(--paper)}
+.statusgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:8px}
+.statusgrid button{border:1.5px solid var(--ink);padding:9px 4px;font-size:10px;font-weight:800;
+  letter-spacing:.04em;text-transform:uppercase;background:var(--paper)}
+.statusgrid button.on{background:var(--ink);color:var(--paper)}
+.choice{border:1.5px solid var(--ink);padding:12px;margin-bottom:8px;cursor:pointer}
+.choice b{font-weight:800;font-size:14px;display:block;text-transform:uppercase}
+.choice span{font-size:12px;color:var(--muted);font-weight:600}
+
+/* Settings */
+.fld{margin-bottom:14px}
+.fld label{font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;
+  display:block;margin-bottom:6px}
+.note{font-size:11px;color:var(--muted);font-weight:600;line-height:1.5;margin-top:6px}
+.section{border:1.5px solid var(--ink);padding:14px;margin-bottom:14px}
+.section h3{margin:0 0 4px;font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:.04em}
+
+/* Bottom nav */
+nav{position:fixed;bottom:0;left:0;right:0;z-index:50;background:var(--paper);
+  border-top:2px solid var(--ink);display:flex;
+  padding-bottom:env(safe-area-inset-bottom)}
+nav button{flex:1;padding:9px 4px;display:flex;flex-direction:column;align-items:center;gap:3px;
+  font-size:9px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);
+  background:var(--paper);border-top:3px solid transparent;margin-top:-2px}
+nav button .ic{font-size:19px;line-height:1}
+nav button.on{color:var(--ink);border-top-color:var(--ink)}
+
+/* toast */
+#toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(80px + env(safe-area-inset-bottom));
+  background:var(--ink);color:var(--paper);padding:12px 18px;font-weight:800;font-size:13px;
+  letter-spacing:.03em;z-index:90;max-width:90%;text-align:center;opacity:0;transition:opacity .2s;
+  pointer-events:none}
+#toast.show{opacity:1}
+.spinner{width:16px;height:16px;border:2px solid currentColor;border-top-color:transparent;
+  border-radius:50%}
+
+/* Passcode-Gate */
+#gate{position:fixed;inset:0;z-index:200;background:var(--ink);color:var(--paper);
+  display:flex;align-items:center;justify-content:center;padding:24px}
+#gate .gc{width:100%;max-width:340px;text-align:center}
+#gate .mark{width:64px;height:64px;border:2px solid var(--paper);display:flex;align-items:center;
+  justify-content:center;font-weight:800;font-size:20px;margin:0 auto 20px}
+#gate h1{font-size:34px;font-weight:800;letter-spacing:-1px;text-transform:uppercase;margin:0}
+#gate p{font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;
+  color:#9a9a9a;margin:6px 0 24px}
+#gate input{width:100%;background:transparent;border:2px solid var(--paper);color:var(--paper);
+  padding:15px;font-size:18px;font-weight:700;text-align:center;letter-spacing:.1em}
+#gate input::placeholder{color:#7a7a7a;letter-spacing:.06em}
+#gate button{width:100%;margin-top:12px;background:var(--paper);color:var(--ink);padding:15px;
+  font-weight:800;font-size:14px;letter-spacing:.08em;text-transform:uppercase}
+#gate .err{color:var(--hot);font-size:12px;font-weight:800;margin-top:14px;min-height:16px;
+  letter-spacing:.04em;text-transform:uppercase}
+</style>
+</head>
+<body>
+<header>
+  <div class="brand"><div class="mark">RSS</div><b>Akquise</b></div>
+  <div id="net" class="net">Online</div>
+</header>
+
+<div id="gate">
+  <div class="gc">
+    <div class="mark">RSS</div>
+    <h1>Akquise</h1>
+    <p>Zugang geschützt</p>
+    <input id="gate-pin" type="password" inputmode="text" autocomplete="current-password" placeholder="Passcode"/>
+    <button id="gate-go">Entsperren ▸</button>
+    <div class="err" id="gate-err"></div>
+  </div>
+</div>
+
+<main id="app"></main>
+
+<nav>
+  <button data-tab="erfassen" class="on"><span class="ic">◉</span>Erfassen</button>
+  <button data-tab="leads"><span class="ic">≣</span>Leads</button>
+  <button data-tab="karte"><span class="ic">⊕</span>Karte</button>
+  <button data-tab="settings"><span class="ic">⚙</span>Setup</button>
+</nav>
+
+<div id="toast"></div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<script src="app.js"></script>
+<script>
+if('serviceWorker' in navigator){
+  window.addEventListener('load',function(){
+    navigator.serviceWorker.register('sw.js').catch(function(){});
+  });
+}
+</script>
+</body>
+</html>
