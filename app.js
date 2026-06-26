@@ -36,10 +36,14 @@ var REMONDIS = {
 var LEER_MT = { 'woe':52/12, '14t':26/12, '4woe':13/12 };  // Leerungen pro Monat
 var RABATT  = 0.10;   // Kunde spart 10 % seiner Kommunalkosten
 
-// Vollständige Wirtschaftlichkeit + margenoptimale Struktur (Option A vs B)
+/* Wirtschaftlichkeit eines Leads.
+   Modell (vom Kunden bestätigt): RSS-Preis = 10 % unter Kommunal.
+   Die kleinste Pflichttonne (40 L) zahlt der Kunde zusätzlich an die Stadt
+   -> seine Ersparnis sinkt genau um die Pflichttonne. Marge bleibt voll bei RSS. */
 function kalkulation(x){
   var rh=(x&&x.rhythmus)||'14t';
-  var kommunal=0, ekRest=0, ekPapVoll=0, paperVol=0, unbekannteEK=false, privat=false;
+  var rabatt=(x&&x.rabatt!=null)?x.rabatt:RABATT;
+  var kommunal=0, ekRest=0, ekPap=0, unbekannteEK=false, privat=false, papier1100=false;
   containersOf(x).forEach(function(c){
     var n=c.anzahl||1;
     if(c.fraktion==='restmuell'){
@@ -48,35 +52,24 @@ function kalkulation(x){
       if(jahr!=null) kommunal+=(jahr/12)*n; else privat=true;        // 660 L = privat
       var ek=REMONDIS.restmuell[c.volumen];
       if(ek) ekRest+=(ek.miete+ek.leerung*LEER_MT[rh])*n; else unbekannteEK=true;
-    } else if(c.fraktion==='papier'){
-      paperVol+=c.volumen*n;
-      if(c.volumen>=1100){ var ekp=REMONDIS.papier[1100]; ekPapVoll+=(ekp.miete+ekp.leerung*LEER_MT[rh])*n; }
+    } else if(c.fraktion==='papier' && c.volumen>=1100){
+      var ekp=REMONDIS.papier[1100]; ekPap+=(ekp.miete+ekp.leerung*LEER_MT[rh])*n; papier1100=true;
+      // 240-L-Papier: kommunal gratis -> 0
     } // bio/gelb: kommunal inklusive -> 0
   });
-  var pflicht=TARIF.pflichtJahr/12;                  // 40 L 4-wö = 6,49 €/Mt
-  var rabatt=(x&&x.rabatt!=null)?x.rabatt:RABATT;    // Kundenrabatt – pro Lead verstellbar
-  var ersparnisMt=kommunal*rabatt;
-  var kundeZahltMt=kommunal-ersparnisMt;
-  var braucht1100Papier = paperVol>240;              // mehr als die gratis 240-L-Tonne
-  // Option A: kleinste Pflichttonne + privates Remondis-Papier
-  var kostenA = pflicht + ekRest + (braucht1100Papier?ekPapVoll:0);
-  // Option B: kommunale Restmülltonne groß halten (240 L) -> 1.100-L-Papier gratis behalten
-  var unlock = TARIF.restmuell[240]['14t']/12;       // 41,23 €/Mt
-  var kostenB = unlock + ekRest;
-  var margeA = kundeZahltMt - kostenA, margeB = kundeZahltMt - kostenB;
-  var optionBest, margeBest, kostenBest;
-  if(braucht1100Papier && margeB>margeA){ optionBest='B'; margeBest=margeB; kostenBest=kostenB; }
-  else { optionBest='A'; margeBest=margeA; kostenBest=kostenA; }
+  var pflicht  = TARIF.pflichtJahr/12;        // 6,49 €/Mt – Kunde zahlt an die Stadt
+  var rssPreis = kommunal*(1-rabatt);          // 10 % unter Kommunal
+  var ekGesamt = ekRest + ekPap;               // RSS-Kosten (Remondis-EK; Papier RSS-getragen)
+  var margeMt  = rssPreis - ekGesamt;
+  var neuGesamt= rssPreis + pflicht;           // neue Gesamtkosten des Kunden
+  var ersparnisMt = kommunal - neuGesamt;      // = kommunal*rabatt − Pflichttonne
   return {
-    rhythmus:rh, kosten_monat:kommunal, rabatt:rabatt,
+    rhythmus:rh, rabatt:rabatt, kosten_monat:kommunal,
+    rss_preis_monat:rssPreis, pflicht_monat:pflicht, neu_gesamt_monat:neuGesamt,
     ersparnis_monat:ersparnisMt, ersparnis_jahr:ersparnisMt*12,
-    rss_marge_monat:margeBest, rss_marge_jahr:margeBest*12,
-    rss_kosten_monat:kostenBest, kunde_zahlt_monat:kundeZahltMt,
-    option:optionBest, braucht1100Papier:braucht1100Papier,
-    margeA_monat:margeA, margeA_jahr:margeA*12, margeB_monat:margeB, margeB_jahr:margeB*12,
-    ek_unvollstaendig:unbekannteEK, privat:privat,
-    // Einzelposten für die aufklappbare Rechnung:
-    pflicht_monat:pflicht, ek_rest_monat:ekRest, ek_pap_monat:ekPapVoll, unlock_monat:unlock
+    rss_marge_monat:margeMt, rss_marge_jahr:margeMt*12,
+    ek_rest_monat:ekRest, ek_pap_monat:ekPap, rss_kosten_monat:ekGesamt,
+    papier1100:papier1100, ek_unvollstaendig:unbekannteEK, privat:privat
   };
 }
 
@@ -89,7 +82,7 @@ var FRAKTION = {
 var VOLUMEN = [120,240,660,1100];
 var STATUS = ['neu','kontaktiert','angebot','gewonnen','verloren'];
 var STATUS_LBL = { neu:'Neu', kontaktiert:'Kontakt', angebot:'Angebot', gewonnen:'Gewonnen', verloren:'Verloren' };
-var APP_VERSION = 'v21 · Rechnung im Detail aufklappbar';
+var APP_VERSION = 'v22 · Pflichttonne schmälert Ersparnis';
 var WD = ['Sonntag','Montag','Dienstag','Mittwoch','Donnerstag','Freitag','Samstag'];
 var WD_WORK = ['Montag','Dienstag','Mittwoch','Donnerstag','Freitag'];
 // Places-Typen, die fast nie Gewerbekunden mit Tonne sind -> aus Route ausblenden
@@ -992,12 +985,9 @@ function offerBox(l){
     '<button class="chip'+(k.rhythmus==='14t'?' on':'')+'" data-act="rhythmus" data-id="'+l.id+'" data-v="14t">14-täglich</button>'+
     '<button class="chip'+(k.rhythmus==='woe'?' on':'')+'" data-act="rhythmus" data-id="'+l.id+'" data-v="woe">wöchentlich</button>'+
   '</div>';
-  var opt = k.braucht1100Papier ?
-    ('<div class="note" style="border:1px solid var(--ink);padding:8px 10px;margin-top:8px">'+
-      '<b>Margenbeste Struktur: Option '+k.option+'</b><br>'+
-      'A) 40-L-Pflicht + privates Papier → <b>'+eur(k.margeA_jahr)+'/Jahr</b><br>'+
-      'B) 240-L kommunal, 1.100-L-Papier gratis → <b>'+eur(k.margeB_jahr)+'/Jahr</b></div>') : '';
-  var warn = (k.ek_unvollstaendig?'<div class="note">⚠ EK nur für 1.100 L hinterlegt — kleinere Volumen unvollständig.</div>':'')+
+  var opt = (k.ersparnis_monat<=0 && k.kosten_monat>0) ?
+    '<div class="note" style="border:1px solid var(--hot);color:var(--hot);padding:8px 10px;margin-top:8px">Bei dieser Größe spart der Kunde nichts — die Pflichttonne frisst den Rabatt. Lohnt sich erst bei großen Tonnen (1.100 L).</div>' : '';
+  var warn = (k.ek_unvollstaendig?'<div class="note">⚠ Remondis-EK nur für 1.100 L hinterlegt — kleinere Volumen unvollständig.</div>':'')+
              (k.privat?'<div class="note">⚠ 660 L hat keinen Kommunaltarif (private Größe).</div>':'');
   var pct=Math.round((k.rabatt||0.10)*100);
   var rabBtns='<div style="font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;margin:4px 0 6px">Kundenrabatt: '+pct+' %</div>'+
@@ -1017,33 +1007,26 @@ function offerBox(l){
   '</div></div>';
 }
 function calcBreakdown(l,k){
-  var rest = k.rss_kosten_monat - k.pflicht_monat;  // Remondis-Anteil der gewählten Option
-  var papZeile, restZeile, pflichtZeile;
-  if(k.option==='B'){
-    pflichtZeile = 'Kommunale Restmülltonne 240 L (statt 40 L) — hält die Papiertonne gratis: <b>'+eur(k.unlock_monat)+'/Mt</b>';
-    restZeile    = 'Privater Remondis-Restmüll: <b>'+eur(k.ek_rest_monat)+'/Mt</b>';
-    papZeile     = '1.100-L-Papier bleibt <b>kommunal gratis</b> (0 €) — erlaubt, weil Restmüll groß genug (4×-Regel §22(5))';
-  } else {
-    pflichtZeile = 'Kleinste Pflicht-Restmülltonne 40 L (4-wö) — gesetzlich Pflicht, bleibt immer: <b>'+eur(k.pflicht_monat)+'/Mt</b>';
-    restZeile    = 'Privater Remondis-Restmüll: <b>'+eur(k.ek_rest_monat)+'/Mt</b>';
-    papZeile     = k.braucht1100Papier
-      ? 'Privates Remondis-Papier (1.100 L): <b>'+eur(k.ek_pap_monat)+'/Mt</b> — kommunal nicht gedeckt, weil Restmüll klein'
-      : 'Papiertonne (240 L) bleibt <b>kommunal gratis</b> (0 €)';
-  }
   var pct=Math.round((k.rabatt||0.10)*100);
+  var ekZeilen = '· Remondis Restmüll: <b>'+eur(k.ek_rest_monat)+'/Mt</b><br>'+
+    (k.papier1100 ? '· Remondis Papier (1.100 L, RSS-getragen): <b>'+eur(k.ek_pap_monat)+'/Mt</b><br>' : '');
   return '<div class="note" style="border:1.5px solid var(--ink);padding:12px;margin-top:8px;line-height:1.6">'+
-    '<b style="text-transform:uppercase">So entsteht die Marge (Option '+k.option+')</b><br><br>'+
-    '<b>① Kunde zahlt heute</b> (kommunal): '+eur(k.kosten_monat)+'/Mt<br><br>'+
-    '<b>② RSS-Lösung — die Kosten für euch:</b><br>'+
-    '· '+pflichtZeile+'<br>'+
-    '· '+restZeile+'<br>'+
-    '· '+papZeile+'<br>'+
-    '= RSS-Kosten gesamt: <b>'+eur(k.rss_kosten_monat)+'/Mt</b><br><br>'+
-    '<b>③ Kunde bekommt '+pct+' % Rabatt</b> → zahlt '+eur(k.kunde_zahlt_monat)+'/Mt (spart '+eur(k.ersparnis_monat)+'/Mt)<br><br>'+
-    '<b>④ RSS-Marge = Kunde zahlt − RSS-Kosten</b><br>'+
-    eur(k.kunde_zahlt_monat)+' − '+eur(k.rss_kosten_monat)+' = <b>'+eur(k.rss_marge_monat)+'/Mt</b> ('+eur(k.rss_marge_jahr)+'/Jahr)<br><br>'+
-    '<span style="color:var(--muted)">Pflichttonne (kleinste kommunale Restmülltonne) zählt immer mit. '+
-    'Die 240-L-Papiertonne ist kommunal gratis; eine 1.100-L-Papiertonne gibt es kommunal nur, wenn Restmüll+Bio groß genug sind (max. 4×).</span>'+
+    '<b style="text-transform:uppercase">So entsteht die Rechnung</b><br><br>'+
+
+    '<b>① Heute zahlt der Kunde an die Stadt</b> (kommunal): '+eur(k.kosten_monat)+'/Mt<br><br>'+
+
+    '<b>② RSS-Preis = '+pct+' % unter Kommunal:</b> '+eur(k.rss_preis_monat)+'/Mt<br>'+
+    '<b>+ Pflicht-Restmülltonne 40 L</b> (zahlt Kunde weiter an die Stadt): '+eur(k.pflicht_monat)+'/Mt<br>'+
+    '<b>= neue Gesamtkosten:</b> '+eur(k.neu_gesamt_monat)+'/Mt<br><br>'+
+
+    '<b>③ Kunde spart:</b> '+eur(k.kosten_monat)+' − '+eur(k.neu_gesamt_monat)+' = <b>'+eur(k.ersparnis_monat)+'/Mt ('+eur(k.ersparnis_jahr)+'/J)</b><br>'+
+    '<span style="color:var(--muted)">Das ist '+pct+' % minus die Pflichttonne ('+eur(k.pflicht_monat)+'/Mt) — die zahlt der Kunde ja weiter.</span><br><br>'+
+
+    '<b>④ RSS-Marge = RSS-Preis − Remondis-EK:</b><br>'+ ekZeilen +
+    eur(k.rss_preis_monat)+' − '+eur(k.rss_kosten_monat)+' = <b>'+eur(k.rss_marge_monat)+'/Mt ('+eur(k.rss_marge_jahr)+'/Jahr)</b><br><br>'+
+
+    '<span style="color:var(--muted)">Die Pflichtmülltonne ist keine RSS-Kost (Kunde zahlt sie an die Stadt), schmälert aber seine Ersparnis. '+
+    'Papier bis 240 L bleibt kommunal gratis; eine 1.100-L-Papiertonne stellt RSS über Remondis (in der Marge berücksichtigt).</span>'+
   '</div>';
 }
 function photoGallery(l){
