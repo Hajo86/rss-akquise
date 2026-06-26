@@ -1,11 +1,14 @@
 {
   "gemeinde_id": "1124",
+  "gemeinde": "Seevetal",
   "jahr": 2026,
   "ortsteile": [
     {
       "name": "Beckedorf",
       "strukturID": "1125",
       "gebietID": "900000146",
+      "lat": 53.419078,
+      "lng": 9.965909,
       "restmuell_wochentag": "Donnerstag",
       "restmuell_termine": [
         {
@@ -277,6 +280,8 @@
       "name": "Bullenhausen",
       "strukturID": "1126",
       "gebietID": "900000147",
+      "lat": 53.447174,
+      "lng": 10.076127,
       "restmuell_wochentag": "Freitag",
       "restmuell_termine": [
         {
@@ -548,6 +553,8 @@
       "name": "Eddelsen",
       "strukturID": "1134",
       "gebietID": "900000148",
+      "lat": 53.385528,
+      "lng": 9.961162,
       "restmuell_wochentag": "Donnerstag",
       "restmuell_termine": [
         {
@@ -819,6 +826,8 @@
       "name": "Emmelndorf (ohne Emmelndorf-Siedlung)",
       "strukturID": "1128",
       "gebietID": "900000149",
+      "lat": 53.393285,
+      "lng": 9.97919,
       "restmuell_wochentag": "Donnerstag",
       "restmuell_termine": [
         {
@@ -1090,6 +1099,8 @@
       "name": "Emmelndorf-Siedlung",
       "strukturID": "1127",
       "gebietID": "900000150",
+      "lat": 53.404276,
+      "lng": 9.968529,
       "restmuell_wochentag": "Donnerstag",
       "restmuell_termine": [
         {
@@ -1361,6 +1372,8 @@
       "name": "Fleestedt (östlich der Autobahn A 7)",
       "strukturID": "1129",
       "gebietID": "900000151",
+      "lat": 53.406499,
+      "lng": 9.992766,
       "restmuell_wochentag": "Donnerstag",
       "restmuell_termine": [
         {
@@ -1632,6 +1645,8 @@
       "name": "Fleestedt (westlich der Autobahn A 7)",
       "strukturID": "1130",
       "gebietID": "900000152",
+      "lat": 53.406499,
+      "lng": 9.992766,
       "restmuell_wochentag": "Donnerstag",
       "restmuell_termine": [
         {
@@ -1903,6 +1918,8 @@
       "name": "Glüsingen",
       "strukturID": "1131",
       "gebietID": "900000153",
+      "lat": 53.407993,
+      "lng": 10.018005,
       "restmuell_wochentag": "Donnerstag",
       "restmuell_termine": [
         {
@@ -2174,6 +2191,8 @@
       "name": "Groß Moor",
       "strukturID": "1132",
       "gebietID": "900000154",
+      "lat": 53.446187,
+      "lng": 10.044724,
       "restmuell_wochentag": "Freitag",
       "restmuell_termine": [
         {
@@ -2445,6 +2464,8 @@
       "name": "Helmstorf",
       "strukturID": "1133",
       "gebietID": "900000155",
+      "lat": 53.364488,
+      "lng": 9.985935,
       "restmuell_wochentag": "Donnerstag",
       "restmuell_termine": [
         {
@@ -2716,6 +2737,8 @@
       "name": "Hittfeld (ohne Eddelsen und Waldesruh)",
       "strukturID": "1136",
       "gebietID": "900000156",
+      "lat": 53.384028,
+      "lng": 9.98779,
       "restmuell_wochentag": "Donnerstag",
       "restmuell_termine": [
         {
@@ -2987,6 +3010,8 @@
       "name": "Hörsten",
       "strukturID": "1139",
       "gebietID": "900000159",
+      "lat": 53.411643,
+      "lng": 10.065776,
       "restmuell_wochentag": "Freitag",
       "restmuell_termine": [
         {
@@ -3258,6 +3283,8 @@
       "name": "Holtorfsloh",
       "strukturID": "1137",
       "gebietID": "900000157",
+      "lat": 53.331066,
+      "lng": 10.074777,
       "restmuell_wochentag": "Donnerstag",
       "restmuell_termine": [
         {
@@ -3529,6 +3556,8 @@
       "name": "Horst",
       "strukturID": "1138",
       "gebietID": "900000158",
+      "lat": 53.370835,
+      "lng": 10.027279,
       "restmuell_wochentag": "Freitag",
       "restmuell_termine": [
         {
@@ -3800,6 +3829,8 @@
       "name": "Klein Moor",
       "strukturID": "1140",
       "gebietID": "900000160",
+      "lat": 53.4397,
+      "lng": 10.035456,
       "restmuell_wochentag": "Freitag",
       "restmuell_termine": [
         {
@@ -4071,6 +4102,8 @@
       "name": "Lindhorst",
       "strukturID": "1141",
       "gebietID": "900000161",
+      "lat": 53.373395,
+      "lng": 9.991465,
       "restmuell_wochentag": "Donnerstag",
       "restmuell_termine": [
         {
@@ -4342,6 +4375,8 @@
       "name": "Maschen (nördlich der Autobahn A 39)",
       "strukturID": "900000004",
       "gebietID": "900000208",
+      "lat": 53.395393,
+      "lng": 10.041584,
       "restmuell_wochentag": "Freitag",
       "restmuell_termine": [
         {
@@ -4613,6 +4648,8 @@
       "name": "Maschen (südlich der Autobahn A 39)",
       "strukturID": "900000003",
       "gebietID": "900000207",
+      "lat": 53.395393,
+      "lng": 10.041584,
       "restmuell_wochentag": "Freitag",
       "restmuell_termine": [
         {
@@ -4884,6 +4921,8 @@
       "name": "Meckelfeld (östlich der Autobahn A 1)",
       "strukturID": "1143",
       "gebietID": "900000162",
+      "lat": 53.421806,
+      "lng": 10.024229,
       "restmuell_wochentag": "Freitag",
       "restmuell_termine": [
         {
@@ -5155,6 +5194,8 @@
       "name": "Meckelfeld (westlich der Autobahn A 1)",
       "strukturID": "1144",
       "gebietID": "900000163",
+      "lat": 53.421806,
+      "lng": 10.024229,
       "restmuell_wochentag": "Donnerstag",
       "restmuell_termine": [
         {
@@ -5426,6 +5467,8 @@
       "name": "Metzendorf (ohne Woxdorf)",
       "strukturID": "1146",
       "gebietID": "900000164",
+      "lat": 53.404517,
+      "lng": 9.955716,
       "restmuell_wochentag": "Donnerstag",
       "restmuell_termine": [
         {
@@ -5697,6 +5740,8 @@
       "name": "Ohlendorf",
       "strukturID": "1147",
       "gebietID": "900000165",
+      "lat": 53.341404,
+      "lng": 10.050345,
       "restmuell_wochentag": "Donnerstag",
       "restmuell_termine": [
         {
@@ -5968,6 +6013,8 @@
       "name": "Over",
       "strukturID": "1148",
       "gebietID": "900000166",
+      "lat": 53.432949,
+      "lng": 10.097442,
       "restmuell_wochentag": "Freitag",
       "restmuell_termine": [
         {
@@ -6239,6 +6286,8 @@
       "name": "Ramelsloh",
       "strukturID": "1149",
       "gebietID": "900000167",
+      "lat": 53.342241,
+      "lng": 10.021106,
       "restmuell_wochentag": "Donnerstag",
       "restmuell_termine": [
         {
@@ -6510,6 +6559,8 @@
       "name": "Waldesruh",
       "strukturID": "1135",
       "gebietID": "900000168",
+      "lat": 53.375233,
+      "lng": 9.963827,
       "restmuell_wochentag": "Donnerstag",
       "restmuell_termine": [
         {
@@ -6781,6 +6832,8 @@
       "name": "Woxdorf",
       "strukturID": "1145",
       "gebietID": "900000169",
+      "lat": 53.41136,
+      "lng": 9.96042,
       "restmuell_wochentag": "Donnerstag",
       "restmuell_termine": [
         {

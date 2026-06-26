@@ -19,7 +19,7 @@ Fuer RSS relevant: SUMMARY enthaelt "Hausmuell" (= Restmuell) oder "Altpapier" (
 Aufruf:  python3 scrape_lkharburg.py <gemeindeId> <Ausgabedatei.json> [jahr]
 Beispiel: python3 scrape_lkharburg.py 1124 ../data/abfuhr-seevetal.json 2026
 """
-import sys, re, json, ssl, urllib.parse, urllib.request
+import sys, re, json, ssl, time, urllib.parse, urllib.request
 from datetime import datetime
 
 # macOS python.org-Builds haben oft kein CA-Bundle -> certifi nutzen, sonst ungeprueft
@@ -87,6 +87,22 @@ def ical_dates(gebiet, struktur_id, year):
             cur = {}
     return events
 
+def geocode_ort(name, gemeinde):
+    """Ortsteil-Mittelpunkt via OpenStreetMap Nominatim (kostenlos, kein Key).
+    Klammerzusaetze wie '(westlich der A 7)' werden entfernt."""
+    base = re.sub(r"\s*\(.*?\)", "", name).strip()
+    q = urllib.parse.quote(f"{base}, {gemeinde}, Landkreis Harburg, Deutschland")
+    url = f"https://nominatim.openstreetmap.org/search?q={q}&format=json&limit=1"
+    req = urllib.request.Request(url, headers={"User-Agent": "RSS-Akquise/1.0 (Routenplanung)"})
+    try:
+        with urllib.request.urlopen(req, timeout=30, context=SSLCTX) as r:
+            d = json.loads(r.read().decode("utf-8", "replace"))
+        if d:
+            return round(float(d[0]["lat"]), 6), round(float(d[0]["lon"]), 6)
+    except Exception:
+        pass
+    return None, None
+
 def dominant_weekday(items):
     if not items: return None
     from collections import Counter
@@ -97,10 +113,11 @@ def main():
     gemeinde = sys.argv[1] if len(sys.argv) > 1 else "1124"
     outfile  = sys.argv[2] if len(sys.argv) > 2 else "../data/abfuhr-seevetal.json"
     year     = sys.argv[3] if len(sys.argv) > 3 else "2026"
+    gem_name = sys.argv[4] if len(sys.argv) > 4 else "Seevetal"
 
     ots = ortsteile(gemeinde)
-    print(f"Gemeinde {gemeinde}: {len(ots)} Ortsteile", file=sys.stderr)
-    result = {"gemeinde_id": gemeinde, "jahr": int(year), "ortsteile": []}
+    print(f"Gemeinde {gem_name} ({gemeinde}): {len(ots)} Ortsteile", file=sys.stderr)
+    result = {"gemeinde_id": gemeinde, "gemeinde": gem_name, "jahr": int(year), "ortsteile": []}
     for sid, name in ots:
         gid = gebiet_id(sid)
         if not gid:
@@ -109,13 +126,16 @@ def main():
         ev = ical_dates(gid, sid, year)
         rest_wd = dominant_weekday(ev["restmuell"])
         pap_wd  = dominant_weekday(ev["papier"])
+        lat, lng = geocode_ort(name, gem_name)
+        time.sleep(1.1)  # Nominatim fair-use
         result["ortsteile"].append({
             "name": name, "strukturID": sid, "gebietID": gid,
+            "lat": lat, "lng": lng,
             "restmuell_wochentag": rest_wd, "restmuell_termine": ev["restmuell"],
             "papier_wochentag": pap_wd, "papier_termine": ev["papier"],
         })
-        print(f"  ✓ {name}: Restmuell {rest_wd} ({len(ev['restmuell'])}x) · "
-              f"Papier {pap_wd} ({len(ev['papier'])}x)", file=sys.stderr)
+        print(f"  ✓ {name}: Restmuell {rest_wd} · Papier {pap_wd} · "
+              f"geo {'OK' if lat else 'fehlt'}", file=sys.stderr)
 
     with open(outfile, "w", encoding="utf-8") as f:
         json.dump(result, f, ensure_ascii=False, indent=2)
