@@ -82,7 +82,7 @@ var FRAKTION = {
 var VOLUMEN = [120,240,660,1100];
 var STATUS = ['neu','kontaktiert','angebot','gewonnen','verloren'];
 var STATUS_LBL = { neu:'Neu', kontaktiert:'Kontakt', angebot:'Angebot', gewonnen:'Gewonnen', verloren:'Verloren' };
-var APP_VERSION = 'v23 · Sync-Fehler sichtbar';
+var APP_VERSION = 'v24 · Sync-Fix (Rundung)';
 var WD = ['Sonntag','Montag','Dienstag','Mittwoch','Donnerstag','Freitag','Samstag'];
 var WD_WORK = ['Montag','Dienstag','Mittwoch','Donnerstag','Freitag'];
 // Places-Typen, die fast nie Gewerbekunden mit Tonne sind -> aus Route ausblenden
@@ -442,8 +442,10 @@ function toRow(l){
     firmenname:l.firmenname||null, telefon:l.telefon||null, website:l.website||null,
     place_id:l.place_id||null, adresse:l.adresse||null, notiz:l.notiz||null,
     status:l.status, score:l.score, hot_lead:l.hot_lead,
-    kosten_monat:l.kosten_monat, ersparnis_monat:l.ersparnis_monat, ersparnis_jahr:l.ersparnis_jahr };
+    // int-Spalten -> auf ganze Euro runden (sonst lehnt Postgres Kommazahlen mit 400 ab)
+    kosten_monat:rnd(l.kosten_monat), ersparnis_monat:rnd(l.ersparnis_monat), ersparnis_jahr:rnd(l.ersparnis_jahr) };
 }
+function rnd(n){ return (n==null||isNaN(n))?null:Math.round(n); }
 function fromRow(rl, local){
   return {
     id:rl.id,
