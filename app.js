@@ -82,7 +82,7 @@ var FRAKTION = {
 var VOLUMEN = [120,240,660,1100];
 var STATUS = ['neu','kontaktiert','angebot','gewonnen','verloren'];
 var STATUS_LBL = { neu:'Neu', kontaktiert:'Kontakt', angebot:'Angebot', gewonnen:'Gewonnen', verloren:'Verloren' };
-var APP_VERSION = 'v31 · Gewerbeparks · Übersicht-Button';
+var APP_VERSION = 'v32 · Angebote speichern & einzeln löschen';
 var WD = ['Sonntag','Montag','Dienstag','Mittwoch','Donnerstag','Freitag','Samstag'];
 // Places-Typen, die fast nie Gewerbekunden mit Tonne sind -> aus Route ausblenden
 var STOP_EXCLUDE = ['bus_stop','transit_station','locality','political','park','school',
@@ -593,6 +593,7 @@ function fromRow(rl, local){
     updated_at: rl.updated_at?Date.parse(rl.updated_at):Date.now(),
     abfuhrtag:rl.abfuhrtag, lat:rl.lat, lng:rl.lng, accuracy:rl.accuracy,
     foto_url:rl.foto_url||null, photoBlob:(local&&local.photoBlob)||null, photos:(local&&local.photos)||[],
+    angebote:(local&&local.angebote)||[],   // Angebote nur lokal – beim Sync-Pull nicht verlieren
     behaelter:rl.behaelter||null, fraktion:rl.fraktion, volumen:rl.volumen, anzahl:rl.anzahl,
     entsorger_logo:rl.entsorger_logo, entsorger:rl.entsorger||'',
     firmenname:rl.firmenname||'', telefon:rl.telefon||'', website:rl.website||'',
@@ -1476,7 +1477,8 @@ function renderSheet(){
       '<input class="txt" style="margin-bottom:8px" data-edit="website" data-id="'+l.id+'" inputmode="url" value="'+esc(l.website||'')+'" placeholder="Website (optional)"/>'+
       '<button class="cta" data-act="saveedit" data-id="'+l.id+'" style="margin-top:0">Firma speichern</button>'+
       offerBox(l)+
-      ((kalkulation(l).ersparnis_jahr>0)?'<button class="cta" data-act="angebot" data-id="'+l.id+'">📄 Angebot für Kunden erstellen</button>':'')+
+      ((kalkulation(l).ersparnis_jahr>0)?'<button class="cta" data-act="angebot" data-id="'+l.id+'">📄 Angebot erstellen & speichern</button>':'')+
+      angebotListe(l)+
 
       ((l._candidates&&l._candidates.length>1)?
         '<button class="cta ghost" data-act="pick" data-id="'+l.id+'">Anderen Betrieb wählen ('+l._candidates.length+')</button>':'')+
@@ -1524,12 +1526,14 @@ function offerBox(l){
   '</div></div>';
 }
 // Kundendokument: druck-/teilbares Angebot (ohne interne Marge!)
-function buildAngebot(l){
-  var k=kalkulation(l);
+// snap = eingefrorenes Angebot (angebotSnapshot) – so bleibt ein gespeichertes Angebot
+// unverändert, auch wenn der Lead später bearbeitet wird.
+function buildAngebot(snap){
+  var k=snap.k;
   var pct=Math.round((k.rabatt||0.10)*100);
-  var datum=new Date().toLocaleDateString('de-DE',{day:'2-digit',month:'long',year:'numeric'});
-  var firma=esc(l.firmenname||'Ihr Betrieb');
-  var adr=esc(l.adresse||'');
+  var datum=new Date(snap.created_at).toLocaleDateString('de-DE',{day:'2-digit',month:'long',year:'numeric'});
+  var firma=esc(snap.firmenname||'Ihr Betrieb');
+  var adr=esc(snap.adresse||'');
   return '<!DOCTYPE html><html lang="de"><head><meta charset="utf-8"/>'+
   '<meta name="viewport" content="width=device-width,initial-scale=1"/><title>Angebot '+firma+'</title>'+
   '<style>*{box-sizing:border-box}body{font-family:Helvetica,Arial,sans-serif;color:#000;max-width:720px;margin:0 auto;padding:28px;line-height:1.5}'+
@@ -1550,7 +1554,7 @@ function buildAngebot(l){
   '<table>'+
     '<tr><td>Ihre Kosten heute (kommunal)</td><td style="text-align:right;font-weight:800">'+eur(k.kosten_monat)+' / Monat</td></tr>'+
     '<tr><td>Mit RSS (inkl. gesetzlicher Pflichttonne)</td><td style="text-align:right;font-weight:800">'+eur(k.neu_gesamt_monat)+' / Monat</td></tr>'+
-    '<tr><td>Erfasste Behälter</td><td style="text-align:right">'+esc(behaelterSummary(l))+'</td></tr>'+
+    '<tr><td>Erfasste Behälter</td><td style="text-align:right">'+esc(behaelterSummary(snap))+'</td></tr>'+
   '</table>'+
   '<div class="big"><div class="l">Ihre Ersparnis</div><div class="e">'+eur(k.ersparnis_jahr)+' / Jahr</div>'+
     '<div class="l" style="margin-top:4px">'+eur(k.ersparnis_monat)+' pro Monat · '+pct+' % günstiger</div></div>'+
@@ -1560,12 +1564,56 @@ function buildAngebot(l){
   '<div class="note">Unverbindliches Angebot, freibleibend. Ersparnis bezogen auf die Abfallgebührensatzung des Landkreises Harburg (Stand 2026) und einen Abfuhrrhythmus '+(k.rhythmus==='woe'?'wöchentlich':'14-täglich')+'. Tatsächliche Werte je nach Vertrag und Rhythmus. Keine Rechtsberatung.</div>'+
   '</body></html>';
 }
-function openAngebot(id){
-  var l=S.leads.find(function(x){return x.id===id;}); if(!l) return;
-  var blob=new Blob([buildAngebot(l)],{type:'text/html'});
+// Angebot als Snapshot einfrieren (bleibt erhalten, auch wenn der Lead sich ändert)
+function angebotSnapshot(l){
+  return { id:'ang-'+Date.now()+'-'+Math.floor(Math.random()*1e4), created_at:Date.now(),
+    firmenname:l.firmenname||'', adresse:l.adresse||'',
+    behaelter:containersOf(l).map(function(c){ return {fraktion:c.fraktion,volumen:c.volumen,anzahl:c.anzahl||1}; }),
+    k:kalkulation(l) };
+}
+function openAngebotDoc(snap){
+  var blob=new Blob([buildAngebot(snap)],{type:'text/html'});
   var url=URL.createObjectURL(blob);
   var w=window.open(url,'_blank');
   if(!w){ location.href=url; }   // Popup blockiert -> im selben Tab öffnen
+}
+// Neues Angebot erstellen: beim Lead speichern UND öffnen
+function createAngebot(id){
+  var l=S.leads.find(function(x){return x.id===id;}); if(!l) return;
+  var snap=angebotSnapshot(l);
+  l.angebote=l.angebote||[]; l.angebote.unshift(snap);
+  l.updated_at=Date.now();
+  dbPut(stripRuntime(l)).then(function(){ syncLead(l); });
+  openAngebotDoc(snap); renderSheet();
+  toast('Angebot gespeichert');
+}
+function openSavedAngebot(id,aid){
+  var l=S.leads.find(function(x){return x.id===id;}); if(!l||!l.angebote) return;
+  var snap=l.angebote.find(function(a){return a.id===aid;}); if(snap) openAngebotDoc(snap);
+}
+// nur DIESES Angebot löschen – der Lead bleibt
+function delAngebot(id,aid){
+  var l=S.leads.find(function(x){return x.id===id;}); if(!l||!l.angebote) return;
+  l.angebote=l.angebote.filter(function(a){return a.id!==aid;});
+  l.updated_at=Date.now();
+  dbPut(stripRuntime(l)).then(function(){ syncLead(l); });
+  renderSheet(); toast('Angebot gelöscht');
+}
+// Liste der gespeicherten Angebote eines Leads
+function angebotListe(l){
+  var arr=l.angebote||[]; if(!arr.length) return '';
+  return '<span class="lab">Erstellte Angebote ('+arr.length+')</span>'+
+    arr.map(function(a){
+      var d=new Date(a.created_at).toLocaleDateString('de-DE');
+      var k=a.k||{};
+      return '<div style="display:flex;align-items:center;gap:8px;border:1.5px solid var(--ink);padding:10px 12px;margin-bottom:8px">'+
+        '<div style="flex:1"><b style="font-size:13px">'+esc(d)+'</b>'+
+          '<div style="font-size:11px;color:var(--muted)">Ersparnis '+eur(k.ersparnis_jahr||0)+'/J · '+
+            (k.rhythmus==='woe'?'wöchentl.':'14-tägl.')+' · '+Math.round((k.rabatt||0.1)*100)+'%</div></div>'+
+        '<button data-act="openangebot" data-id="'+l.id+'" data-aid="'+esc(a.id)+'" style="border:1.5px solid var(--ink);font-size:11px;font-weight:800;padding:7px 10px">Öffnen</button>'+
+        '<button data-act="delangebot" data-id="'+l.id+'" data-aid="'+esc(a.id)+'" style="border:1.5px solid var(--hot);color:var(--hot);font-size:14px;font-weight:800;padding:7px 10px">✕</button>'+
+      '</div>';
+    }).join('');
 }
 function calcBreakdown(l,k){
   var pct=Math.round((k.rabatt||0.10)*100);
@@ -1686,7 +1734,9 @@ document.addEventListener('click',function(e){
   else if(act==='close'||act==='closebg'&&e.target.id==='mbg'){ S.modal=null; renderSheet(); }
   else if(act==='status'){ setStatus(id,v); }
   else if(act==='calctoggle'){ S.calcOpen=!S.calcOpen; renderSheet(); }
-  else if(act==='angebot'){ openAngebot(id); }
+  else if(act==='angebot'){ createAngebot(id); }
+  else if(act==='openangebot'){ openSavedAngebot(id, t.dataset.aid); }
+  else if(act==='delangebot'){ delAngebot(id, t.dataset.aid); }
   else if(act==='rhythmus' || act==='rabatt'){
     var lr=S.leads.find(function(x){return x.id===id;});
     if(lr){
