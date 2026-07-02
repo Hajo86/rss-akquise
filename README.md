@@ -193,7 +193,14 @@ Salzhausen, Seevetal, Stelle, Tostedt, Winsen).
   python3 -c "import json,glob,os; rows=[]; [rows.append({'id':(d:=json.load(open(f)))['gemeinde_id'],'name':d['gemeinde'],'file':os.path.basename(f),'jahr':d['jahr'],'lat':round(sum(o['lat'] for o in d['ortsteile'] if o['lat'])/max(1,sum(1 for o in d['ortsteile'] if o['lat'])),5),'lng':round(sum(o['lng'] for o in d['ortsteile'] if o['lng'])/max(1,sum(1 for o in d['ortsteile'] if o['lng'])),5),'ortsteile':len(d['ortsteile'])}) for f in sorted(glob.glob('../data/abfuhr-*.json'))]; rows.sort(key=lambda r:r['name']); json.dump(rows,open('../data/gemeinden.json','w'),ensure_ascii=False,indent=2)"
   ```
 
-- **Beim Jahreswechsel** Scraper mit neuem Jahr laufen lassen (`scrape_lkharburg.py <id> <out> 2027 "<Name>"`).
+  Danach zusätzlich den landkreisweiten Termin-Index für die Start-Erinnerung bauen:
+
+  ```bash
+  python3 -c "import json,glob; idx={}; [ ([ ( [ idx.setdefault(t['datum'],{}).setdefault(d['gemeinde_id'],{'id':d['gemeinde_id'],'name':d['gemeinde'],'r':[],'p':[]})['r'].append(o['name'].split(' (')[0]) for t in o.get('restmuell_termine',[]) if t.get('datum') ] ) for o in (d:=json.load(open(f)))['ortsteile'] ] for f in glob.glob('../data/abfuhr-*.json')]; out={dt:[ {**e,'r':sorted(set(e['r'])),'p':sorted(set(e['p']))} for e in sorted(idx[dt].values(),key=lambda x:x['name']) ] for dt in sorted(idx)}; json.dump(out,open('../data/termine-index.json','w'),ensure_ascii=False,separators=(',',':'))"
+  ```
+
+- **Beim Jahreswechsel** Scraper mit neuem Jahr laufen lassen (`scrape_lkharburg.py <id> <out> 2027 "<Name>"`),
+  dann Manifest **und** Termin-Index neu bauen.
 - **Granularität:** Bezirks-Ebene (in Großstädten variieren Termine teils straßenweise —
   Straßen-genau ist bewusst noch nicht umgesetzt).
 - **Offline:** Gemeinden werden beim ersten Öffnen gecacht (Service Worker, network-first);

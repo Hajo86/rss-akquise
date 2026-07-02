@@ -82,7 +82,7 @@ var FRAKTION = {
 var VOLUMEN = [120,240,660,1100];
 var STATUS = ['neu','kontaktiert','angebot','gewonnen','verloren'];
 var STATUS_LBL = { neu:'Neu', kontaktiert:'Kontakt', angebot:'Angebot', gewonnen:'Gewonnen', verloren:'Verloren' };
-var APP_VERSION = 'v29 · Zielkunden-Finder · Abfuhr-Erinnerung';
+var APP_VERSION = 'v30 · Abfuhr-Erinnerung ganzer Landkreis';
 var WD = ['Sonntag','Montag','Dienstag','Mittwoch','Donnerstag','Freitag','Samstag'];
 // Places-Typen, die fast nie Gewerbekunden mit Tonne sind -> aus Route ausblenden
 var STOP_EXCLUDE = ['bus_stop','transit_station','locality','political','park','school',
@@ -126,6 +126,8 @@ var S = {
   route: null,        // geladene Abfuhr-/Routendaten der AKTIVEN Gemeinde
   gemeinden: null,    // Manifest data/gemeinden.json (alle Kommunen)
   gemeindeId: null,   // aktuell geladene Gemeinde
+  termineIndex: null, // data/termine-index.json: Datum -> [{id,name,r[],p[]}] (ganzer LK, für Erinnerung)
+  showReminder: false,// „Nächste Abfuhr"-Overlay beim App-Start
   routeLoading: false,// verhindert Doppel-Fetch beim Rendern
   routeDate: null,    // angezeigtes ISO-Datum (Default = heute)
   stops: {},          // strukturID -> [places]  (Betriebe je Ortsteil, on demand)
@@ -705,6 +707,7 @@ function render(){
   else if(S.tab==='settings') renderSettings();
 
   renderSheet();
+  renderReminderOverlay();
 }
 
 function renderErfassen(){
@@ -739,7 +742,6 @@ function renderErfassen(){
   '<div class="screen">'+
     '<h1 class="t">Tonne<br>erfassen</h1>'+
     '<div class="sub">Foto → GPS → Firma (automatisch) → Tonnen prüfen → speichern.</div>'+
-    reminderBanner()+
     savedBanner+
     preBanner+
 
@@ -1055,6 +1057,20 @@ async function loadManifest(){
   catch(e){ /* offline / fehlt */ }
   if(!S.gemeinden) S.gemeinden=[];
 }
+// landkreisweiter Termin-Index (für die „Nächste Abfuhr"-Erinnerung ohne Gemeindewahl)
+async function loadTermineIndex(){
+  if(S.termineIndex) return;
+  try{ var r=await fetch('data/termine-index.json',{cache:'no-cache'}); if(r.ok) S.termineIndex=await r.json(); }
+  catch(e){ /* offline / fehlt */ }
+  if(!S.termineIndex) S.termineIndex={};
+}
+// Route einer Gemeinde laden und direkt auf ein Datum im Heute-Tab springen
+function gotoRoute(id,date){
+  S.tab='heute'; S.showReminder=false; stopGPSWatch();
+  if(String(S.gemeindeId)===String(id) && S.route){ S.routeDate=date; render(); return; }
+  S.route=null; S.gemeindeId=null;
+  loadRoute(id).then(function(){ S.routeDate=date; render(); });   // loadRoute setzt routeDate=null -> danach setzen
+}
 function pickDefaultGemeinde(){
   if(!S.gemeinden.length) return null;
   var saved=localStorage.getItem('rss_gemeinde');
@@ -1153,56 +1169,83 @@ function rhythmLabel(art){ if(!art) return ''; var s=String(art).toLowerCase();
   if(s.indexOf('14')>=0) return '14-täglich'; return ''; }
 
 // Ortsteile nach Basisnamen gruppieren + exakte Termin-Daten je Gebiet
-// (Fleestedt ost/west -> ein "Fleestedt"; rest[ISO]=art, pap[ISO]=true)
+// (Fleestedt ost/west -> ein "Fleestedt"; rest[ISO]=art). Nur Restmüll interessiert.
 function routeGroupsDated(){
   var g={};
   (S.route.ortsteile||[]).forEach(function(o){
     var base=o.name.split(' (')[0];
-    if(!g[base]) g[base]={ name:base, lat:o.lat, lng:o.lng, rest:{}, pap:{} };
+    if(!g[base]) g[base]={ name:base, lat:o.lat, lng:o.lng, rest:{} };
     if(g[base].lat==null && o.lat!=null){ g[base].lat=o.lat; g[base].lng=o.lng; }
     (o.restmuell_termine||[]).forEach(function(t){ if(t.datum){ var ex=g[base].rest[t.datum];
       if(!ex || /14/.test(t.art||'')) g[base].rest[t.datum]=t.art||'Restmüll'; } });  // 14-täglich hat Vorrang beim Label
-    (o.papier_termine||[]).forEach(function(t){ if(t.datum) g[base].pap[t.datum]=true; });
   });
   return Object.keys(g).map(function(k){ return g[k]; });
 }
 // kommende Abfuhrtage (ISO) ab heute, max n
 function upcomingDates(groups,n){
   var today=todayISO(), set={};
-  groups.forEach(function(g){
+  groups.forEach(function(g){                       // NUR Restmüll interessiert
     Object.keys(g.rest).forEach(function(d){ if(d>=today) set[d]=1; });
-    Object.keys(g.pap).forEach(function(d){ if(d>=today) set[d]=1; });
   });
   return Object.keys(set).sort().slice(0,n);
 }
 
-/* Erinnerungs-Banner beim Öffnen: nächste Abfuhrtage (heute/morgen) der aktiven
-   Gemeinde, damit man Restmüll nicht selbst suchen muss. Pro Tag wegklickbar. */
-function dismissReminder(){ localStorage.setItem('rss_reminder_dismissed', todayISO()); render(); }
-function reminderBanner(){
-  if(!S.route) return '';
-  if(localStorage.getItem('rss_reminder_dismissed')===todayISO()) return '';
-  var groups=routeGroupsDated();
-  var dates=upcomingDates(groups,4);
-  if(!dates.length) return '';
+/* „Nächste Abfuhr"-Overlay beim App-Start: leuchtet landkreisweit auf, welche
+   RESTMÜLL-Abfuhr heute/als Nächstes ansteht — ohne vorher eine Gemeinde zu wählen.
+   Gemeinde tippen -> lädt sie und springt in die Route. Wegklickbar (× / Hintergrund). */
+function dismissReminder(){ localStorage.setItem('rss_reminder_dismissed', todayISO()); S.showReminder=false; render(); }
+function reminderDateHead(iso){
+  var t=todayISO(); if(iso===t) return 'Heute';
+  var tm=new Date(); tm.setDate(tm.getDate()+1);
+  if(iso===isoOf(tm)) return 'Morgen';
+  return '';
+}
+// Inhalt (Datums-Abschnitte, nur Restmüll) – oder '' wenn nichts ansteht
+function reminderContent(){
+  var idx=S.termineIndex; if(!idx) return '';
   var today=todayISO();
-  var lines=dates.slice(0,2).map(function(iso){
-    var rest=groups.filter(function(g){return g.rest[iso];}).map(function(g){return g.name;});
-    var pap=groups.filter(function(g){return g.pap[iso];}).length;
-    var when=iso===today?'Heute':(iso===dates.find(function(d){return d>today;})?'Als Nächstes':'');
-    var restTxt=rest.length?(rest.slice(0,4).join(', ')+(rest.length>4?(' +'+(rest.length-4)):'')):'—';
-    return '<button data-act="remindday" data-v="'+iso+'" style="display:block;width:100%;text-align:left;background:transparent;border:0;border-top:1px solid rgba(255,255,255,.22);padding:9px 0;color:var(--paper);cursor:pointer">'+
-      '<b style="font-size:13px">'+(when?esc(when)+' · ':'')+esc(dateLabel(iso))+'</b>'+
-      '<div style="font-size:12px;color:#cfcfcf">Restmüll: '+esc(restTxt)+(pap?(' · Papier '+pap+' Geb.'):'')+'</div>'+
-    '</button>';
+  var dates=Object.keys(idx).filter(function(d){ return d>=today; }).sort();
+  if(!dates.length) return '';
+  var show=[];
+  if(idx[today] && idx[today].some(function(e){return e.r&&e.r.length;})) show.push(today);
+  for(var i=0;i<dates.length && show.length<2;i++){
+    if(dates[i]>today && idx[dates[i]].some(function(e){return e.r&&e.r.length;})){ show.push(dates[i]); break; }
+  }
+  if(!show.length) show=[dates[0]];
+  var sections=show.map(function(iso){
+    var entries=(idx[iso]||[]).filter(function(e){ return e.r && e.r.length; });   // NUR Restmüll
+    if(!entries.length) return '';
+    var head=reminderDateHead(iso);
+    var rows=entries.map(function(e){
+      var restTxt=e.r.slice(0,3).join(', ')+(e.r.length>3?(' +'+(e.r.length-3)):'');
+      return '<button data-act="remindgo" data-id="'+esc(e.id)+'" data-v="'+iso+'" '+
+        'style="display:block;width:100%;text-align:left;background:transparent;border:0;border-top:1px solid rgba(255,255,255,.18);padding:10px 0;color:var(--paper);cursor:pointer">'+
+        '<b style="font-size:14px">'+esc(e.name)+'</b> <span style="font-size:12px;color:#bbb">▸</span>'+
+        '<div style="font-size:12px;color:#cfcfcf">Restmüll: '+esc(restTxt)+'</div>'+
+      '</button>';
+    }).join('');
+    return '<div style="margin-top:8px"><div style="font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:#fff">'+
+      (head?esc(head)+' · ':'')+esc(dateLabel(iso))+'</div>'+rows+'</div>';
   }).join('');
-  return '<div style="border:2px solid var(--ink);background:var(--ink);color:var(--paper);padding:12px 14px;margin-bottom:14px">'+
-    '<div style="display:flex;justify-content:space-between;align-items:center">'+
-      '<div style="font-size:10px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:#bbb">Nächste Abfuhr · '+esc(S.route.gemeinde)+'</div>'+
-      '<button data-act="dismissreminder" style="background:var(--paper);color:var(--ink);font-size:13px;font-weight:800;padding:4px 9px;border:0;line-height:1">×</button>'+
-    '</div>'+ lines +
-    '<button data-act="remindday" data-v="'+dates[0]+'" style="margin-top:8px;background:var(--paper);color:var(--ink);font-size:10px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;padding:7px 10px;border:0">Zur Route ▸</button>'+
-  '</div>';
+  return sections.replace(/\s/g,'')?sections:'';
+}
+// Overlay ein-/ausblenden (ans <body> gehängt, unabhängig vom Tab)
+function renderReminderOverlay(){
+  var ex=document.getElementById('rmd');
+  if(!S.showReminder){ if(ex) ex.remove(); return; }
+  var inner=reminderContent();
+  if(!inner){ if(ex) ex.remove(); S.showReminder=false; return; }
+  var html='<div id="rmd" data-act="rmdbg" style="position:fixed;inset:0;z-index:60;background:rgba(0,0,0,.55);display:flex;align-items:flex-end">'+
+    '<div style="background:var(--ink);color:var(--paper);width:100%;max-height:82vh;overflow-y:auto;padding:18px 16px 26px">'+
+      '<div style="display:flex;justify-content:space-between;align-items:center">'+
+        '<div style="font-size:11px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:#bbb">Nächste Restmüll-Abfuhr · Landkreis Harburg</div>'+
+        '<button data-act="dismissreminder" style="background:var(--paper);color:var(--ink);font-size:16px;font-weight:800;padding:4px 11px;border:0;line-height:1">×</button>'+
+      '</div>'+
+      '<div style="font-size:12px;color:#cfcfcf;margin-top:4px">Tippe eine Gemeinde → direkt in die Route.</div>'+
+      inner+
+    '</div></div>';
+  if(ex) ex.remove();
+  document.body.insertAdjacentHTML('beforeend',html);
 }
 
 function renderHeute(){
@@ -1220,8 +1263,8 @@ function renderHeute(){
   var sel=S.routeDate;
   if(!sel || dates.indexOf(sel)<0) sel = (dates.indexOf(today)>=0?today:(dates[0]||today));
 
-  var due=groups.filter(function(g){ return g.rest[sel]||g.pap[sel]; });
-  due.sort(function(a,b){ return (b.rest[sel]?1:0)-(a.rest[sel]?1:0) || a.name.localeCompare(b.name); });
+  var due=groups.filter(function(g){ return g.rest[sel]; });      // NUR Restmüll
+  due.sort(function(a,b){ return a.name.localeCompare(b.name); });
 
   // Gemeinde-Auswahl (Dropdown)
   var gemSel = (S.gemeinden&&S.gemeinden.length>1) ?
@@ -1231,35 +1274,33 @@ function renderHeute(){
 
   // Datums-Leiste (nächste Abfuhrtage)
   var chips = dates.length ? ('<div class="bar">'+ dates.map(function(iso){
-    var n=groups.filter(function(g){return g.rest[iso]||g.pap[iso];}).length;
+    var n=groups.filter(function(g){return g.rest[iso];}).length;
     return '<button class="'+(iso===sel?'on':'')+'" data-act="day" data-v="'+iso+'">'+
       dateLabel(iso)+(iso===today?' •':'')+' · '+n+'</button>';
   }).join('')+'</div>') : '';
 
   var body;
   if(!due.length){
-    body='<div class="empty"><div class="big">Keine Abfuhr</div>'+
-      '<div class="sm">An diesem Datum steht in '+esc(S.route.gemeinde)+' nichts an. Anderes Datum oben wählen.</div></div>';
+    body='<div class="empty"><div class="big">Keine Restmüll-Abfuhr</div>'+
+      '<div class="sm">An diesem Datum steht in '+esc(S.route.gemeinde)+' kein Restmüll an. Anderes Datum oben wählen.</div></div>';
   } else {
     body=due.map(function(g){ return gebietCard(g,sel); }).join('');
   }
 
-  var rN=due.filter(function(g){return g.rest[sel];}).length;
-  var pN=due.filter(function(g){return g.pap[sel];}).length;
   var selLbl = sel===today ? ('heute · '+dateLabel(sel)) : dateLabel(sel);
 
   $app.innerHTML='<div class="screen">'+
     '<h1 class="t">Heute</h1>'+
     gemSel+
-    '<div class="sub">'+esc(S.route.gemeinde)+' · '+esc(selLbl)+' · '+rN+'× Restmüll · '+pN+'× Papier</div>'+
+    '<div class="sub">'+esc(S.route.gemeinde)+' · '+esc(selLbl)+' · '+due.length+' Gebiete mit Restmüll</div>'+
     chips+
-    '<div class="note" style="margin:0 0 12px">Exakte Abfuhrtermine (14-täglich/4-wöchentlich unterschieden, Feiertage bereits berücksichtigt). '+
+    '<div class="note" style="margin:0 0 12px">Nur Restmüll-Abfuhr (exakte Termine, 14-täglich/4-wöchentlich unterschieden, Feiertage berücksichtigt). '+
       'An diesen Tagen stehen die Tonnen draußen — hinfahren und per „Erfassen" aufnehmen.</div>'+
     body+'</div>';
 }
 
 function gebietCard(g,iso){
-  var restArt=g.rest[iso], pap=!!g.pap[iso];
+  var restArt=g.rest[iso];
   var rhy=rhythmLabel(restArt);
   var near = g.lat!=null ? S.leads.filter(function(l){ return l.lat!=null && haversine(l.lat,l.lng,g.lat,g.lng)<2.5; }).length : 0;
   var nav = g.lat!=null
@@ -1275,7 +1316,7 @@ function gebietCard(g,iso){
   return '<div style="border:1.5px solid var(--ink);margin-bottom:12px">'+
     '<div style="display:flex;justify-content:space-between;align-items:center;padding:12px 14px;border-bottom:1.5px solid var(--ink)">'+
       '<b style="font-size:16px;text-transform:uppercase">'+esc(g.name)+'</b>'+
-      '<span>'+(restArt?'<span class="tag hot">Restmüll</span> ':'')+(pap?'<span class="tag fill">Papier</span>':'')+'</span>'+
+      '<span><span class="tag hot">Restmüll</span></span>'+
     '</div>'+
     '<div style="padding:10px 14px;display:flex;align-items:center;gap:10px">'+
       '<span style="font-size:12px;font-weight:700;color:var(--muted);flex:1">'+
@@ -1581,8 +1622,8 @@ document.addEventListener('click',function(e){
     var plt=(S.stops[t.dataset.name]||[]).find(function(x){return x.place_id===t.dataset.pid;});
     if(gt&&plt) startStop(plt,{name:gt.name},'restmuell');
   }
-  else if(act==='dismissreminder'){ dismissReminder(); }
-  else if(act==='remindday'){ S.tab='heute'; S.routeDate=v; stopGPSWatch(); render(); }
+  else if(act==='dismissreminder'||(act==='rmdbg'&&e.target.id==='rmd')){ dismissReminder(); }
+  else if(act==='remindgo'){ gotoRoute(t.dataset.id, v); }
   else if(act==='filter'){ S.filter=v; render(); }
   else if(act==='sort'){ S.sort=v; render(); }
   else if(act==='open'){ S.modal=id; renderSheet(); }
@@ -1804,6 +1845,10 @@ async function boot(){
   try{ await openDB(); await loadLeads(); render(); }
   catch(e){ console.error(e); toast('Lokaler Speicher nicht verfügbar'); }
   startGPSWatch(S.draft);                 // Live-Tracking (Auto) + Auto-Firma beim ersten Fix
+  loadTermineIndex().then(function(){     // landkreisweite Restmüll-Erinnerung als Start-Overlay
+    if(localStorage.getItem('rss_reminder_dismissed')!==todayISO()) S.showReminder=true;
+    render();
+  });
   loadRoute().then(render);
   if(S.online){ processOutbox().then(function(){ syncAll(); }); }
   // regelmäßig Team-Leads nachladen (alle 90 s), ohne Tipp-Eingaben zu stören

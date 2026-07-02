@@ -1,11 +1,12 @@
 /* RSS Akquise — Service Worker: App-Shell-Cache für Offline-Start */
-var CACHE = 'rss-akquise-v29';
+var CACHE = 'rss-akquise-v30';
 var SHELL = [
   './',
   './index.html',
   './app.js',
   './manifest.json',
   './data/gemeinden.json',
+  './data/termine-index.json',
   './data/abfuhr-seevetal.json'
 ];
 
