@@ -1,2 +1,4 @@
 .DS_Store
 node_modules/
+scripts/__pycache__/
+scripts/scrape.log

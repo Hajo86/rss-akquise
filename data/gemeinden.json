@@ -1,0 +1,110 @@
+[
+  {
+    "id": "1001",
+    "name": "Buchholz",
+    "file": "abfuhr-buchholz.json",
+    "jahr": 2026,
+    "lat": 53.30873,
+    "lng": 9.85653,
+    "ortsteile": 7
+  },
+  {
+    "id": "1011",
+    "name": "Elbmarsch",
+    "file": "abfuhr-elbmarsch.json",
+    "jahr": 2026,
+    "lat": 53.39752,
+    "lng": 10.3359,
+    "ortsteile": 16
+  },
+  {
+    "id": "1028",
+    "name": "Hanstedt",
+    "file": "abfuhr-hanstedt.json",
+    "jahr": 2026,
+    "lat": 53.24313,
+    "lng": 9.99975,
+    "ortsteile": 21
+  },
+  {
+    "id": "1050",
+    "name": "Hollenstedt",
+    "file": "abfuhr-hollenstedt.json",
+    "jahr": 2026,
+    "lat": 53.37239,
+    "lng": 9.71652,
+    "ortsteile": 23
+  },
+  {
+    "id": "1074",
+    "name": "Jesteburg",
+    "file": "abfuhr-jesteburg.json",
+    "jahr": 2026,
+    "lat": 53.32027,
+    "lng": 9.94805,
+    "ortsteile": 6
+  },
+  {
+    "id": "1081",
+    "name": "Neu Wulmstorf",
+    "file": "abfuhr-neu-wulmstorf.json",
+    "jahr": 2026,
+    "lat": 53.42931,
+    "lng": 9.78888,
+    "ortsteile": 12
+  },
+  {
+    "id": "1094",
+    "name": "Rosengarten",
+    "file": "abfuhr-rosengarten.json",
+    "jahr": 2026,
+    "lat": 53.40004,
+    "lng": 9.90025,
+    "ortsteile": 13
+  },
+  {
+    "id": "1108",
+    "name": "Salzhausen",
+    "file": "abfuhr-salzhausen.json",
+    "jahr": 2026,
+    "lat": 53.24301,
+    "lng": 10.15151,
+    "ortsteile": 15
+  },
+  {
+    "id": "1124",
+    "name": "Seevetal",
+    "file": "abfuhr-seevetal.json",
+    "jahr": 2026,
+    "lat": 53.39745,
+    "lng": 10.01339,
+    "ortsteile": 26
+  },
+  {
+    "id": "1150",
+    "name": "Stelle",
+    "file": "abfuhr-stelle.json",
+    "jahr": 2026,
+    "lat": 53.38466,
+    "lng": 10.11856,
+    "ortsteile": 6
+  },
+  {
+    "id": "1157",
+    "name": "Tostedt",
+    "file": "abfuhr-tostedt.json",
+    "jahr": 2026,
+    "lat": 53.26049,
+    "lng": 9.73867,
+    "ortsteile": 29
+  },
+  {
+    "id": "1187",
+    "name": "Winsen",
+    "file": "abfuhr-winsen.json",
+    "jahr": 2026,
+    "lat": 53.35333,
+    "lng": 10.20434,
+    "ortsteile": 17
+  }
+]

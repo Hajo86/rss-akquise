@@ -82,9 +82,8 @@ var FRAKTION = {
 var VOLUMEN = [120,240,660,1100];
 var STATUS = ['neu','kontaktiert','angebot','gewonnen','verloren'];
 var STATUS_LBL = { neu:'Neu', kontaktiert:'Kontakt', angebot:'Angebot', gewonnen:'Gewonnen', verloren:'Verloren' };
-var APP_VERSION = 'v27 · Firma live · GPS-Tracking · Lead voll editierbar';
+var APP_VERSION = 'v28 · Abfuhrkalender ganzer Landkreis · datumsgenau';
 var WD = ['Sonntag','Montag','Dienstag','Mittwoch','Donnerstag','Freitag','Samstag'];
-var WD_WORK = ['Montag','Dienstag','Mittwoch','Donnerstag','Freitag'];
 // Places-Typen, die fast nie Gewerbekunden mit Tonne sind -> aus Route ausblenden
 var STOP_EXCLUDE = ['bus_stop','transit_station','locality','political','park','school',
   'primary_school','secondary_school','place_of_worship','church','cemetery','tourist_attraction',
@@ -102,8 +101,11 @@ var S = {
   online: navigator.onLine,
   keys: loadKeys(),
   map: null,
-  route: null,        // geladene Abfuhr-/Routendaten (Gemeinde + Ortsteile)
-  routeDay: null,     // angezeigter Wochentag (Default = heute)
+  route: null,        // geladene Abfuhr-/Routendaten der AKTIVEN Gemeinde
+  gemeinden: null,    // Manifest data/gemeinden.json (alle Kommunen)
+  gemeindeId: null,   // aktuell geladene Gemeinde
+  routeLoading: false,// verhindert Doppel-Fetch beim Rendern
+  routeDate: null,    // angezeigtes ISO-Datum (Default = heute)
   stops: {},          // strukturID -> [places]  (Betriebe je Ortsteil, on demand)
   stopsLoading: {},   // strukturID -> bool
   lastSaved: null,    // {id,score,hot} -> Bestätigungsbanner nach dem Speichern
@@ -998,13 +1000,47 @@ function initMap(){
   if(pts.length>1) map.fitBounds(bounds);
 }
 
-/* ---------- Route / Heute ---------- */
-async function loadRoute(){
-  if(S.route) return;
+/* ---------- Route / Heute ----------
+   Kalender für den GANZEN Landkreis Harburg: pro Gemeinde eine JSON mit exakten
+   Terminen (restmuell_termine[].datum + art). Manifest data/gemeinden.json listet sie.
+   Es ist immer genau EINE Gemeinde aktiv (S.route); Auswahl im Heute-Header. */
+async function loadManifest(){
+  if(S.gemeinden) return;
+  try{ var r=await fetch('data/gemeinden.json',{cache:'no-cache'}); if(r.ok) S.gemeinden=await r.json(); }
+  catch(e){ /* offline / fehlt */ }
+  if(!S.gemeinden) S.gemeinden=[];
+}
+function pickDefaultGemeinde(){
+  if(!S.gemeinden.length) return null;
+  var saved=localStorage.getItem('rss_gemeinde');
+  if(saved && S.gemeinden.some(function(g){return String(g.id)===saved;})) return saved;
+  var d=S.draft;                                   // sonst: nächste Gemeinde per GPS
+  if(d && d.lat!=null){
+    var best=null,bd=1e9;
+    S.gemeinden.forEach(function(g){ if(g.lat!=null){ var dist=haversine(d.lat,d.lng,g.lat,g.lng); if(dist<bd){bd=dist;best=g;} } });
+    if(best) return best.id;
+  }
+  var see=S.gemeinden.find(function(g){ return /seevetal/i.test(g.name); });
+  return see?see.id:S.gemeinden[0].id;             // Fallback Seevetal
+}
+async function loadRoute(id){
+  if(S.routeLoading) return;
+  S.routeLoading=true;
   try{
-    var r=await fetch('data/abfuhr-seevetal.json',{cache:'no-cache'});
-    if(r.ok) S.route=await r.json();
+    await loadManifest();
+    if(!S.gemeinden.length) return;
+    if(id==null) id=pickDefaultGemeinde();
+    var entry=S.gemeinden.find(function(g){ return String(g.id)===String(id); })||S.gemeinden[0];
+    if(S.route && String(S.gemeindeId)===String(entry.id)) return;   // schon geladen
+    var r=await fetch('data/'+entry.file,{cache:'no-cache'});
+    if(r.ok){ S.route=await r.json(); S.gemeindeId=entry.id; S.stops={}; S.stopsLoading={}; S.routeDate=null;
+              localStorage.setItem('rss_gemeinde',String(entry.id)); }
   }catch(e){ /* offline / fehlt */ }
+  finally{ S.routeLoading=false; }
+}
+function switchGemeinde(id){
+  S.route=null; S.gemeindeId=null; S.routeDate=null;
+  loadRoute(id).then(render);
 }
 function leadHasPlace(pid){ return S.leads.some(function(l){ return pid && l.place_id===pid; }); }
 
@@ -1040,64 +1076,98 @@ function haversine(a,b,c,d){
     s=Math.sin(dx/2)*Math.sin(dx/2)+Math.cos(a*Math.PI/180)*Math.cos(c*Math.PI/180)*Math.sin(dy/2)*Math.sin(dy/2);
   return 2*R*Math.asin(Math.sqrt(s));
 }
-// Ortsteile nach Basisnamen gruppieren (Fleestedt ost/west -> ein "Fleestedt")
-function routeGroups(){
+/* ---- Datums-Helfer (lokale Zeit, nicht UTC) ---- */
+function isoOf(d){ var m=d.getMonth()+1, day=d.getDate();
+  return d.getFullYear()+'-'+(m<10?'0':'')+m+'-'+(day<10?'0':'')+day; }
+function todayISO(){ return isoOf(new Date()); }
+function dateLabel(iso){ var p=iso.split('-'), d=new Date(+p[0],+p[1]-1,+p[2]);
+  return WD[d.getDay()].slice(0,2)+' '+(+p[2])+'.'+(+p[1])+'.'; }
+// kurzer Rhythmus-Text aus dem iCal-"art" ("Hausmüll 14-täglich" -> "14-täglich")
+function rhythmLabel(art){ if(!art) return ''; var s=String(art).toLowerCase();
+  if(s.indexOf('4-w')>=0||s.indexOf('4w')>=0||s.indexOf('vier')>=0) return '4-wöchentlich';
+  if(s.indexOf('woch')>=0&&s.indexOf('14')<0) return 'wöchentlich';
+  if(s.indexOf('14')>=0) return '14-täglich'; return ''; }
+
+// Ortsteile nach Basisnamen gruppieren + exakte Termin-Daten je Gebiet
+// (Fleestedt ost/west -> ein "Fleestedt"; rest[ISO]=art, pap[ISO]=true)
+function routeGroupsDated(){
   var g={};
-  S.route.ortsteile.forEach(function(o){
+  (S.route.ortsteile||[]).forEach(function(o){
     var base=o.name.split(' (')[0];
-    if(!g[base]) g[base]={ name:base, lat:o.lat, lng:o.lng, restDays:{}, papDays:{} };
+    if(!g[base]) g[base]={ name:base, lat:o.lat, lng:o.lng, rest:{}, pap:{} };
     if(g[base].lat==null && o.lat!=null){ g[base].lat=o.lat; g[base].lng=o.lng; }
-    if(o.restmuell_wochentag) g[base].restDays[o.restmuell_wochentag]=true;
-    if(o.papier_wochentag)    g[base].papDays[o.papier_wochentag]=true;
+    (o.restmuell_termine||[]).forEach(function(t){ if(t.datum){ var ex=g[base].rest[t.datum];
+      if(!ex || /14/.test(t.art||'')) g[base].rest[t.datum]=t.art||'Restmüll'; } });  // 14-täglich hat Vorrang beim Label
+    (o.papier_termine||[]).forEach(function(t){ if(t.datum) g[base].pap[t.datum]=true; });
   });
   return Object.keys(g).map(function(k){ return g[k]; });
 }
+// kommende Abfuhrtage (ISO) ab heute, max n
+function upcomingDates(groups,n){
+  var today=todayISO(), set={};
+  groups.forEach(function(g){
+    Object.keys(g.rest).forEach(function(d){ if(d>=today) set[d]=1; });
+    Object.keys(g.pap).forEach(function(d){ if(d>=today) set[d]=1; });
+  });
+  return Object.keys(set).sort().slice(0,n);
+}
 
 function renderHeute(){
-  var today=WD[new Date().getDay()];
-  var day=S.routeDay||today;
-
   if(!S.route){
     $app.innerHTML='<div class="screen"><h1 class="t">Heute</h1>'+
-      '<div class="sub">Routendaten werden geladen…</div>'+
+      '<div class="sub">Abfuhrkalender wird geladen…</div>'+
       '<div class="empty"><div class="big">Keine Routendaten</div>'+
-      '<div class="sm">Für Seevetal sollten sie automatisch laden. Bei Offline-Erststart einmal online öffnen.</div></div></div>';
+      '<div class="sm">Beim Offline-Erststart die App einmal online öffnen, damit der Kalender lädt.</div></div></div>';
     loadRoute().then(render); return;
   }
 
-  var groups=routeGroups();
-  var due=groups.filter(function(g){ return g.restDays[day]||g.papDays[day]; });
-  due.sort(function(a,b){ return (b.restDays[day]?1:0)-(a.restDays[day]?1:0) || a.name.localeCompare(b.name); });
+  var groups=routeGroupsDated();
+  var today=todayISO();
+  var dates=upcomingDates(groups,12);
+  var sel=S.routeDate;
+  if(!sel || dates.indexOf(sel)<0) sel = (dates.indexOf(today)>=0?today:(dates[0]||today));
 
-  var chips='<div class="bar">'+ WD_WORK.map(function(wd){
-    var n=groups.filter(function(g){return g.restDays[wd]||g.papDays[wd];}).length;
-    return '<button class="'+(day===wd?'on':'')+'" data-act="day" data-v="'+wd+'">'+
-      wd.slice(0,2)+(wd===today?' •':'')+' '+n+'</button>';
-  }).join('')+'</div>';
+  var due=groups.filter(function(g){ return g.rest[sel]||g.pap[sel]; });
+  due.sort(function(a,b){ return (b.rest[sel]?1:0)-(a.rest[sel]?1:0) || a.name.localeCompare(b.name); });
+
+  // Gemeinde-Auswahl (Dropdown)
+  var gemSel = (S.gemeinden&&S.gemeinden.length>1) ?
+    ('<select class="txt" data-act="gemeinde" style="margin-bottom:10px;font-weight:800">'+
+      S.gemeinden.map(function(g){ return '<option value="'+g.id+'"'+(String(g.id)===String(S.gemeindeId)?' selected':'')+'>'+esc(g.name)+'</option>'; }).join('')+
+    '</select>') : '';
+
+  // Datums-Leiste (nächste Abfuhrtage)
+  var chips = dates.length ? ('<div class="bar">'+ dates.map(function(iso){
+    var n=groups.filter(function(g){return g.rest[iso]||g.pap[iso];}).length;
+    return '<button class="'+(iso===sel?'on':'')+'" data-act="day" data-v="'+iso+'">'+
+      dateLabel(iso)+(iso===today?' •':'')+' · '+n+'</button>';
+  }).join('')+'</div>') : '';
 
   var body;
   if(!due.length){
-    body='<div class="empty"><div class="big">'+esc(day)+': keine Abfuhr</div>'+
-      '<div class="sm">Wähle oben einen Tag mit Restmüll-/Papier-Abfuhr.</div></div>';
+    body='<div class="empty"><div class="big">Keine Abfuhr</div>'+
+      '<div class="sm">An diesem Datum steht in '+esc(S.route.gemeinde)+' nichts an. Anderes Datum oben wählen.</div></div>';
   } else {
-    body=due.map(function(g){ return gebietCard(g,day); }).join('');
+    body=due.map(function(g){ return gebietCard(g,sel); }).join('');
   }
 
-  var rN=due.filter(function(g){return g.restDays[day];}).length;
-  var pN=due.filter(function(g){return g.papDays[day];}).length;
+  var rN=due.filter(function(g){return g.rest[sel];}).length;
+  var pN=due.filter(function(g){return g.pap[sel];}).length;
+  var selLbl = sel===today ? ('heute · '+dateLabel(sel)) : dateLabel(sel);
 
   $app.innerHTML='<div class="screen">'+
     '<h1 class="t">Heute</h1>'+
-    '<div class="sub">'+esc(S.route.gemeinde)+' · '+esc(day)+(day===today?' (heute)':'')+
-      ' · '+rN+'× Restmüll · '+pN+'× Papier</div>'+
+    gemSel+
+    '<div class="sub">'+esc(S.route.gemeinde)+' · '+esc(selLbl)+' · '+rN+'× Restmüll · '+pN+'× Papier</div>'+
     chips+
-    '<div class="note" style="margin:0 0 12px">An diesen Tagen stehen die Tonnen draußen — hinfahren und die Gewerbe-Tonnen einfach per „Erfassen" aufnehmen. '+
-      '<b>An Feiertagen verschiebt sich die Abfuhr um 1–2 Tage.</b></div>'+
+    '<div class="note" style="margin:0 0 12px">Exakte Abfuhrtermine (14-täglich/4-wöchentlich unterschieden, Feiertage bereits berücksichtigt). '+
+      'An diesen Tagen stehen die Tonnen draußen — hinfahren und per „Erfassen" aufnehmen.</div>'+
     body+'</div>';
 }
 
-function gebietCard(g,day){
-  var rest=!!g.restDays[day], pap=!!g.papDays[day];
+function gebietCard(g,iso){
+  var restArt=g.rest[iso], pap=!!g.pap[iso];
+  var rhy=rhythmLabel(restArt);
   var near = g.lat!=null ? S.leads.filter(function(l){ return l.lat!=null && haversine(l.lat,l.lng,g.lat,g.lng)<2.5; }).length : 0;
   var nav = g.lat!=null
     ? '<a class="cta ghost" style="margin:0;text-decoration:none;flex:none;padding:12px 16px" href="https://www.google.com/maps/dir/?api=1&destination='+g.lat+','+g.lng+'" target="_blank">Navigieren ▸</a>'
@@ -1105,10 +1175,11 @@ function gebietCard(g,day){
   return '<div style="border:1.5px solid var(--ink);margin-bottom:12px">'+
     '<div style="display:flex;justify-content:space-between;align-items:center;padding:12px 14px;border-bottom:1.5px solid var(--ink)">'+
       '<b style="font-size:16px;text-transform:uppercase">'+esc(g.name)+'</b>'+
-      '<span>'+(rest?'<span class="tag hot">Restmüll</span> ':'')+(pap?'<span class="tag fill">Papier</span>':'')+'</span>'+
+      '<span>'+(restArt?'<span class="tag hot">Restmüll</span> ':'')+(pap?'<span class="tag fill">Papier</span>':'')+'</span>'+
     '</div>'+
     '<div style="padding:10px 14px;display:flex;align-items:center;gap:10px">'+
-      '<span style="font-size:12px;font-weight:700;color:var(--muted);flex:1">'+near+' Lead'+(near===1?'':'s')+' hier erfasst</span>'+
+      '<span style="font-size:12px;font-weight:700;color:var(--muted);flex:1">'+
+        near+' Lead'+(near===1?'':'s')+' hier'+(rhy?(' · Restmüll '+esc(rhy)):'')+'</span>'+
       nav+
     '</div></div>';
 }
@@ -1384,7 +1455,7 @@ document.addEventListener('click',function(e){
   else if(act==='dismisslast'){ S.lastSaved=null; render(); }
   else if(act==='save'){ saveDraft(); }
 
-  else if(act==='day'){ S.routeDay=v; render(); }
+  else if(act==='day'){ S.routeDate=v; render(); }
   else if(act==='loadstops'){ var o=S.route.ortsteile.find(function(x){return x.strukturID===t.dataset.sid;}); if(o) loadStops(o); }
   else if(act==='stop'){
     var os=S.route.ortsteile.find(function(x){return x.strukturID===t.dataset.sid;});
@@ -1459,6 +1530,7 @@ document.addEventListener('input',function(e){
 // Photo
 document.addEventListener('change',async function(e){
   var t=e.target;
+  if(t.dataset.act==='gemeinde'){ switchGemeinde(t.value); return; }
   if(t.dataset.act==='photo' && t.files && t.files[0]){
     S.lastSaved=null;
     toast('Foto wird verarbeitet…');

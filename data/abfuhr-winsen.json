@@ -1,0 +1,4693 @@
+{
+  "gemeinde_id": "1187",
+  "gemeinde": "Winsen",
+  "jahr": 2026,
+  "ortsteile": [
+    {
+      "name": "Bahlburg",
+      "strukturID": "1189",
+      "gebietID": "900000022",
+      "lat": 53.302717,
+      "lng": 10.182772,
+      "restmuell_wochentag": "Freitag",
+      "restmuell_termine": [
+        {
+          "datum": "2026-01-03",
+          "wochentag": "Samstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-01-16",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-01-16",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-01-30",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-02-13",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-02-13",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-02-27",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-03-13",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-03-13",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-03-27",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-04-11",
+          "wochentag": "Samstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-04-11",
+          "wochentag": "Samstag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-04-24",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-05-08",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-05-08",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-05-22",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-06-05",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-06-05",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-06-19",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-07-03",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-07-03",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-07-17",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-07-31",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-07-31",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-08-14",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-08-28",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-08-28",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-09-11",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-09-25",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-09-25",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-10-09",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-10-23",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-10-23",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-11-06",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-11-20",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-11-20",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-12-04",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-12-18",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-12-18",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 4-wöchentlich"
+        }
+      ],
+      "papier_wochentag": "Mittwoch",
+      "papier_termine": [
+        {
+          "datum": "2026-01-21",
+          "wochentag": "Mittwoch",
+          "art": "Altpapier"
+        },
+        {
+          "datum": "2026-02-18",
+          "wochentag": "Mittwoch",
+          "art": "Altpapier"
+        },
+        {
+          "datum": "2026-03-18",
+          "wochentag": "Mittwoch",
+          "art": "Altpapier"
+        },
+        {
+          "datum": "2026-04-15",
+          "wochentag": "Mittwoch",
+          "art": "Altpapier"
+        },
+        {
+          "datum": "2026-05-13",
+          "wochentag": "Mittwoch",
+          "art": "Altpapier"
+        },
+        {
+          "datum": "2026-06-10",
+          "wochentag": "Mittwoch",
+          "art": "Altpapier"
+        },
+        {
+          "datum": "2026-07-08",
+          "wochentag": "Mittwoch",
+          "art": "Altpapier"
+        },
+        {
+          "datum": "2026-08-05",
+          "wochentag": "Mittwoch",
+          "art": "Altpapier"
+        },
+        {
+          "datum": "2026-09-02",
+          "wochentag": "Mittwoch",
+          "art": "Altpapier"
+        },
+        {
+          "datum": "2026-09-30",
+          "wochentag": "Mittwoch",
+          "art": "Altpapier"
+        },
+        {
+          "datum": "2026-10-28",
+          "wochentag": "Mittwoch",
+          "art": "Altpapier"
+        },
+        {
+          "datum": "2026-11-25",
+          "wochentag": "Mittwoch",
+          "art": "Altpapier"
+        },
+        {
+          "datum": "2026-12-22",
+          "wochentag": "Dienstag",
+          "art": "Altpapier"
+        }
+      ]
+    },
+    {
+      "name": "Borstel (ohne Gewerbepark Winsen-Ost",
+      "strukturID": "1191",
+      "gebietID": "900000016",
+      "lat": null,
+      "lng": null,
+      "restmuell_wochentag": "Donnerstag",
+      "restmuell_termine": [
+        {
+          "datum": "2026-01-02",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-01-15",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-01-15",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-01-29",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-02-12",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-02-12",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-02-26",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-03-12",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-03-12",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-03-26",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-04-10",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-04-10",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-04-23",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-05-07",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-05-07",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-05-21",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-06-04",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-06-04",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-06-18",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-07-02",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-07-02",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-07-16",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-07-30",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-07-30",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-08-13",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-08-27",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-08-27",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-09-10",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-09-24",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-09-24",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-10-08",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-10-22",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-10-22",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-11-05",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-11-19",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-11-19",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-12-03",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-12-17",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-12-17",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-12-31",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        }
+      ],
+      "papier_wochentag": "Dienstag",
+      "papier_termine": [
+        {
+          "datum": "2026-01-06",
+          "wochentag": "Dienstag",
+          "art": "Altpapier"
+        },
+        {
+          "datum": "2026-02-03",
+          "wochentag": "Dienstag",
+          "art": "Altpapier"
+        },
+        {
+          "datum": "2026-03-03",
+          "wochentag": "Dienstag",
+          "art": "Altpapier"
+        },
+        {
+          "datum": "2026-03-30",
+          "wochentag": "Montag",
+          "art": "Altpapier"
+        },
+        {
+          "datum": "2026-04-28",
+          "wochentag": "Dienstag",
+          "art": "Altpapier"
+        },
+        {
+          "datum": "2026-05-27",
+          "wochentag": "Mittwoch",
+          "art": "Altpapier"
+        },
+        {
+          "datum": "2026-06-23",
+          "wochentag": "Dienstag",
+          "art": "Altpapier"
+        },
+        {
+          "datum": "2026-07-21",
+          "wochentag": "Dienstag",
+          "art": "Altpapier"
+        },
+        {
+          "datum": "2026-08-18",
+          "wochentag": "Dienstag",
+          "art": "Altpapier"
+        },
+        {
+          "datum": "2026-09-15",
+          "wochentag": "Dienstag",
+          "art": "Altpapier"
+        },
+        {
+          "datum": "2026-10-13",
+          "wochentag": "Dienstag",
+          "art": "Altpapier"
+        },
+        {
+          "datum": "2026-11-10",
+          "wochentag": "Dienstag",
+          "art": "Altpapier"
+        },
+        {
+          "datum": "2026-12-08",
+          "wochentag": "Dienstag",
+          "art": "Altpapier"
+        }
+      ]
+    },
+    {
+      "name": "Gehrden",
+      "strukturID": "1192",
+      "gebietID": "900000017",
+      "lat": 53.370195,
+      "lng": 10.155137,
+      "restmuell_wochentag": "Freitag",
+      "restmuell_termine": [
+        {
+          "datum": "2026-01-09",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-01-23",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-01-23",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-02-06",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-02-20",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-02-20",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-03-06",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-03-20",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-03-20",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-04-02",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-04-17",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-04-17",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-05-02",
+          "wochentag": "Samstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-05-16",
+          "wochentag": "Samstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-05-16",
+          "wochentag": "Samstag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-05-30",
+          "wochentag": "Samstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-06-12",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-06-12",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-06-26",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-07-10",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-07-10",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-07-24",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-08-07",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-08-07",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-08-21",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-09-04",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-09-04",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-09-18",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-10-02",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-10-02",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-10-16",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-10-30",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-10-30",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-11-13",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-11-27",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-11-27",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-12-11",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-12-24",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-12-24",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 4-wöchentlich"
+        }
+      ],
+      "papier_wochentag": "Donnerstag",
+      "papier_termine": [
+        {
+          "datum": "2026-01-08",
+          "wochentag": "Donnerstag",
+          "art": "Altpapier"
+        },
+        {
+          "datum": "2026-02-05",
+          "wochentag": "Donnerstag",
+          "art": "Altpapier"
+        },
+        {
+          "datum": "2026-03-05",
+          "wochentag": "Donnerstag",
+          "art": "Altpapier"
+        },
+        {
+          "datum": "2026-04-01",
+          "wochentag": "Mittwoch",
+          "art": "Altpapier"
+        },
+        {
+          "datum": "2026-04-30",
+          "wochentag": "Donnerstag",
+          "art": "Altpapier"
+        },
+        {
+          "datum": "2026-05-29",
+          "wochentag": "Freitag",
+          "art": "Altpapier"
+        },
+        {
+          "datum": "2026-06-25",
+          "wochentag": "Donnerstag",
+          "art": "Altpapier"
+        },
+        {
+          "datum": "2026-07-23",
+          "wochentag": "Donnerstag",
+          "art": "Altpapier"
+        },
+        {
+          "datum": "2026-08-20",
+          "wochentag": "Donnerstag",
+          "art": "Altpapier"
+        },
+        {
+          "datum": "2026-09-17",
+          "wochentag": "Donnerstag",
+          "art": "Altpapier"
+        },
+        {
+          "datum": "2026-10-15",
+          "wochentag": "Donnerstag",
+          "art": "Altpapier"
+        },
+        {
+          "datum": "2026-11-12",
+          "wochentag": "Donnerstag",
+          "art": "Altpapier"
+        },
+        {
+          "datum": "2026-12-10",
+          "wochentag": "Donnerstag",
+          "art": "Altpapier"
+        }
+      ]
+    },
+    {
+      "name": "Gewerbepark Winsen-Ost - Max-Planck-Str., Werner-Forsmann-Str., Robert-Koch-Str., Karl-Ferdinand-Braun-Str., Otto-Hahn-Str.)",
+      "strukturID": "1190",
+      "gebietID": "900000027",
+      "lat": null,
+      "lng": null,
+      "restmuell_wochentag": "Donnerstag",
+      "restmuell_termine": [
+        {
+          "datum": "2026-01-02",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-01-15",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-01-15",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-01-29",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-02-12",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-02-12",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-02-26",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-03-12",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-03-12",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-03-26",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-04-10",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-04-10",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-04-23",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-05-07",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-05-07",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-05-21",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-06-04",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-06-04",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-06-18",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-07-02",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-07-02",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-07-16",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-07-30",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-07-30",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-08-13",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-08-27",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-08-27",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-09-10",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-09-24",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-09-24",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-10-08",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-10-22",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-10-22",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-11-05",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-11-19",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-11-19",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-12-03",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-12-17",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-12-17",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-12-31",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        }
+      ],
+      "papier_wochentag": "Dienstag",
+      "papier_termine": [
+        {
+          "datum": "2026-01-06",
+          "wochentag": "Dienstag",
+          "art": "Altpapier"
+        },
+        {
+          "datum": "2026-02-03",
+          "wochentag": "Dienstag",
+          "art": "Altpapier"
+        },
+        {
+          "datum": "2026-03-03",
+          "wochentag": "Dienstag",
+          "art": "Altpapier"
+        },
+        {
+          "datum": "2026-03-30",
+          "wochentag": "Montag",
+          "art": "Altpapier"
+        },
+        {
+          "datum": "2026-04-28",
+          "wochentag": "Dienstag",
+          "art": "Altpapier"
+        },
+        {
+          "datum": "2026-05-27",
+          "wochentag": "Mittwoch",
+          "art": "Altpapier"
+        },
+        {
+          "datum": "2026-06-23",
+          "wochentag": "Dienstag",
+          "art": "Altpapier"
+        },
+        {
+          "datum": "2026-07-21",
+          "wochentag": "Dienstag",
+          "art": "Altpapier"
+        },
+        {
+          "datum": "2026-08-18",
+          "wochentag": "Dienstag",
+          "art": "Altpapier"
+        },
+        {
+          "datum": "2026-09-15",
+          "wochentag": "Dienstag",
+          "art": "Altpapier"
+        },
+        {
+          "datum": "2026-10-13",
+          "wochentag": "Dienstag",
+          "art": "Altpapier"
+        },
+        {
+          "datum": "2026-11-10",
+          "wochentag": "Dienstag",
+          "art": "Altpapier"
+        },
+        {
+          "datum": "2026-12-08",
+          "wochentag": "Dienstag",
+          "art": "Altpapier"
+        }
+      ]
+    },
+    {
+      "name": "Grevelau",
+      "strukturID": "1203",
+      "gebietID": "900000028",
+      "lat": 53.356962,
+      "lng": 10.184347,
+      "restmuell_wochentag": "Freitag",
+      "restmuell_termine": [
+        {
+          "datum": "2026-01-03",
+          "wochentag": "Samstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-01-16",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-01-16",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-01-30",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-02-13",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-02-13",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-02-27",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-03-13",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-03-13",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-03-27",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-04-11",
+          "wochentag": "Samstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-04-11",
+          "wochentag": "Samstag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-04-24",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-05-08",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-05-08",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-05-22",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-06-05",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-06-05",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-06-19",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-07-03",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-07-03",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-07-17",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-07-31",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-07-31",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-08-14",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-08-28",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-08-28",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-09-11",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-09-25",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-09-25",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-10-09",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-10-23",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-10-23",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-11-06",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-11-20",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-11-20",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-12-04",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-12-18",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-12-18",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 4-wöchentlich"
+        }
+      ],
+      "papier_wochentag": "Dienstag",
+      "papier_termine": [
+        {
+          "datum": "2026-01-06",
+          "wochentag": "Dienstag",
+          "art": "Altpapier"
+        },
+        {
+          "datum": "2026-02-03",
+          "wochentag": "Dienstag",
+          "art": "Altpapier"
+        },
+        {
+          "datum": "2026-03-03",
+          "wochentag": "Dienstag",
+          "art": "Altpapier"
+        },
+        {
+          "datum": "2026-03-30",
+          "wochentag": "Montag",
+          "art": "Altpapier"
+        },
+        {
+          "datum": "2026-04-28",
+          "wochentag": "Dienstag",
+          "art": "Altpapier"
+        },
+        {
+          "datum": "2026-05-27",
+          "wochentag": "Mittwoch",
+          "art": "Altpapier"
+        },
+        {
+          "datum": "2026-06-23",
+          "wochentag": "Dienstag",
+          "art": "Altpapier"
+        },
+        {
+          "datum": "2026-07-21",
+          "wochentag": "Dienstag",
+          "art": "Altpapier"
+        },
+        {
+          "datum": "2026-08-18",
+          "wochentag": "Dienstag",
+          "art": "Altpapier"
+        },
+        {
+          "datum": "2026-09-15",
+          "wochentag": "Dienstag",
+          "art": "Altpapier"
+        },
+        {
+          "datum": "2026-10-13",
+          "wochentag": "Dienstag",
+          "art": "Altpapier"
+        },
+        {
+          "datum": "2026-11-10",
+          "wochentag": "Dienstag",
+          "art": "Altpapier"
+        },
+        {
+          "datum": "2026-12-08",
+          "wochentag": "Dienstag",
+          "art": "Altpapier"
+        }
+      ]
+    },
+    {
+      "name": "Hoopte",
+      "strukturID": "1193",
+      "gebietID": "900000012",
+      "lat": 53.394848,
+      "lng": 10.170727,
+      "restmuell_wochentag": "Freitag",
+      "restmuell_termine": [
+        {
+          "datum": "2026-01-09",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-01-23",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-01-23",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-02-06",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-02-20",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-02-20",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-03-06",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-03-20",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-03-20",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-04-02",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-04-17",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-04-17",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-05-02",
+          "wochentag": "Samstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-05-16",
+          "wochentag": "Samstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-05-16",
+          "wochentag": "Samstag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-05-30",
+          "wochentag": "Samstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-06-12",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-06-12",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-06-26",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-07-10",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-07-10",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-07-24",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-08-07",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-08-07",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-08-21",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-09-04",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-09-04",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-09-18",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-10-02",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-10-02",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-10-16",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-10-30",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-10-30",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-11-13",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-11-27",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-11-27",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-12-11",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-12-24",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-12-24",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 4-wöchentlich"
+        }
+      ],
+      "papier_wochentag": "Mittwoch",
+      "papier_termine": [
+        {
+          "datum": "2026-01-07",
+          "wochentag": "Mittwoch",
+          "art": "Altpapier"
+        },
+        {
+          "datum": "2026-02-04",
+          "wochentag": "Mittwoch",
+          "art": "Altpapier"
+        },
+        {
+          "datum": "2026-03-04",
+          "wochentag": "Mittwoch",
+          "art": "Altpapier"
+        },
+        {
+          "datum": "2026-03-31",
+          "wochentag": "Dienstag",
+          "art": "Altpapier"
+        },
+        {
+          "datum": "2026-04-29",
+          "wochentag": "Mittwoch",
+          "art": "Altpapier"
+        },
+        {
+          "datum": "2026-05-28",
+          "wochentag": "Donnerstag",
+          "art": "Altpapier"
+        },
+        {
+          "datum": "2026-06-24",
+          "wochentag": "Mittwoch",
+          "art": "Altpapier"
+        },
+        {
+          "datum": "2026-07-22",
+          "wochentag": "Mittwoch",
+          "art": "Altpapier"
+        },
+        {
+          "datum": "2026-08-19",
+          "wochentag": "Mittwoch",
+          "art": "Altpapier"
+        },
+        {
+          "datum": "2026-09-16",
+          "wochentag": "Mittwoch",
+          "art": "Altpapier"
+        },
+        {
+          "datum": "2026-10-14",
+          "wochentag": "Mittwoch",
+          "art": "Altpapier"
+        },
+        {
+          "datum": "2026-11-11",
+          "wochentag": "Mittwoch",
+          "art": "Altpapier"
+        },
+        {
+          "datum": "2026-12-09",
+          "wochentag": "Mittwoch",
+          "art": "Altpapier"
+        }
+      ]
+    },
+    {
+      "name": "Laßrönne",
+      "strukturID": "1194",
+      "gebietID": "900000013",
+      "lat": 53.389036,
+      "lng": 10.228337,
+      "restmuell_wochentag": "Donnerstag",
+      "restmuell_termine": [
+        {
+          "datum": "2026-01-02",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-01-15",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-01-15",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-01-29",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-02-12",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-02-12",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-02-26",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-03-12",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-03-12",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-03-26",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-04-10",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-04-10",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-04-23",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-05-07",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-05-07",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-05-21",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-06-04",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-06-04",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-06-18",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-07-02",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-07-02",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-07-16",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-07-30",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-07-30",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-08-13",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-08-27",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-08-27",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-09-10",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-09-24",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-09-24",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-10-08",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-10-22",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-10-22",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-11-05",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-11-19",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-11-19",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-12-03",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-12-17",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-12-17",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-12-31",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        }
+      ],
+      "papier_wochentag": "Montag",
+      "papier_termine": [
+        {
+          "datum": "2026-01-05",
+          "wochentag": "Montag",
+          "art": "Altpapier"
+        },
+        {
+          "datum": "2026-02-02",
+          "wochentag": "Montag",
+          "art": "Altpapier"
+        },
+        {
+          "datum": "2026-03-02",
+          "wochentag": "Montag",
+          "art": "Altpapier"
+        },
+        {
+          "datum": "2026-03-28",
+          "wochentag": "Samstag",
+          "art": "Altpapier"
+        },
+        {
+          "datum": "2026-04-27",
+          "wochentag": "Montag",
+          "art": "Altpapier"
+        },
+        {
+          "datum": "2026-05-26",
+          "wochentag": "Dienstag",
+          "art": "Altpapier"
+        },
+        {
+          "datum": "2026-06-22",
+          "wochentag": "Montag",
+          "art": "Altpapier"
+        },
+        {
+          "datum": "2026-07-20",
+          "wochentag": "Montag",
+          "art": "Altpapier"
+        },
+        {
+          "datum": "2026-08-17",
+          "wochentag": "Montag",
+          "art": "Altpapier"
+        },
+        {
+          "datum": "2026-09-14",
+          "wochentag": "Montag",
+          "art": "Altpapier"
+        },
+        {
+          "datum": "2026-10-12",
+          "wochentag": "Montag",
+          "art": "Altpapier"
+        },
+        {
+          "datum": "2026-11-09",
+          "wochentag": "Montag",
+          "art": "Altpapier"
+        },
+        {
+          "datum": "2026-12-07",
+          "wochentag": "Montag",
+          "art": "Altpapier"
+        }
+      ]
+    },
+    {
+      "name": "Luhdorf",
+      "strukturID": "1195",
+      "gebietID": "900000023",
+      "lat": 53.332219,
+      "lng": 10.202188,
+      "restmuell_wochentag": "Freitag",
+      "restmuell_termine": [
+        {
+          "datum": "2026-01-03",
+          "wochentag": "Samstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-01-16",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-01-16",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-01-30",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-02-13",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-02-13",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-02-27",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-03-13",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-03-13",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-03-27",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-04-11",
+          "wochentag": "Samstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-04-11",
+          "wochentag": "Samstag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-04-24",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-05-08",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-05-08",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-05-22",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-06-05",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-06-05",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-06-19",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-07-03",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-07-03",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-07-17",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-07-31",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-07-31",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-08-14",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-08-28",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-08-28",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-09-11",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-09-25",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-09-25",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-10-09",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-10-23",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-10-23",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-11-06",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-11-20",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-11-20",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-12-04",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-12-18",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-12-18",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 4-wöchentlich"
+        }
+      ],
+      "papier_wochentag": "Dienstag",
+      "papier_termine": [
+        {
+          "datum": "2026-01-06",
+          "wochentag": "Dienstag",
+          "art": "Altpapier"
+        },
+        {
+          "datum": "2026-02-03",
+          "wochentag": "Dienstag",
+          "art": "Altpapier"
+        },
+        {
+          "datum": "2026-03-03",
+          "wochentag": "Dienstag",
+          "art": "Altpapier"
+        },
+        {
+          "datum": "2026-03-30",
+          "wochentag": "Montag",
+          "art": "Altpapier"
+        },
+        {
+          "datum": "2026-04-28",
+          "wochentag": "Dienstag",
+          "art": "Altpapier"
+        },
+        {
+          "datum": "2026-05-27",
+          "wochentag": "Mittwoch",
+          "art": "Altpapier"
+        },
+        {
+          "datum": "2026-06-23",
+          "wochentag": "Dienstag",
+          "art": "Altpapier"
+        },
+        {
+          "datum": "2026-07-21",
+          "wochentag": "Dienstag",
+          "art": "Altpapier"
+        },
+        {
+          "datum": "2026-08-18",
+          "wochentag": "Dienstag",
+          "art": "Altpapier"
+        },
+        {
+          "datum": "2026-09-15",
+          "wochentag": "Dienstag",
+          "art": "Altpapier"
+        },
+        {
+          "datum": "2026-10-13",
+          "wochentag": "Dienstag",
+          "art": "Altpapier"
+        },
+        {
+          "datum": "2026-11-10",
+          "wochentag": "Dienstag",
+          "art": "Altpapier"
+        },
+        {
+          "datum": "2026-12-08",
+          "wochentag": "Dienstag",
+          "art": "Altpapier"
+        }
+      ]
+    },
+    {
+      "name": "Pattensen",
+      "strukturID": "1196",
+      "gebietID": "900000024",
+      "lat": 53.319379,
+      "lng": 10.14284,
+      "restmuell_wochentag": "Freitag",
+      "restmuell_termine": [
+        {
+          "datum": "2026-01-03",
+          "wochentag": "Samstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-01-16",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-01-16",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-01-30",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-02-13",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-02-13",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-02-27",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-03-13",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-03-13",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-03-27",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-04-11",
+          "wochentag": "Samstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-04-11",
+          "wochentag": "Samstag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-04-24",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-05-08",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-05-08",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-05-22",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-06-05",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-06-05",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-06-19",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-07-03",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-07-03",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-07-17",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-07-31",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-07-31",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-08-14",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-08-28",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-08-28",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-09-11",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-09-25",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-09-25",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-10-09",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-10-23",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-10-23",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-11-06",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-11-20",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-11-20",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-12-04",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-12-18",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-12-18",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 4-wöchentlich"
+        }
+      ],
+      "papier_wochentag": "Dienstag",
+      "papier_termine": [
+        {
+          "datum": "2026-01-06",
+          "wochentag": "Dienstag",
+          "art": "Altpapier"
+        },
+        {
+          "datum": "2026-02-03",
+          "wochentag": "Dienstag",
+          "art": "Altpapier"
+        },
+        {
+          "datum": "2026-03-03",
+          "wochentag": "Dienstag",
+          "art": "Altpapier"
+        },
+        {
+          "datum": "2026-03-30",
+          "wochentag": "Montag",
+          "art": "Altpapier"
+        },
+        {
+          "datum": "2026-04-28",
+          "wochentag": "Dienstag",
+          "art": "Altpapier"
+        },
+        {
+          "datum": "2026-05-27",
+          "wochentag": "Mittwoch",
+          "art": "Altpapier"
+        },
+        {
+          "datum": "2026-06-23",
+          "wochentag": "Dienstag",
+          "art": "Altpapier"
+        },
+        {
+          "datum": "2026-07-21",
+          "wochentag": "Dienstag",
+          "art": "Altpapier"
+        },
+        {
+          "datum": "2026-08-18",
+          "wochentag": "Dienstag",
+          "art": "Altpapier"
+        },
+        {
+          "datum": "2026-09-15",
+          "wochentag": "Dienstag",
+          "art": "Altpapier"
+        },
+        {
+          "datum": "2026-10-13",
+          "wochentag": "Dienstag",
+          "art": "Altpapier"
+        },
+        {
+          "datum": "2026-11-10",
+          "wochentag": "Dienstag",
+          "art": "Altpapier"
+        },
+        {
+          "datum": "2026-12-08",
+          "wochentag": "Dienstag",
+          "art": "Altpapier"
+        }
+      ]
+    },
+    {
+      "name": "Rottorf",
+      "strukturID": "1197",
+      "gebietID": "900000018",
+      "lat": 53.337446,
+      "lng": 10.30962,
+      "restmuell_wochentag": "Donnerstag",
+      "restmuell_termine": [
+        {
+          "datum": "2026-01-02",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-01-15",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-01-15",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-01-29",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-02-12",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-02-12",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-02-26",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-03-12",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-03-12",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-03-26",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-04-10",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-04-10",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-04-23",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-05-07",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-05-07",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-05-21",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-06-04",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-06-04",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-06-18",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-07-02",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-07-02",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-07-16",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-07-30",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-07-30",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-08-13",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-08-27",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-08-27",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-09-10",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-09-24",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-09-24",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-10-08",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-10-22",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-10-22",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-11-05",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-11-19",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-11-19",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-12-03",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-12-17",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-12-17",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-12-31",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        }
+      ],
+      "papier_wochentag": "Dienstag",
+      "papier_termine": [
+        {
+          "datum": "2026-01-06",
+          "wochentag": "Dienstag",
+          "art": "Altpapier"
+        },
+        {
+          "datum": "2026-02-03",
+          "wochentag": "Dienstag",
+          "art": "Altpapier"
+        },
+        {
+          "datum": "2026-03-03",
+          "wochentag": "Dienstag",
+          "art": "Altpapier"
+        },
+        {
+          "datum": "2026-03-30",
+          "wochentag": "Montag",
+          "art": "Altpapier"
+        },
+        {
+          "datum": "2026-04-28",
+          "wochentag": "Dienstag",
+          "art": "Altpapier"
+        },
+        {
+          "datum": "2026-05-27",
+          "wochentag": "Mittwoch",
+          "art": "Altpapier"
+        },
+        {
+          "datum": "2026-06-23",
+          "wochentag": "Dienstag",
+          "art": "Altpapier"
+        },
+        {
+          "datum": "2026-07-21",
+          "wochentag": "Dienstag",
+          "art": "Altpapier"
+        },
+        {
+          "datum": "2026-08-18",
+          "wochentag": "Dienstag",
+          "art": "Altpapier"
+        },
+        {
+          "datum": "2026-09-15",
+          "wochentag": "Dienstag",
+          "art": "Altpapier"
+        },
+        {
+          "datum": "2026-10-13",
+          "wochentag": "Dienstag",
+          "art": "Altpapier"
+        },
+        {
+          "datum": "2026-11-10",
+          "wochentag": "Dienstag",
+          "art": "Altpapier"
+        },
+        {
+          "datum": "2026-12-08",
+          "wochentag": "Dienstag",
+          "art": "Altpapier"
+        }
+      ]
+    },
+    {
+      "name": "Roydorf (ohne Gewerbepark Winsen-Ost)",
+      "strukturID": "1198",
+      "gebietID": "900000019",
+      "lat": 53.341831,
+      "lng": 10.205987,
+      "restmuell_wochentag": "Donnerstag",
+      "restmuell_termine": [
+        {
+          "datum": "2026-01-02",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-01-15",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-01-15",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-01-29",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-02-12",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-02-12",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-02-26",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-03-12",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-03-12",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-03-26",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-04-10",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-04-10",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-04-23",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-05-07",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-05-07",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-05-21",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-06-04",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-06-04",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-06-18",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-07-02",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-07-02",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-07-16",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-07-30",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-07-30",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-08-13",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-08-27",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-08-27",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-09-10",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-09-24",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-09-24",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-10-08",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-10-22",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-10-22",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-11-05",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-11-19",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-11-19",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-12-03",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-12-17",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-12-17",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-12-31",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        }
+      ],
+      "papier_wochentag": "Dienstag",
+      "papier_termine": [
+        {
+          "datum": "2026-01-06",
+          "wochentag": "Dienstag",
+          "art": "Altpapier"
+        },
+        {
+          "datum": "2026-02-03",
+          "wochentag": "Dienstag",
+          "art": "Altpapier"
+        },
+        {
+          "datum": "2026-03-03",
+          "wochentag": "Dienstag",
+          "art": "Altpapier"
+        },
+        {
+          "datum": "2026-03-30",
+          "wochentag": "Montag",
+          "art": "Altpapier"
+        },
+        {
+          "datum": "2026-04-28",
+          "wochentag": "Dienstag",
+          "art": "Altpapier"
+        },
+        {
+          "datum": "2026-05-27",
+          "wochentag": "Mittwoch",
+          "art": "Altpapier"
+        },
+        {
+          "datum": "2026-06-23",
+          "wochentag": "Dienstag",
+          "art": "Altpapier"
+        },
+        {
+          "datum": "2026-07-21",
+          "wochentag": "Dienstag",
+          "art": "Altpapier"
+        },
+        {
+          "datum": "2026-08-18",
+          "wochentag": "Dienstag",
+          "art": "Altpapier"
+        },
+        {
+          "datum": "2026-09-15",
+          "wochentag": "Dienstag",
+          "art": "Altpapier"
+        },
+        {
+          "datum": "2026-10-13",
+          "wochentag": "Dienstag",
+          "art": "Altpapier"
+        },
+        {
+          "datum": "2026-11-10",
+          "wochentag": "Dienstag",
+          "art": "Altpapier"
+        },
+        {
+          "datum": "2026-12-08",
+          "wochentag": "Dienstag",
+          "art": "Altpapier"
+        }
+      ]
+    },
+    {
+      "name": "Sangenstedt",
+      "strukturID": "1199",
+      "gebietID": "900000020",
+      "lat": 53.345074,
+      "lng": 10.272218,
+      "restmuell_wochentag": "Donnerstag",
+      "restmuell_termine": [
+        {
+          "datum": "2026-01-02",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-01-15",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-01-15",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-01-29",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-02-12",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-02-12",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-02-26",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-03-12",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-03-12",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-03-26",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-04-10",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-04-10",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-04-23",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-05-07",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-05-07",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-05-21",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-06-04",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-06-04",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-06-18",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-07-02",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-07-02",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-07-16",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-07-30",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-07-30",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-08-13",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-08-27",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-08-27",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-09-10",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-09-24",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-09-24",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-10-08",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-10-22",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-10-22",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-11-05",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-11-19",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-11-19",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-12-03",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-12-17",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-12-17",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-12-31",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        }
+      ],
+      "papier_wochentag": "Dienstag",
+      "papier_termine": [
+        {
+          "datum": "2026-01-06",
+          "wochentag": "Dienstag",
+          "art": "Altpapier"
+        },
+        {
+          "datum": "2026-02-03",
+          "wochentag": "Dienstag",
+          "art": "Altpapier"
+        },
+        {
+          "datum": "2026-03-03",
+          "wochentag": "Dienstag",
+          "art": "Altpapier"
+        },
+        {
+          "datum": "2026-03-30",
+          "wochentag": "Montag",
+          "art": "Altpapier"
+        },
+        {
+          "datum": "2026-04-28",
+          "wochentag": "Dienstag",
+          "art": "Altpapier"
+        },
+        {
+          "datum": "2026-05-27",
+          "wochentag": "Mittwoch",
+          "art": "Altpapier"
+        },
+        {
+          "datum": "2026-06-23",
+          "wochentag": "Dienstag",
+          "art": "Altpapier"
+        },
+        {
+          "datum": "2026-07-21",
+          "wochentag": "Dienstag",
+          "art": "Altpapier"
+        },
+        {
+          "datum": "2026-08-18",
+          "wochentag": "Dienstag",
+          "art": "Altpapier"
+        },
+        {
+          "datum": "2026-09-15",
+          "wochentag": "Dienstag",
+          "art": "Altpapier"
+        },
+        {
+          "datum": "2026-10-13",
+          "wochentag": "Dienstag",
+          "art": "Altpapier"
+        },
+        {
+          "datum": "2026-11-10",
+          "wochentag": "Dienstag",
+          "art": "Altpapier"
+        },
+        {
+          "datum": "2026-12-08",
+          "wochentag": "Dienstag",
+          "art": "Altpapier"
+        }
+      ]
+    },
+    {
+      "name": "Scharmbeck",
+      "strukturID": "1200",
+      "gebietID": "900000025",
+      "lat": 53.345619,
+      "lng": 10.146038,
+      "restmuell_wochentag": "Freitag",
+      "restmuell_termine": [
+        {
+          "datum": "2026-01-03",
+          "wochentag": "Samstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-01-16",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-01-16",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-01-30",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-02-13",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-02-13",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-02-27",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-03-13",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-03-13",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-03-27",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-04-11",
+          "wochentag": "Samstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-04-11",
+          "wochentag": "Samstag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-04-24",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-05-08",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-05-08",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-05-22",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-06-05",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-06-05",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-06-19",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-07-03",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-07-03",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-07-17",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-07-31",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-07-31",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-08-14",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-08-28",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-08-28",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-09-11",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-09-25",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-09-25",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-10-09",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-10-23",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-10-23",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-11-06",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-11-20",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-11-20",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-12-04",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-12-18",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-12-18",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 4-wöchentlich"
+        }
+      ],
+      "papier_wochentag": "Dienstag",
+      "papier_termine": [
+        {
+          "datum": "2026-01-06",
+          "wochentag": "Dienstag",
+          "art": "Altpapier"
+        },
+        {
+          "datum": "2026-02-03",
+          "wochentag": "Dienstag",
+          "art": "Altpapier"
+        },
+        {
+          "datum": "2026-03-03",
+          "wochentag": "Dienstag",
+          "art": "Altpapier"
+        },
+        {
+          "datum": "2026-03-30",
+          "wochentag": "Montag",
+          "art": "Altpapier"
+        },
+        {
+          "datum": "2026-04-28",
+          "wochentag": "Dienstag",
+          "art": "Altpapier"
+        },
+        {
+          "datum": "2026-05-27",
+          "wochentag": "Mittwoch",
+          "art": "Altpapier"
+        },
+        {
+          "datum": "2026-06-23",
+          "wochentag": "Dienstag",
+          "art": "Altpapier"
+        },
+        {
+          "datum": "2026-07-21",
+          "wochentag": "Dienstag",
+          "art": "Altpapier"
+        },
+        {
+          "datum": "2026-08-18",
+          "wochentag": "Dienstag",
+          "art": "Altpapier"
+        },
+        {
+          "datum": "2026-09-15",
+          "wochentag": "Dienstag",
+          "art": "Altpapier"
+        },
+        {
+          "datum": "2026-10-13",
+          "wochentag": "Dienstag",
+          "art": "Altpapier"
+        },
+        {
+          "datum": "2026-11-10",
+          "wochentag": "Dienstag",
+          "art": "Altpapier"
+        },
+        {
+          "datum": "2026-12-08",
+          "wochentag": "Dienstag",
+          "art": "Altpapier"
+        }
+      ]
+    },
+    {
+      "name": "Stöckte",
+      "strukturID": "1201",
+      "gebietID": "900000014",
+      "lat": 53.384354,
+      "lng": 10.190668,
+      "restmuell_wochentag": "Donnerstag",
+      "restmuell_termine": [
+        {
+          "datum": "2026-01-02",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-01-15",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-01-15",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-01-29",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-02-12",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-02-12",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-02-26",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-03-12",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-03-12",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-03-26",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-04-10",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-04-10",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-04-23",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-05-07",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-05-07",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-05-21",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-06-04",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-06-04",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-06-18",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-07-02",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-07-02",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-07-16",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-07-30",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-07-30",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-08-13",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-08-27",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-08-27",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-09-10",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-09-24",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-09-24",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-10-08",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-10-22",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-10-22",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-11-05",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-11-19",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-11-19",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-12-03",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-12-17",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-12-17",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-12-31",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        }
+      ],
+      "papier_wochentag": "Mittwoch",
+      "papier_termine": [
+        {
+          "datum": "2026-01-07",
+          "wochentag": "Mittwoch",
+          "art": "Altpapier"
+        },
+        {
+          "datum": "2026-02-04",
+          "wochentag": "Mittwoch",
+          "art": "Altpapier"
+        },
+        {
+          "datum": "2026-03-04",
+          "wochentag": "Mittwoch",
+          "art": "Altpapier"
+        },
+        {
+          "datum": "2026-03-31",
+          "wochentag": "Dienstag",
+          "art": "Altpapier"
+        },
+        {
+          "datum": "2026-04-29",
+          "wochentag": "Mittwoch",
+          "art": "Altpapier"
+        },
+        {
+          "datum": "2026-05-28",
+          "wochentag": "Donnerstag",
+          "art": "Altpapier"
+        },
+        {
+          "datum": "2026-06-24",
+          "wochentag": "Mittwoch",
+          "art": "Altpapier"
+        },
+        {
+          "datum": "2026-07-22",
+          "wochentag": "Mittwoch",
+          "art": "Altpapier"
+        },
+        {
+          "datum": "2026-08-19",
+          "wochentag": "Mittwoch",
+          "art": "Altpapier"
+        },
+        {
+          "datum": "2026-09-16",
+          "wochentag": "Mittwoch",
+          "art": "Altpapier"
+        },
+        {
+          "datum": "2026-10-14",
+          "wochentag": "Mittwoch",
+          "art": "Altpapier"
+        },
+        {
+          "datum": "2026-11-11",
+          "wochentag": "Mittwoch",
+          "art": "Altpapier"
+        },
+        {
+          "datum": "2026-12-09",
+          "wochentag": "Mittwoch",
+          "art": "Altpapier"
+        }
+      ]
+    },
+    {
+      "name": "Tönnhausen",
+      "strukturID": "1202",
+      "gebietID": "900000015",
+      "lat": 53.37356,
+      "lng": 10.261263,
+      "restmuell_wochentag": "Donnerstag",
+      "restmuell_termine": [
+        {
+          "datum": "2026-01-02",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-01-15",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-01-15",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-01-29",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-02-12",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-02-12",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-02-26",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-03-12",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-03-12",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-03-26",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-04-10",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-04-10",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-04-23",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-05-07",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-05-07",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-05-21",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-06-04",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-06-04",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-06-18",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-07-02",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-07-02",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-07-16",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-07-30",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-07-30",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-08-13",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-08-27",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-08-27",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-09-10",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-09-24",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-09-24",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-10-08",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-10-22",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-10-22",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-11-05",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-11-19",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-11-19",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-12-03",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-12-17",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-12-17",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-12-31",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        }
+      ],
+      "papier_wochentag": "Montag",
+      "papier_termine": [
+        {
+          "datum": "2026-01-05",
+          "wochentag": "Montag",
+          "art": "Altpapier"
+        },
+        {
+          "datum": "2026-02-02",
+          "wochentag": "Montag",
+          "art": "Altpapier"
+        },
+        {
+          "datum": "2026-03-02",
+          "wochentag": "Montag",
+          "art": "Altpapier"
+        },
+        {
+          "datum": "2026-03-28",
+          "wochentag": "Samstag",
+          "art": "Altpapier"
+        },
+        {
+          "datum": "2026-04-27",
+          "wochentag": "Montag",
+          "art": "Altpapier"
+        },
+        {
+          "datum": "2026-05-26",
+          "wochentag": "Dienstag",
+          "art": "Altpapier"
+        },
+        {
+          "datum": "2026-06-22",
+          "wochentag": "Montag",
+          "art": "Altpapier"
+        },
+        {
+          "datum": "2026-07-20",
+          "wochentag": "Montag",
+          "art": "Altpapier"
+        },
+        {
+          "datum": "2026-08-17",
+          "wochentag": "Montag",
+          "art": "Altpapier"
+        },
+        {
+          "datum": "2026-09-14",
+          "wochentag": "Montag",
+          "art": "Altpapier"
+        },
+        {
+          "datum": "2026-10-12",
+          "wochentag": "Montag",
+          "art": "Altpapier"
+        },
+        {
+          "datum": "2026-11-09",
+          "wochentag": "Montag",
+          "art": "Altpapier"
+        },
+        {
+          "datum": "2026-12-07",
+          "wochentag": "Montag",
+          "art": "Altpapier"
+        }
+      ]
+    },
+    {
+      "name": "Winsen (nur nördlichder ehemaligen B 4 -Hansestraße - Lüneburger Straße",
+      "strukturID": "1204",
+      "gebietID": "900000021",
+      "lat": null,
+      "lng": null,
+      "restmuell_wochentag": "Freitag",
+      "restmuell_termine": [
+        {
+          "datum": "2026-01-03",
+          "wochentag": "Samstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-01-16",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-01-16",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-01-30",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-02-13",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-02-13",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-02-27",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-03-13",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-03-13",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-03-27",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-04-11",
+          "wochentag": "Samstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-04-11",
+          "wochentag": "Samstag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-04-24",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-05-08",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-05-08",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-05-22",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-06-05",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-06-05",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-06-19",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-07-03",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-07-03",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-07-17",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-07-31",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-07-31",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-08-14",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-08-28",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-08-28",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-09-11",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-09-25",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-09-25",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-10-09",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-10-23",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-10-23",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-11-06",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-11-20",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-11-20",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-12-04",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-12-18",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-12-18",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 4-wöchentlich"
+        }
+      ],
+      "papier_wochentag": "Donnerstag",
+      "papier_termine": [
+        {
+          "datum": "2026-01-08",
+          "wochentag": "Donnerstag",
+          "art": "Altpapier"
+        },
+        {
+          "datum": "2026-02-05",
+          "wochentag": "Donnerstag",
+          "art": "Altpapier"
+        },
+        {
+          "datum": "2026-03-05",
+          "wochentag": "Donnerstag",
+          "art": "Altpapier"
+        },
+        {
+          "datum": "2026-04-01",
+          "wochentag": "Mittwoch",
+          "art": "Altpapier"
+        },
+        {
+          "datum": "2026-04-30",
+          "wochentag": "Donnerstag",
+          "art": "Altpapier"
+        },
+        {
+          "datum": "2026-05-29",
+          "wochentag": "Freitag",
+          "art": "Altpapier"
+        },
+        {
+          "datum": "2026-06-25",
+          "wochentag": "Donnerstag",
+          "art": "Altpapier"
+        },
+        {
+          "datum": "2026-07-23",
+          "wochentag": "Donnerstag",
+          "art": "Altpapier"
+        },
+        {
+          "datum": "2026-08-20",
+          "wochentag": "Donnerstag",
+          "art": "Altpapier"
+        },
+        {
+          "datum": "2026-09-17",
+          "wochentag": "Donnerstag",
+          "art": "Altpapier"
+        },
+        {
+          "datum": "2026-10-15",
+          "wochentag": "Donnerstag",
+          "art": "Altpapier"
+        },
+        {
+          "datum": "2026-11-12",
+          "wochentag": "Donnerstag",
+          "art": "Altpapier"
+        },
+        {
+          "datum": "2026-12-10",
+          "wochentag": "Donnerstag",
+          "art": "Altpapier"
+        }
+      ]
+    },
+    {
+      "name": "Winsen (südlich und einschließlich der ehemaligen B 4 - Hansestraße - Lüneburger Straße)",
+      "strukturID": "1205",
+      "gebietID": "900000026",
+      "lat": 53.35343,
+      "lng": 10.208684,
+      "restmuell_wochentag": "Donnerstag",
+      "restmuell_termine": [
+        {
+          "datum": "2026-01-02",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-01-15",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-01-15",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-01-29",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-02-12",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-02-12",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-02-26",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-03-12",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-03-12",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-03-26",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-04-10",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-04-10",
+          "wochentag": "Freitag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-04-23",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-05-07",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-05-07",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-05-21",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-06-04",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-06-04",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-06-18",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-07-02",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-07-02",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-07-16",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-07-30",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-07-30",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-08-13",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-08-27",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-08-27",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-09-10",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-09-24",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-09-24",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-10-08",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-10-22",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-10-22",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-11-05",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-11-19",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-11-19",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-12-03",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-12-17",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 4-wöchentlich"
+        },
+        {
+          "datum": "2026-12-17",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        },
+        {
+          "datum": "2026-12-31",
+          "wochentag": "Donnerstag",
+          "art": "Hausmüll 14-täglich"
+        }
+      ],
+      "papier_wochentag": "Dienstag",
+      "papier_termine": [
+        {
+          "datum": "2026-01-06",
+          "wochentag": "Dienstag",
+          "art": "Altpapier"
+        },
+        {
+          "datum": "2026-02-03",
+          "wochentag": "Dienstag",
+          "art": "Altpapier"
+        },
+        {
+          "datum": "2026-03-03",
+          "wochentag": "Dienstag",
+          "art": "Altpapier"
+        },
+        {
+          "datum": "2026-03-30",
+          "wochentag": "Montag",
+          "art": "Altpapier"
+        },
+        {
+          "datum": "2026-04-28",
+          "wochentag": "Dienstag",
+          "art": "Altpapier"
+        },
+        {
+          "datum": "2026-05-27",
+          "wochentag": "Mittwoch",
+          "art": "Altpapier"
+        },
+        {
+          "datum": "2026-06-23",
+          "wochentag": "Dienstag",
+          "art": "Altpapier"
+        },
+        {
+          "datum": "2026-07-21",
+          "wochentag": "Dienstag",
+          "art": "Altpapier"
+        },
+        {
+          "datum": "2026-08-18",
+          "wochentag": "Dienstag",
+          "art": "Altpapier"
+        },
+        {
+          "datum": "2026-09-15",
+          "wochentag": "Dienstag",
+          "art": "Altpapier"
+        },
+        {
+          "datum": "2026-10-13",
+          "wochentag": "Dienstag",
+          "art": "Altpapier"
+        },
+        {
+          "datum": "2026-11-10",
+          "wochentag": "Dienstag",
+          "art": "Altpapier"
+        },
+        {
+          "datum": "2026-12-08",
+          "wochentag": "Dienstag",
+          "art": "Altpapier"
+        }
+      ]
+    }
+  ]
+}

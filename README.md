@@ -174,8 +174,35 @@ Leads syncen automatisch nach, sobald wieder Netz da ist.
   Verarbeitungsverzeichnis + berechtigtes Interesse (Art. 6 (1) f DSGVO) dokumentieren.
 - Vor dem Skalieren einmal anwaltlich gegenchecken.
 
+## Abfuhrkalender-Daten (ganzer Landkreis Harburg)
+
+Der **Heute**-Tab plant datumsgenau über den echten Abfuhrkalender aller **12 Kommunen**
+(Buchholz, Elbmarsch, Hanstedt, Hollenstedt, Jesteburg, Neu Wulmstorf, Rosengarten,
+Salzhausen, Seevetal, Stelle, Tostedt, Winsen).
+
+- **Datenquelle:** NOLIS-Abfallportal des Landkreis Harburg (iCal), kein API-Key.
+- **Dateien:** je Gemeinde `data/abfuhr-<slug>.json` (exakte Termine inkl. Rhythmus
+  14-täglich/4-wöchentlich, Feiertage bereits verschoben) + Index `data/gemeinden.json`.
+- **Erzeugen/aktualisieren** (z. B. neues Jahr) mit dem vorhandenen Scraper:
+
+  ```bash
+  cd scripts
+  # alle 12 Kommunen (Gemeinde-IDs im Kommunen-Dropdown des NOLIS-Portals):
+  ./run_all.sh                       # erzeugt data/abfuhr-*.json für 2026
+  # danach Manifest neu bauen:
+  python3 -c "import json,glob,os; rows=[]; [rows.append({'id':(d:=json.load(open(f)))['gemeinde_id'],'name':d['gemeinde'],'file':os.path.basename(f),'jahr':d['jahr'],'lat':round(sum(o['lat'] for o in d['ortsteile'] if o['lat'])/max(1,sum(1 for o in d['ortsteile'] if o['lat'])),5),'lng':round(sum(o['lng'] for o in d['ortsteile'] if o['lng'])/max(1,sum(1 for o in d['ortsteile'] if o['lng'])),5),'ortsteile':len(d['ortsteile'])}) for f in sorted(glob.glob('../data/abfuhr-*.json'))]; rows.sort(key=lambda r:r['name']); json.dump(rows,open('../data/gemeinden.json','w'),ensure_ascii=False,indent=2)"
+  ```
+
+- **Beim Jahreswechsel** Scraper mit neuem Jahr laufen lassen (`scrape_lkharburg.py <id> <out> 2027 "<Name>"`).
+- **Granularität:** Bezirks-Ebene (in Großstädten variieren Termine teils straßenweise —
+  Straßen-genau ist bewusst noch nicht umgesetzt).
+- **Offline:** Gemeinden werden beim ersten Öffnen gecacht (Service Worker, network-first);
+  eine nie geöffnete Gemeinde ist offline noch nicht verfügbar.
+
 ## Roadmap
 
 - **Phase 2:** Impressum-Anreicherung (§5 TMG → Ansprechpartner), Dashboard/Funnel,
   Pain×Power×Budget×Timing-Score (Hormozi).
-- **Phase 3:** Routenplanung über Abfuhrkalender, Angebots-Generator aus der Kostenschätzung.
+- **Phase 3 (in Arbeit):** ✅ Routenplanung über Abfuhrkalender (datumsgenau, ganzer LK).
+  Als Nächstes: **Zielkunden-Finder** (Altenheime, Kliniken, Kitas, Gewerbeparks —
+  1100-L-Restmüll = Wunschkunde) integriert im Heute-Tab; Angebots-Generator (bereits live).
