@@ -82,7 +82,7 @@ var FRAKTION = {
 var VOLUMEN = [120,240,660,1100];
 var STATUS = ['neu','kontaktiert','angebot','gewonnen','verloren'];
 var STATUS_LBL = { neu:'Neu', kontaktiert:'Kontakt', angebot:'Angebot', gewonnen:'Gewonnen', verloren:'Verloren' };
-var APP_VERSION = 'v30 · Abfuhr-Erinnerung ganzer Landkreis';
+var APP_VERSION = 'v31 · Gewerbeparks · Übersicht-Button';
 var WD = ['Sonntag','Montag','Dienstag','Mittwoch','Donnerstag','Freitag','Samstag'];
 // Places-Typen, die fast nie Gewerbekunden mit Tonne sind -> aus Route ausblenden
 var STOP_EXCLUDE = ['bus_stop','transit_station','locality','political','park','school',
@@ -100,7 +100,6 @@ var TARGET_TYPES = {
   restaurant:        { w:2, lbl:'Restaurant' },
   meal_takeaway:     { w:2, lbl:'Imbiss/To-Go' },
   hotel:             { w:2, lbl:'Hotel' },
-  lodging:           { w:2, lbl:'Beherbergung' },
   bar:               { w:1, lbl:'Bar' },
   cafe:              { w:1, lbl:'Café' },
   preschool:         { w:1, lbl:'Kita' },
@@ -130,8 +129,9 @@ var S = {
   showReminder: false,// „Nächste Abfuhr"-Overlay beim App-Start
   routeLoading: false,// verhindert Doppel-Fetch beim Rendern
   routeDate: null,    // angezeigtes ISO-Datum (Default = heute)
-  stops: {},          // strukturID -> [places]  (Betriebe je Ortsteil, on demand)
-  stopsLoading: {},   // strukturID -> bool
+  stops: {},          // Gebietsname -> [Zielkunden]  (on demand)
+  parks: {},          // Gebietsname -> [Gewerbepark-Cluster]
+  stopsLoading: {},   // Gebietsname -> bool
   lastSaved: null,    // {id,score,hot} -> Bestätigungsbanner nach dem Speichern
   calcOpen: false,    // aufklappbare Detail-Rechnung im Lead-Sheet
   lastSyncError: null,// letzter Sync-Fehler (sichtbar in Setup)
@@ -1094,7 +1094,7 @@ async function loadRoute(id){
     var entry=S.gemeinden.find(function(g){ return String(g.id)===String(id); })||S.gemeinden[0];
     if(S.route && String(S.gemeindeId)===String(entry.id)) return;   // schon geladen
     var r=await fetch('data/'+entry.file,{cache:'no-cache'});
-    if(r.ok){ S.route=await r.json(); S.gemeindeId=entry.id; S.stops={}; S.stopsLoading={}; S.routeDate=null;
+    if(r.ok){ S.route=await r.json(); S.gemeindeId=entry.id; S.stops={}; S.parks={}; S.stopsLoading={}; S.routeDate=null;
               localStorage.setItem('rss_gemeinde',String(entry.id)); }
   }catch(e){ /* offline / fehlt */ }
   finally{ S.routeLoading=false; }
@@ -1134,8 +1134,39 @@ async function loadTargets(g){
     });
     merged.sort(function(a,b){ return b._pot-a._pot; });   // Wunschkunden zuerst
     S.stops[key]=merged;
+    // Gewerbepark-Cluster: generischer Sweep + Firmen an gleicher Adresse bündeln
+    try{
+      var generic=await placesNearby(g.lat,g.lng,1500,20);
+      generic=generic.filter(function(p){ return p.firmenname && STOP_EXCLUDE.indexOf(p.primaryType)<0; });
+      S.parks[key]=findParks(generic);
+    }catch(e){ S.parks[key]=[]; }
   }catch(e){ toast('Zielkunden laden fehlgeschlagen'); S.stops[key]=[]; }
   S.stopsLoading[key]=false; render();
+}
+// Adresse auf "Straße + Basis-Hausnummer" normalisieren (Zusätze A/B/C/D strippen)
+function baseAddr(adr){
+  if(!adr) return '';
+  var first=String(adr).split(',')[0];                 // "Musterstr. 5 A"
+  var m=first.match(/^(.*?)(\d+)\s*[a-zA-Z]?\s*$/);    // Straße + erste Nummer, Buchstabe weg
+  var s=(m?(m[1]+m[2]):first).toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
+  return s;
+}
+// Firmen an gleicher Basis-Adresse (bzw. gleichem Koordinaten-Punkt) zu Parks bündeln
+function findParks(places){
+  var groups={};
+  places.forEach(function(p){
+    var k=baseAddr(p.adresse) || (p.lat!=null?(p.lat.toFixed(4)+','+p.lng.toFixed(4)):'');
+    if(!k) return;
+    (groups[k]=groups[k]||[]).push(p);
+  });
+  var parks=[];
+  Object.keys(groups).forEach(function(k){
+    var seen={}, firms=[];
+    groups[k].forEach(function(p){ if(!seen[p.firmenname]){ seen[p.firmenname]=1; firms.push(p); } });
+    if(firms.length>=3) parks.push({ addr:firms[0].adresse||'', firms:firms });   // ≥3 Firmen = Gewerbepark
+  });
+  parks.sort(function(a,b){ return b.firms.length-a.firms.length; });
+  return parks;
 }
 
 function startStop(p, o, frak){
@@ -1291,6 +1322,7 @@ function renderHeute(){
 
   $app.innerHTML='<div class="screen">'+
     '<h1 class="t">Heute</h1>'+
+    '<button class="cta ghost" data-act="openreminder" style="margin:0 0 10px">▤ Übersicht · alle Gemeinden</button>'+
     gemSel+
     '<div class="sub">'+esc(S.route.gemeinde)+' · '+esc(selLbl)+' · '+due.length+' Gebiete mit Restmüll</div>'+
     chips+
@@ -1310,7 +1342,7 @@ function gebietCard(g,iso){
   var targetUI;
   if(g.lat==null){ targetUI=''; }
   else if(loading){ targetUI='<div style="padding:0 14px 12px"><button class="cta ghost" style="margin:0" disabled>★ Zielkunden werden gesucht…</button></div>'; }
-  else if(stops){ targetUI='<div style="padding:0 14px 12px">'+targetList(g,stops)+'</div>'; }
+  else if(stops){ targetUI='<div style="padding:0 14px 12px">'+parkList(g)+targetList(g,stops)+'</div>'; }
   else { targetUI='<div style="padding:0 14px 12px"><button class="cta ghost" style="margin:0" data-act="loadtargets" data-name="'+esc(g.name)+'">★ Zielkunden hier finden</button></div>'; }
 
   return '<div style="border:1.5px solid var(--ink);margin-bottom:12px">'+
@@ -1325,6 +1357,23 @@ function gebietCard(g,iso){
     '</div>'+
     targetUI+
   '</div>';
+}
+// Gewerbepark-Cluster (viele Firmen an einer Adresse) – je Firma tippen zum Erfassen
+function parkList(g){
+  var parks=S.parks[g.name]; if(!parks||!parks.length) return '';
+  return '<div style="font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:2px 0 6px">🏢 Gewerbepark-Cluster · viele Firmen an einer Adresse</div>'+
+    parks.map(function(pk){
+      var members=pk.firms.map(function(p){
+        var done=leadHasPlace(p.place_id);
+        return '<button data-act="startpark" data-name="'+esc(g.name)+'" data-pid="'+esc(p.place_id)+'" '+
+          'style="display:block;width:100%;text-align:left;background:transparent;border:0;border-top:1px solid var(--line,rgba(0,0,0,.12));padding:7px 0;font-size:13px'+(done?';opacity:.55':'')+'">'+
+          esc(p.firmenname)+(done?' · ✓':'')+'</button>';
+      }).join('');
+      return '<div style="border:1.5px solid var(--ink);padding:10px 12px;margin-bottom:8px">'+
+        '<b style="font-size:13px">🏢 '+pk.firms.length+' Firmen · '+esc((pk.addr||'').split(',')[0])+'</b>'+
+        members+
+      '</div>';
+    }).join('');
 }
 // Zielkunden-Liste je Gebiet (Wunschkunden oben, ✓ wenn bereits erfasst)
 function targetList(g,stops){
@@ -1622,7 +1671,14 @@ document.addEventListener('click',function(e){
     var plt=(S.stops[t.dataset.name]||[]).find(function(x){return x.place_id===t.dataset.pid;});
     if(gt&&plt) startStop(plt,{name:gt.name},'restmuell');
   }
+  else if(act==='startpark'){
+    var gp=routeGroupsDated().find(function(x){return x.name===t.dataset.name;});
+    var pks=S.parks[t.dataset.name]||[], pl=null;
+    pks.forEach(function(pk){ pk.firms.forEach(function(f){ if(f.place_id===t.dataset.pid) pl=f; }); });
+    if(gp&&pl) startStop(pl,{name:gp.name},'restmuell');
+  }
   else if(act==='dismissreminder'||(act==='rmdbg'&&e.target.id==='rmd')){ dismissReminder(); }
+  else if(act==='openreminder'){ S.showReminder=true; render(); }   // Übersicht erneut öffnen
   else if(act==='remindgo'){ gotoRoute(t.dataset.id, v); }
   else if(act==='filter'){ S.filter=v; render(); }
   else if(act==='sort'){ S.sort=v; render(); }

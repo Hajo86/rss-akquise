@@ -216,8 +216,10 @@ Salzhausen, Seevetal, Stelle, Tostedt, Winsen).
   Wunschkunde), nach Potenzial sortiert, tippen → Erfassen. Pflegeheime per Textsuche
   (kein eigener Places-Typ). ✅ **Abfuhr-Erinnerung** beim Öffnen (heute/morgen, wegklickbar).
   ✅ Angebots-Generator.
-- **Phase 3b (offen):** Gewerbepark-Cluster (viele Firmen unter einer Adresse, A/B/C/D)
-  über Adress-/Koordinaten-Clustering + optional OSM-Overpass-Flächen.
+- **Phase 3b:** ✅ Gewerbepark-Cluster (viele Firmen an einer Adresse, A/B/C/D werden
+  zusammengefasst) über Adress-/Koordinaten-Clustering (≥3 Firmen) im Zielkunden-Finder.
+  Grenze: generischer Places-Sweep max. 20 POIs je Gebietszentrum → dichte Parks am Rand
+  ggf. unvollständig. Optional-Ausbau: OSM-Overpass-Gewerbeflächen als Overlay.
 
 > Hinweis: Der LK Harburg hat **keine** Einwohnergleichwert-Tabelle; Behälter nach
 > Selbsteinschätzung (§22 ABS), Gebühr 40 €/Tonne + 3,79 €/Liter/Jahr (Stand 2026).
