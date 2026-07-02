@@ -203,6 +203,14 @@ Salzhausen, Seevetal, Stelle, Tostedt, Winsen).
 
 - **Phase 2:** Impressum-Anreicherung (§5 TMG → Ansprechpartner), Dashboard/Funnel,
   Pain×Power×Budget×Timing-Score (Hormozi).
-- **Phase 3 (in Arbeit):** ✅ Routenplanung über Abfuhrkalender (datumsgenau, ganzer LK).
-  Als Nächstes: **Zielkunden-Finder** (Altenheime, Kliniken, Kitas, Gewerbeparks —
-  1100-L-Restmüll = Wunschkunde) integriert im Heute-Tab; Angebots-Generator (bereits live).
+- **Phase 3:** ✅ Routenplanung über Abfuhrkalender (datumsgenau, ganzer LK).
+  ✅ **Zielkunden-Finder** im Heute-Tab: je Gebiet die restmüllintensiven Zielbranchen
+  (Kliniken, Pflege-/Altenheime, Supermärkte/LEH, Gastronomie, Hotels — 1100-L-Restmüll =
+  Wunschkunde), nach Potenzial sortiert, tippen → Erfassen. Pflegeheime per Textsuche
+  (kein eigener Places-Typ). ✅ **Abfuhr-Erinnerung** beim Öffnen (heute/morgen, wegklickbar).
+  ✅ Angebots-Generator.
+- **Phase 3b (offen):** Gewerbepark-Cluster (viele Firmen unter einer Adresse, A/B/C/D)
+  über Adress-/Koordinaten-Clustering + optional OSM-Overpass-Flächen.
+
+> Hinweis: Der LK Harburg hat **keine** Einwohnergleichwert-Tabelle; Behälter nach
+> Selbsteinschätzung (§22 ABS), Gebühr 40 €/Tonne + 3,79 €/Liter/Jahr (Stand 2026).

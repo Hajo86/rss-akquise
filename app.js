@@ -82,12 +82,34 @@ var FRAKTION = {
 var VOLUMEN = [120,240,660,1100];
 var STATUS = ['neu','kontaktiert','angebot','gewonnen','verloren'];
 var STATUS_LBL = { neu:'Neu', kontaktiert:'Kontakt', angebot:'Angebot', gewonnen:'Gewonnen', verloren:'Verloren' };
-var APP_VERSION = 'v28 · Abfuhrkalender ganzer Landkreis · datumsgenau';
+var APP_VERSION = 'v29 · Zielkunden-Finder · Abfuhr-Erinnerung';
 var WD = ['Sonntag','Montag','Dienstag','Mittwoch','Donnerstag','Freitag','Samstag'];
 // Places-Typen, die fast nie Gewerbekunden mit Tonne sind -> aus Route ausblenden
 var STOP_EXCLUDE = ['bus_stop','transit_station','locality','political','park','school',
   'primary_school','secondary_school','place_of_worship','church','cemetery','tourist_attraction',
   'parking','bus_station','train_station','light_rail_station'];
+
+// Restmüll-intensive Zielbranchen (Google Places New primaryType) + Potenzial-Gewicht.
+// Belegt durch amtliche EGW-Faktoren + Benchmark-Studien: 3 = Wunschkunde (1100 L wahrscheinlich),
+// 2 = stark, 1 = solide. Kliniken/Pflege/Supermarkt = höchstes Restmüllvolumen pro Standort.
+var TARGET_TYPES = {
+  hospital:          { w:3, lbl:'Klinik' },
+  supermarket:       { w:3, lbl:'Supermarkt' },
+  grocery_store:     { w:2, lbl:'Lebensmittel' },
+  wholesaler:        { w:2, lbl:'Großhandel' },
+  restaurant:        { w:2, lbl:'Restaurant' },
+  meal_takeaway:     { w:2, lbl:'Imbiss/To-Go' },
+  hotel:             { w:2, lbl:'Hotel' },
+  lodging:           { w:2, lbl:'Beherbergung' },
+  bar:               { w:1, lbl:'Bar' },
+  cafe:              { w:1, lbl:'Café' },
+  preschool:         { w:1, lbl:'Kita' },
+  child_care_agency: { w:1, lbl:'Kita' }
+};
+var TARGET_TYPE_KEYS = Object.keys(TARGET_TYPES);
+// Pflege-/Altenheime haben in Places (New) KEINEN eigenen Typ -> per Textsuche holen (Top-Ziel!)
+var TARGET_TEXT = [{ q:'Pflegeheim Altenheim Seniorenheim', w:3, lbl:'Pflegeheim' }];
+function potText(w){ return w>=3?'hoch':(w>=2?'stark':'solide'); }
 
 /* ---------- State ---------- */
 var S = {
@@ -398,16 +420,38 @@ function updateGpsPill(draft){
 }
 
 /* ---------- Google APIs ---------- */
-async function placesNearby(lat,lng,radius,max){
+async function placesNearby(lat,lng,radius,max,includedTypes){
   var key=S.keys.google; if(!key) throw new Error('Kein Google-Key');
+  var body={ maxResultCount:(max||5), rankPreference:'DISTANCE',
+      locationRestriction:{ circle:{ center:{latitude:lat,longitude:lng}, radius:(radius||75.0) } } };
+  if(includedTypes && includedTypes.length) body.includedTypes=includedTypes;   // nur Zielbranchen
   var r=await fetch('https://places.googleapis.com/v1/places:searchNearby',{
     method:'POST',
     headers:{ 'Content-Type':'application/json','X-Goog-Api-Key':key,
       'X-Goog-FieldMask':'places.id,places.displayName,places.formattedAddress,places.nationalPhoneNumber,places.websiteUri,places.primaryType,places.primaryTypeDisplayName,places.location' },
-    body:JSON.stringify({ maxResultCount:(max||5), rankPreference:'DISTANCE',
-      locationRestriction:{ circle:{ center:{latitude:lat,longitude:lng}, radius:(radius||75.0) } } })
+    body:JSON.stringify(body)
   });
   if(!r.ok){ var e=await r.json().catch(function(){return{};}); throw new Error((e.error&&e.error.message)||'Places fehlgeschlagen'); }
+  var d=await r.json();
+  return (d.places||[]).map(function(p){
+    return { place_id:p.id, firmenname:(p.displayName&&p.displayName.text)||'',
+      adresse:p.formattedAddress||'', telefon:p.nationalPhoneNumber||'',
+      website:p.websiteUri||'', typ:(p.primaryTypeDisplayName&&p.primaryTypeDisplayName.text)||'',
+      primaryType:p.primaryType||'',
+      lat:(p.location&&p.location.latitude), lng:(p.location&&p.location.longitude) };
+  });
+}
+// Text-Suche (Places New) – für Kategorien ohne eigenen Typ, z.B. Pflegeheime
+async function placesSearchText(query,lat,lng,radius,max){
+  var key=S.keys.google; if(!key) throw new Error('Kein Google-Key');
+  var r=await fetch('https://places.googleapis.com/v1/places:searchText',{
+    method:'POST',
+    headers:{ 'Content-Type':'application/json','X-Goog-Api-Key':key,
+      'X-Goog-FieldMask':'places.id,places.displayName,places.formattedAddress,places.nationalPhoneNumber,places.websiteUri,places.primaryType,places.primaryTypeDisplayName,places.location' },
+    body:JSON.stringify({ textQuery:query, maxResultCount:(max||10),
+      locationBias:{ circle:{ center:{latitude:lat,longitude:lng}, radius:(radius||2500) } } })
+  });
+  if(!r.ok){ var e=await r.json().catch(function(){return{};}); throw new Error((e.error&&e.error.message)||'Text-Suche fehlgeschlagen'); }
   var d=await r.json();
   return (d.places||[]).map(function(p){
     return { place_id:p.id, firmenname:(p.displayName&&p.displayName.text)||'',
@@ -695,6 +739,7 @@ function renderErfassen(){
   '<div class="screen">'+
     '<h1 class="t">Tonne<br>erfassen</h1>'+
     '<div class="sub">Foto → GPS → Firma (automatisch) → Tonnen prüfen → speichern.</div>'+
+    reminderBanner()+
     savedBanner+
     preBanner+
 
@@ -1044,18 +1089,37 @@ function switchGemeinde(id){
 }
 function leadHasPlace(pid){ return S.leads.some(function(l){ return pid && l.place_id===pid; }); }
 
-async function loadStops(o){
-  if(S.stops[o.strukturID]||S.stopsLoading[o.strukturID]) return;
+// Zielkunden (Restmüll-intensive Branchen) im Umkreis eines Gebiets laden,
+// nach Potenzial sortiert. Key = Gebietsname (Gruppe aus routeGroupsDated).
+async function loadTargets(g){
+  var key=g.name;
+  if(S.stops[key]||S.stopsLoading[key]) return;
   if(!S.keys.google){ toast('Erst Google-Key in Setup eintragen'); return; }
-  if(o.lat==null){ toast('Kein Ortsteil-Mittelpunkt'); return; }
-  S.stopsLoading[o.strukturID]=true; render();
+  if(g.lat==null){ toast('Kein Gebiets-Mittelpunkt'); return; }
+  S.stopsLoading[key]=true; render();
   try{
-    var places=await placesNearby(o.lat,o.lng,1600,20);
-    // Wohn-/Nicht-Gewerbe-POIs grob ausblenden (Wohnhäuser sind in Places ohnehin nicht enthalten)
-    places=places.filter(function(p){ return p.firmenname && STOP_EXCLUDE.indexOf(p.primaryType)<0; });
-    S.stops[o.strukturID]=places;
-  }catch(e){ toast('Betriebe laden fehlgeschlagen'); S.stops[o.strukturID]=[]; }
-  S.stopsLoading[o.strukturID]=false; render();
+    var byType=await placesNearby(g.lat,g.lng,2500,20,TARGET_TYPE_KEYS);
+    byType.forEach(function(p){ var t=TARGET_TYPES[p.primaryType]; p._pot=t?t.w:1; p._potLbl=t?t.lbl:(p.typ||'Ziel'); });
+    // Pflege-/Altenheime per Textsuche ergänzen (kein eigener Places-Typ)
+    var extra=[];
+    for(var i=0;i<TARGET_TEXT.length;i++){
+      try{
+        var res=await placesSearchText(TARGET_TEXT[i].q,g.lat,g.lng,2500,10);
+        res.forEach(function(p){ p._pot=TARGET_TEXT[i].w; p._potLbl=TARGET_TEXT[i].lbl; });
+        extra=extra.concat(res);
+      }catch(e){ /* Textsuche optional */ }
+    }
+    // zusammenführen, nach place_id deduplizieren, Texttreffer auf ~3,5 km begrenzen
+    var seen={}, merged=[];
+    byType.concat(extra).forEach(function(p){
+      if(!p.firmenname || seen[p.place_id]) return;
+      if(p.lat!=null && haversine(g.lat,g.lng,p.lat,p.lng)>3.5) return;
+      seen[p.place_id]=1; merged.push(p);
+    });
+    merged.sort(function(a,b){ return b._pot-a._pot; });   // Wunschkunden zuerst
+    S.stops[key]=merged;
+  }catch(e){ toast('Zielkunden laden fehlgeschlagen'); S.stops[key]=[]; }
+  S.stopsLoading[key]=false; render();
 }
 
 function startStop(p, o, frak){
@@ -1110,6 +1174,35 @@ function upcomingDates(groups,n){
     Object.keys(g.pap).forEach(function(d){ if(d>=today) set[d]=1; });
   });
   return Object.keys(set).sort().slice(0,n);
+}
+
+/* Erinnerungs-Banner beim Öffnen: nächste Abfuhrtage (heute/morgen) der aktiven
+   Gemeinde, damit man Restmüll nicht selbst suchen muss. Pro Tag wegklickbar. */
+function dismissReminder(){ localStorage.setItem('rss_reminder_dismissed', todayISO()); render(); }
+function reminderBanner(){
+  if(!S.route) return '';
+  if(localStorage.getItem('rss_reminder_dismissed')===todayISO()) return '';
+  var groups=routeGroupsDated();
+  var dates=upcomingDates(groups,4);
+  if(!dates.length) return '';
+  var today=todayISO();
+  var lines=dates.slice(0,2).map(function(iso){
+    var rest=groups.filter(function(g){return g.rest[iso];}).map(function(g){return g.name;});
+    var pap=groups.filter(function(g){return g.pap[iso];}).length;
+    var when=iso===today?'Heute':(iso===dates.find(function(d){return d>today;})?'Als Nächstes':'');
+    var restTxt=rest.length?(rest.slice(0,4).join(', ')+(rest.length>4?(' +'+(rest.length-4)):'')):'—';
+    return '<button data-act="remindday" data-v="'+iso+'" style="display:block;width:100%;text-align:left;background:transparent;border:0;border-top:1px solid rgba(255,255,255,.22);padding:9px 0;color:var(--paper);cursor:pointer">'+
+      '<b style="font-size:13px">'+(when?esc(when)+' · ':'')+esc(dateLabel(iso))+'</b>'+
+      '<div style="font-size:12px;color:#cfcfcf">Restmüll: '+esc(restTxt)+(pap?(' · Papier '+pap+' Geb.'):'')+'</div>'+
+    '</button>';
+  }).join('');
+  return '<div style="border:2px solid var(--ink);background:var(--ink);color:var(--paper);padding:12px 14px;margin-bottom:14px">'+
+    '<div style="display:flex;justify-content:space-between;align-items:center">'+
+      '<div style="font-size:10px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:#bbb">Nächste Abfuhr · '+esc(S.route.gemeinde)+'</div>'+
+      '<button data-act="dismissreminder" style="background:var(--paper);color:var(--ink);font-size:13px;font-weight:800;padding:4px 9px;border:0;line-height:1">×</button>'+
+    '</div>'+ lines +
+    '<button data-act="remindday" data-v="'+dates[0]+'" style="margin-top:8px;background:var(--paper);color:var(--ink);font-size:10px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;padding:7px 10px;border:0">Zur Route ▸</button>'+
+  '</div>';
 }
 
 function renderHeute(){
@@ -1172,6 +1265,13 @@ function gebietCard(g,iso){
   var nav = g.lat!=null
     ? '<a class="cta ghost" style="margin:0;text-decoration:none;flex:none;padding:12px 16px" href="https://www.google.com/maps/dir/?api=1&destination='+g.lat+','+g.lng+'" target="_blank">Navigieren ▸</a>'
     : '<span style="font-size:12px;color:var(--muted)">kein Standort</span>';
+  var key=g.name, loading=S.stopsLoading[key], stops=S.stops[key];
+  var targetUI;
+  if(g.lat==null){ targetUI=''; }
+  else if(loading){ targetUI='<div style="padding:0 14px 12px"><button class="cta ghost" style="margin:0" disabled>★ Zielkunden werden gesucht…</button></div>'; }
+  else if(stops){ targetUI='<div style="padding:0 14px 12px">'+targetList(g,stops)+'</div>'; }
+  else { targetUI='<div style="padding:0 14px 12px"><button class="cta ghost" style="margin:0" data-act="loadtargets" data-name="'+esc(g.name)+'">★ Zielkunden hier finden</button></div>'; }
+
   return '<div style="border:1.5px solid var(--ink);margin-bottom:12px">'+
     '<div style="display:flex;justify-content:space-between;align-items:center;padding:12px 14px;border-bottom:1.5px solid var(--ink)">'+
       '<b style="font-size:16px;text-transform:uppercase">'+esc(g.name)+'</b>'+
@@ -1181,7 +1281,26 @@ function gebietCard(g,iso){
       '<span style="font-size:12px;font-weight:700;color:var(--muted);flex:1">'+
         near+' Lead'+(near===1?'':'s')+' hier'+(rhy?(' · Restmüll '+esc(rhy)):'')+'</span>'+
       nav+
-    '</div></div>';
+    '</div>'+
+    targetUI+
+  '</div>';
+}
+// Zielkunden-Liste je Gebiet (Wunschkunden oben, ✓ wenn bereits erfasst)
+function targetList(g,stops){
+  if(!stops.length) return '<div class="note" style="margin:0">Keine Restmüll-Zielbranchen im Umkreis gefunden.</div>';
+  var rows=stops.map(function(p){
+    var done=leadHasPlace(p.place_id);
+    var potCls=p._pot>=3?'hot':'fill';
+    return '<button class="'+(done?'':'')+'" data-act="starttarget" data-name="'+esc(g.name)+'" data-pid="'+esc(p.place_id)+'" '+
+      'style="display:block;width:100%;text-align:left;border:1.5px solid var(--ink);background:var(--paper);padding:10px 12px;margin-bottom:8px'+(done?';opacity:.55':'')+'">'+
+      '<div style="display:flex;justify-content:space-between;gap:8px;align-items:center">'+
+        '<b style="font-size:14px">'+esc(p.firmenname)+'</b>'+
+        '<span class="tag '+potCls+'" style="flex:none">★ '+esc(p._potLbl)+' · '+potText(p._pot)+'</span>'+
+      '</div>'+
+      '<div style="font-size:11px;color:var(--muted);margin-top:2px">'+esc(p.adresse||'')+(done?' · ✓ erfasst':'')+'</div>'+
+    '</button>';
+  }).join('');
+  return '<div style="font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:2px 0 6px">Zielkunden (Restmüll-intensiv) · tippen zum Erfassen</div>'+rows;
 }
 
 function renderSettings(){
@@ -1456,12 +1575,14 @@ document.addEventListener('click',function(e){
   else if(act==='save'){ saveDraft(); }
 
   else if(act==='day'){ S.routeDate=v; render(); }
-  else if(act==='loadstops'){ var o=S.route.ortsteile.find(function(x){return x.strukturID===t.dataset.sid;}); if(o) loadStops(o); }
-  else if(act==='stop'){
-    var os=S.route.ortsteile.find(function(x){return x.strukturID===t.dataset.sid;});
-    var pl=(S.stops[t.dataset.sid]||[]).find(function(x){return x.place_id===t.dataset.pid;});
-    if(os&&pl) startStop(pl,os,t.dataset.frak);
+  else if(act==='loadtargets'){ var gg=routeGroupsDated().find(function(x){return x.name===t.dataset.name;}); if(gg) loadTargets(gg); }
+  else if(act==='starttarget'){
+    var gt=routeGroupsDated().find(function(x){return x.name===t.dataset.name;});
+    var plt=(S.stops[t.dataset.name]||[]).find(function(x){return x.place_id===t.dataset.pid;});
+    if(gt&&plt) startStop(plt,{name:gt.name},'restmuell');
   }
+  else if(act==='dismissreminder'){ dismissReminder(); }
+  else if(act==='remindday'){ S.tab='heute'; S.routeDate=v; stopGPSWatch(); render(); }
   else if(act==='filter'){ S.filter=v; render(); }
   else if(act==='sort'){ S.sort=v; render(); }
   else if(act==='open'){ S.modal=id; renderSheet(); }
