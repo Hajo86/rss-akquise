@@ -82,7 +82,7 @@ var FRAKTION = {
 var VOLUMEN = [120,240,660,1100];
 var STATUS = ['neu','kontaktiert','angebot','gewonnen','verloren'];
 var STATUS_LBL = { neu:'Neu', kontaktiert:'Kontakt', angebot:'Angebot', gewonnen:'Gewonnen', verloren:'Verloren' };
-var APP_VERSION = 'v26 · Sync-Keys robust';
+var APP_VERSION = 'v27 · Firma live · GPS-Tracking · Lead voll editierbar';
 var WD = ['Sonntag','Montag','Dienstag','Mittwoch','Donnerstag','Freitag','Samstag'];
 var WD_WORK = ['Montag','Dienstag','Mittwoch','Donnerstag','Freitag'];
 // Places-Typen, die fast nie Gewerbekunden mit Tonne sind -> aus Route ausblenden
@@ -108,13 +108,17 @@ var S = {
   stopsLoading: {},   // strukturID -> bool
   lastSaved: null,    // {id,score,hot} -> Bestätigungsbanner nach dem Speichern
   calcOpen: false,    // aufklappbare Detail-Rechnung im Lead-Sheet
-  lastSyncError: null // letzter Sync-Fehler (sichtbar in Setup)
+  lastSyncError: null,// letzter Sync-Fehler (sichtbar in Setup)
+  watchId: null,      // navigator.geolocation.watchPosition-ID (Live-Tracking im Auto)
+  gpsTick: null       // Intervall, das das Fix-Alter in der GPS-Pille aktualisiert
 };
 function freshDraft(){
-  return { photoBlob:null, lat:null, lng:null, accuracy:null, gpsState:'wait', gpsMsg:'',
+  return { photoBlob:null, lat:null, lng:null, accuracy:null, gpsState:'wait', gpsMsg:'', gpsTime:null,
            behaelter:[{fraktion:'restmuell',volumen:1100,anzahl:1}], rhythmus:'14t', rabatt:0.10,
            entsorger_logo:true, entsorger:'', notiz:'', analyzing:false,
-           preset:null };  // preset = { firmenname, adresse, telefon, website, place_id, ortsteil }
+           preset:null, fromStop:false,               // fromStop = aus Route-Stop (springt nach Speichern zu „Heute")
+           companyState:'idle', companyCands:null, companyMsg:'', showCands:false };
+  // preset = { firmenname, adresse, telefon, website, place_id, ortsteil }
 }
 
 /* ---------- Keys / Settings persistence ---------- */
@@ -305,39 +309,90 @@ async function analyzeSign(lead, blob){
   }catch(err){ lead._scanning=false; renderSheet(); toast('Schild: '+(err.message||'Fehler')); }
 }
 
-/* ---------- GPS ---------- */
-function getGPS(draft){
-  if(!navigator.geolocation){ draft.gpsState='err'; draft.gpsMsg='Gerät ohne Standort'; render(); return; }
-  if(!window.isSecureContext){ draft.gpsState='err'; draft.gpsMsg='Nur über https (nicht file://)'; render(); return; }
-  draft.gpsState='wait'; render();
-  // Diagnose: ist der Standort in Chrome blockiert?
+/* ---------- GPS ----------
+   Im Auto ist ein einmaliger Fix schnell veraltet („Handy noch am alten Ort").
+   Lösung: dauerhaftes Live-Tracking (watchPosition, maximumAge:0) solange man
+   erfasst. Die Koordinaten bleiben so immer aktuell; das Fix-Alter ist sichtbar. */
+function gpsCommon(draft){
+  if(!navigator.geolocation){ draft.gpsState='err'; draft.gpsMsg='Gerät ohne Standort'; return false; }
+  if(!window.isSecureContext){ draft.gpsState='err'; draft.gpsMsg='Nur über https (nicht file://)'; return false; }
   if(navigator.permissions && navigator.permissions.query){
     navigator.permissions.query({name:'geolocation'}).then(function(p){
       if(p.state==='denied'){
         draft.gpsState='err';
         draft.gpsMsg='In Chrome blockiert (Standort = denied) – Schloss-Symbol → Berechtigungen → Standort → Zulassen';
-        render();
+        updateGpsPill(draft);
       }
     }).catch(function(){});
   }
-  function ok(p){
-    draft.lat=p.coords.latitude; draft.lng=p.coords.longitude;
-    draft.accuracy=Math.round(p.coords.accuracy); draft.gpsState='ok'; draft.gpsMsg=''; render();
-  }
-  function fail(e){
-    draft.gpsState='err';
-    draft.gpsMsg = e && e.code===1 ? 'Standort-Freigabe verweigert – im Browser/Handy erlauben'
-                 : e && e.code===2 ? 'Standort nicht verfügbar'
-                 : 'Zeitüberschreitung – Pille antippen für neuen Versuch';
-    render();
-  }
-  // 1. Versuch: hohe Genauigkeit; bei Timeout/Unavailable 2. Versuch ohne HighAccuracy
-  navigator.geolocation.getCurrentPosition(ok, function(e){
+  return true;
+}
+function gpsOk(draft,p){
+  draft.lat=p.coords.latitude; draft.lng=p.coords.longitude;
+  draft.accuracy=Math.round(p.coords.accuracy); draft.gpsState='ok'; draft.gpsMsg=''; draft.gpsTime=Date.now();
+}
+function gpsFail(draft,e){
+  draft.gpsState='err';
+  draft.gpsMsg = e && e.code===1 ? 'Standort-Freigabe verweigert – im Browser/Handy erlauben'
+               : e && e.code===2 ? 'Standort nicht verfügbar'
+               : 'Zeitüberschreitung – Pille antippen für neuen Versuch';
+}
+// Einmaliger, frischer Fix (maximumAge:0 – nie ein alter Cache-Wert)
+function getGPS(draft){
+  if(!gpsCommon(draft)){ render(); return; }
+  draft.gpsState='wait'; render();
+  navigator.geolocation.getCurrentPosition(function(p){
+    var first=(draft.companyState==='idle');
+    gpsOk(draft,p); render();
+    if(first) maybeLookupCompany(draft);   // Firma direkt beim ersten Fix ziehen
+  }, function(e){
     if(e && (e.code===3 || e.code===2)){
-      navigator.geolocation.getCurrentPosition(ok, fail,
-        { enableHighAccuracy:false, timeout:15000, maximumAge:60000 });
-    } else { fail(e); }
-  }, { enableHighAccuracy:true, timeout:15000, maximumAge:8000 });
+      navigator.geolocation.getCurrentPosition(function(p){ gpsOk(draft,p); render(); },
+        function(er){ gpsFail(draft,er); render(); },
+        { enableHighAccuracy:false, timeout:15000, maximumAge:0 });
+    } else { gpsFail(draft,e); render(); }
+  }, { enableHighAccuracy:true, timeout:15000, maximumAge:0 });
+}
+// Live-Tracking starten (nur im Erfassen-Tab): hält lat/lng dauerhaft aktuell.
+function startGPSWatch(draft){
+  if(!gpsCommon(draft)){ render(); return; }
+  stopGPSWatch();
+  if(draft.gpsState!=='ok') draft.gpsState='wait';
+  try{
+    S.watchId=navigator.geolocation.watchPosition(function(p){
+      var first=(draft.companyState==='idle');
+      gpsOk(draft,p);
+      updateGpsPill(draft);            // nur die Pille aktualisieren – kein Full-Render (kein Flackern)
+      if(first) maybeLookupCompany(draft);
+    }, function(e){
+      if(draft.gpsState!=='ok'){ gpsFail(draft,e); updateGpsPill(draft); }  // laufenden Fix bei Aussetzern behalten
+    }, { enableHighAccuracy:true, timeout:20000, maximumAge:0 });
+  }catch(e){ /* watch nicht möglich -> einmaliger Fix reicht */ getGPS(draft); }
+  // Alter des Fixes jede Sekunde aktualisieren (watch feuert nicht, wenn man steht)
+  if(S.gpsTick) clearInterval(S.gpsTick);
+  S.gpsTick=setInterval(function(){ if(S.tab==='erfassen' && S.draft) updateGpsPill(S.draft); }, 1000);
+}
+function stopGPSWatch(){
+  if(S.watchId!=null){ try{ navigator.geolocation.clearWatch(S.watchId); }catch(e){} S.watchId=null; }
+  if(S.gpsTick){ clearInterval(S.gpsTick); S.gpsTick=null; }
+}
+function gpsAgeText(draft){
+  if(draft.gpsState!=='ok'||!draft.gpsTime) return '';
+  var s=Math.round((Date.now()-draft.gpsTime)/1000);
+  return s<3 ? 'live' : ('vor '+(s<60?(s+' s'):(Math.round(s/60)+' min')));
+}
+// GPS-Pille direkt im DOM aktualisieren, ohne das ganze Formular neu zu bauen
+function updateGpsPill(draft){
+  var el=document.querySelector('.gps'); if(!el) return;
+  var stale=draft.gpsState==='ok'&&draft.gpsTime&&(Date.now()-draft.gpsTime>12000);
+  el.className='gps '+(draft.gpsState==='ok'?(stale?'':'ok'):(draft.gpsState==='err'?'err':''));
+  var age=gpsAgeText(draft);
+  var txt = draft.gpsState==='ok' ? ('GPS ±'+draft.accuracy+' m · '+age)
+          : draft.gpsState==='err' ? ('GPS: '+(draft.gpsMsg||'nicht verfügbar'))
+          : 'GPS wird ermittelt…';
+  if(draft.gpsState==='ok') txt+=' · TIPPEN für neuen Fix';
+  else if(draft.gpsState!=='ok') txt+=' · TIPPEN zum Aktivieren';
+  el.innerHTML='<span class="dot"></span>'+esc(txt);
 }
 
 /* ---------- Google APIs ---------- */
@@ -359,6 +414,39 @@ async function placesNearby(lat,lng,radius,max){
       primaryType:p.primaryType||'',
       lat:(p.location&&p.location.latitude), lng:(p.location&&p.location.longitude) };
   });
+}
+
+/* ---------- Firma live beim Erfassen (Ist-Aufnahme) ----------
+   Sobald ein GPS-Fix da ist, holen wir die nächstgelegenen Betriebe und
+   zeigen die Firma schon VOR dem Speichern an – änderbar per Auswahl/Freitext.
+   Nur EIN Places-Call pro Draft (Kosten), zusätzlich manuell auslösbar. */
+function maybeLookupCompany(draft){
+  if(draft.companyState!=='idle') return;   // pro Draft nur einmal automatisch
+  lookupCompany(draft);
+}
+async function lookupCompany(draft){
+  if(draft.lat==null){ toast('Erst GPS aktivieren'); return; }
+  if(!S.keys.google){ draft.companyState='err'; draft.companyMsg='Kein Google-Key (Setup)'; render(); return; }
+  if(!S.online){ draft.companyState='err'; draft.companyMsg='Offline – Firma später im Lead'; render(); return; }
+  draft.companyState='loading'; render();
+  try{
+    var cands=await placesNearby(draft.lat,draft.lng,90,6);
+    cands=cands.filter(function(p){ return p.firmenname && STOP_EXCLUDE.indexOf(p.primaryType)<0; });
+    draft.companyCands=cands;
+    if(cands.length && !(draft.preset&&draft.preset._manual)){
+      var c=cands[0];
+      draft.preset={ firmenname:c.firmenname, adresse:c.adresse, telefon:c.telefon||'',
+                     website:c.website||'', place_id:c.place_id, ortsteil:(draft.preset&&draft.preset.ortsteil)||'' };
+    }
+    draft.companyState=cands.length?'ok':'empty';
+  }catch(e){ draft.companyState='err'; draft.companyMsg=(e&&e.message)||'Fehler'; }
+  render();
+}
+function pickDraftCompany(i){
+  var d=S.draft, c=d.companyCands&&d.companyCands[i]; if(!c) return;
+  d.preset={ firmenname:c.firmenname, adresse:c.adresse, telefon:c.telefon||'',
+             website:c.website||'', place_id:c.place_id, ortsteil:(d.preset&&d.preset.ortsteil)||'' };
+  d.showCands=false; render();
 }
 
 /* ---------- Anreicherung (offline-first Outbox) ---------- */
@@ -530,11 +618,13 @@ async function saveDraft(){
     notiz:d.notiz, status:'neu', score:scoreLead(d), hot_lead:isHot(d), rhythmus:d.rhythmus||'14t', rabatt:(d.rabatt!=null?d.rabatt:0.10),
     kosten_monat:cost.kosten_monat, ersparnis_monat:cost.ersparnis_monat, ersparnis_jahr:cost.ersparnis_jahr,
     rss_marge_monat:cost.rss_marge_monat, rss_marge_jahr:cost.rss_marge_jahr,
-    enriched:pre?true:false, sync_state: supaOn()?'pending':'local', duplikat:false
+    // schon beim Erfassen per Places gefunden? -> enriched, kein zweiter API-Call nötig
+    enriched:(pre&&pre.place_id)?true:false, sync_state: supaOn()?'pending':'local', duplikat:false
   };
+  if(d.companyCands&&d.companyCands.length) lead._candidates=d.companyCands;  // „Andere Firma" im Detail
   await dbPut(stripRuntime(lead));
   S.leads.unshift(lead);
-  var wasStop=!!pre;
+  var wasStop=!!d.fromStop;
   S.draft=freshDraft();
   if(wasStop){
     S.tab='heute';                                  // nach Route-Stop zurück zur Route
@@ -543,8 +633,11 @@ async function saveDraft(){
   } else {
     S.tab='erfassen';                               // bereit für die nächste Tonne
     S.lastSaved={ id:lead.id, score:lead.score, hot:lead.hot_lead };
-    render(); toast(lead.hot_lead?'🔥 Hot Lead gespeichert':'Lead gespeichert');
-    enrich(lead).then(render);
+    render();
+    if(S.tab==='erfassen') startGPSWatch(S.draft);  // Tracking für die nächste Tonne
+    toast(lead.hot_lead?'🔥 Hot Lead gespeichert':'Lead gespeichert');
+    if(lead.enriched){ dedupeFlag(lead); syncLead(lead); }
+    else enrich(lead).then(render);                 // nur wenn Firma noch fehlt
   }
 }
 
@@ -573,14 +666,17 @@ function renderErfassen(){
   var sc=scoreLead(d), hot=isHot(d), cost=costEstimate(d);
   var img=d.photoBlob?URL.createObjectURL(d.photoBlob):null;
 
-  var gpsCls = d.gpsState==='ok'?'ok':(d.gpsState==='err'?'err':'');
-  var gpsTxt = d.gpsState==='ok' ? ('GPS ±'+d.accuracy+' m erfasst')
+  var stale = d.gpsState==='ok' && d.gpsTime && (Date.now()-d.gpsTime>12000);
+  var gpsCls = d.gpsState==='ok'?(stale?'':'ok'):(d.gpsState==='err'?'err':'');
+  var gpsTxt = d.gpsState==='ok' ? ('GPS ±'+d.accuracy+' m · '+gpsAgeText(d))
             : d.gpsState==='err' ? ('GPS: '+(d.gpsMsg||'nicht verfügbar'))
             : 'GPS wird ermittelt…';
+  var gpsHint = d.gpsState==='ok' ? ' · TIPPEN für neuen Fix' : ' · TIPPEN zum Aktivieren';
 
-  var preBanner = d.preset ?
+  // Route-Stop-Banner bleibt oben; die Auto-Firma zeigen wir unten im Firma-Block.
+  var preBanner = (d.preset && d.fromStop) ?
     ('<div style="border:2px solid var(--ink);background:var(--ink);color:var(--paper);padding:12px 14px;margin-bottom:14px">'+
-      '<div style="font-size:10px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:#bbb">Route-Stop · '+esc(d.preset.ortsteil.split(' (')[0])+'</div>'+
+      '<div style="font-size:10px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:#bbb">Route-Stop · '+esc((d.preset.ortsteil||'').split(' (')[0])+'</div>'+
       '<div style="font-weight:800;font-size:16px;text-transform:uppercase;margin-top:2px">'+esc(d.preset.firmenname)+'</div>'+
       '<div style="font-size:12px;color:#ccc">'+esc(d.preset.adresse||'')+'</div>'+
       '<button data-act="clearpreset" style="margin-top:8px;background:var(--paper);color:var(--ink);font-size:10px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;padding:6px 10px">Stop entfernen</button>'+
@@ -596,7 +692,7 @@ function renderErfassen(){
   var html=''+
   '<div class="screen">'+
     '<h1 class="t">Tonne<br>erfassen</h1>'+
-    '<div class="sub">Foto antippen → Tonnen prüfen → speichern. Firma trägst du danach im Lead nach.</div>'+
+    '<div class="sub">Foto → GPS → Firma (automatisch) → Tonnen prüfen → speichern.</div>'+
     savedBanner+
     preBanner+
 
@@ -610,8 +706,7 @@ function renderErfassen(){
       ('<button class="mic'+(d.analyzing?' rec':'')+'" data-act="analyze"'+(d.analyzing?' disabled':'')+'>'+
         (d.analyzing?'🔍 Bild wird analysiert…':'🔍 Tonnen aus Foto erkennen')+'</button>') : '')+
 
-    '<div class="gps '+gpsCls+'" data-act="gps"><span class="dot"></span>'+esc(gpsTxt)+
-      (d.gpsState!=='ok'?' · TIPPEN zum Aktivieren':'')+'</div>'+
+    '<div class="gps '+gpsCls+'" data-act="gps"><span class="dot"></span>'+esc(gpsTxt+gpsHint)+'</div>'+
     (d.gpsState==='err' ?
       ('<div class="note" style="border:1.5px solid var(--hot);padding:10px 12px;margin-top:0">'+
         '<b>Standort in Chrome freigeben:</b><br>'+
@@ -620,6 +715,8 @@ function renderErfassen(){
         '• <b>iPhone:</b> zusätzlich Einstellungen → Datenschutz → Ortungsdienste <b>AN</b> und für <b>Chrome</b> „Beim Verwenden".<br>'+
         '• <b>Android:</b> Einstellungen → Standort <b>AN</b>; App-Berechtigung für Chrome auf „Zulassen".<br>'+
         'Danach oben auf die GPS-Leiste tippen. (Speichern geht auch ohne GPS — aber Firma/Adresse braucht den Standort.)</div>') : '')+
+
+    firmaBlock(d)+
 
     '<span class="lab">Tonnen vor Ort'+(d.behaelter.length>1?(' · '+totalAnzahl(d)+' gesamt'):'')+'</span>'+
     d.behaelter.map(binBlock).join('')+
@@ -651,6 +748,56 @@ function renderErfassen(){
   '</div>';
   $app.innerHTML=html;
 }
+/* Firma-Block im Erfassen: zeigt die per Places gefundene Firma schon vor dem
+   Speichern – auswählbar (mehrere Treffer) oder per Freitext überschreibbar. */
+function firmaBlock(d){
+  if(d.fromStop) return '';                       // Route-Stop hat oben schon sein Banner
+  var st=d.companyState;
+  var hasGps=d.lat!=null;
+  var pre=d.preset;
+  var head='<span class="lab">Firma (automatisch am Standort)</span>';
+
+  // Auswahl-Liste (mehrere Betriebe in der Nähe)
+  var candList = (d.showCands && d.companyCands && d.companyCands.length) ?
+    ('<div style="border:1.5px solid var(--ink);border-top:0;margin-bottom:10px">'+
+      d.companyCands.map(function(c,i){
+        var on=pre&&pre.place_id===c.place_id;
+        return '<div data-act="dpickco" data-i="'+i+'" style="padding:10px 12px;border-top:1.5px solid var(--ink);'+(on?'background:var(--ink);color:var(--paper)':'')+'">'+
+          '<b style="font-size:13px">'+esc(c.firmenname||'?')+'</b>'+
+          '<div style="font-size:11px;opacity:.8">'+esc(c.adresse||'')+(c.typ?(' · '+esc(c.typ)):'')+'</div></div>';
+      }).join('')+'</div>') : '';
+
+  var body;
+  if(st==='loading'){
+    body='<div class="toggle"><span>🔎 Firma wird gesucht…</span></div>';
+  } else if(pre && pre.firmenname){
+    body='<div style="border:1.5px solid var(--ink);padding:12px 14px;margin-bottom:0">'+
+        '<div style="font-weight:800;font-size:16px;text-transform:uppercase">'+esc(pre.firmenname)+'</div>'+
+        (pre.adresse?'<div style="font-size:12px;color:var(--muted)">'+esc(pre.adresse)+'</div>':'')+
+        (pre._manual?'<div style="font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-top:4px">manuell</div>':'')+
+      '</div>'+
+      candList+
+      '<div class="row two" style="margin-top:8px">'+
+        ((d.companyCands&&d.companyCands.length>1)?
+          '<button class="chip" data-act="togglecands">'+(d.showCands?'Auswahl schließen':'Andere Firma ('+d.companyCands.length+')')+'</button>':
+          '<button class="chip" data-act="findco"'+(hasGps?'':' disabled')+'>🔄 Neu suchen</button>')+
+        '<button class="chip" data-act="clearco">✎ Manuell</button>'+
+      '</div>';
+  } else if(st==='empty'){
+    body='<div class="note" style="margin-top:0">Kein Betrieb am Standort gefunden. Namen unten eintragen oder neu suchen.</div>'+
+      '<input class="txt" style="margin:8px 0" data-act="manualfirma" value="'+esc(pre?pre.firmenname||'':'')+'" placeholder="Firmenname manuell"/>'+
+      '<button class="chip" data-act="findco"'+(hasGps?'':' disabled')+'>🔄 Neu suchen</button>';
+  } else if(st==='err'){
+    body='<div class="note" style="border:1.5px solid var(--hot);margin-top:0">Firma: '+esc(d.companyMsg||'Fehler')+'</div>'+
+      '<input class="txt" style="margin:8px 0" data-act="manualfirma" value="'+esc(pre?pre.firmenname||'':'')+'" placeholder="Firmenname manuell"/>'+
+      '<button class="chip" data-act="findco"'+(hasGps?'':' disabled')+'>🔄 Erneut versuchen</button>';
+  } else {  // idle
+    body= hasGps
+      ? '<button class="chip" data-act="findco">🔎 Firma am Standort suchen</button>'
+      : '<div class="note" style="margin-top:0">Sobald GPS steht, wird die Firma automatisch gesucht.</div>';
+  }
+  return head+'<div style="margin-bottom:8px">'+body+'</div>';
+}
 function binBlock(c,i){
   var d=S.draft, multi=d.behaelter.length>1;
   var head = multi ?
@@ -672,6 +819,68 @@ function binBlock(c,i){
       '<button data-act="anz" data-i="'+i+'" data-v="1">+</button>'+
     '</div>';
   return '<div style="border:1.5px solid var(--ink);padding:12px;margin-bottom:10px">'+head+frakChips+volChips+stepper+'</div>';
+}
+// Bin-Editor im Lead-Detail (bearbeitet einen bestehenden Lead statt des Drafts)
+function binBlockLead(l,c,i){
+  var multi=containersOf(l).length>1;
+  var head = multi ?
+    ('<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">'+
+      '<b style="font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase">Tonne '+(i+1)+'</b>'+
+      '<button data-act="ldelbin" data-id="'+l.id+'" data-i="'+i+'" style="border:1.5px solid var(--hot);color:var(--hot);font-size:10px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;padding:4px 8px">Entfernen</button>'+
+    '</div>') : '';
+  var frakChips='<div class="row">'+ Object.keys(FRAKTION).map(function(k){
+      var f=FRAKTION[k];
+      return '<button class="chip'+(c.fraktion===k?' on':'')+'" data-act="lfrak" data-id="'+l.id+'" data-i="'+i+'" data-v="'+k+'">'+
+        '<span class="swatch" style="background:'+f.sw+'"></span>'+f.label+'</button>';
+    }).join('')+'</div>';
+  var volChips='<div class="row" style="margin-top:8px">'+ VOLUMEN.map(function(v){
+      return '<button class="chip'+(c.volumen===v?' on':'')+'" data-act="lvol" data-id="'+l.id+'" data-i="'+i+'" data-v="'+v+'">'+v+'</button>';
+    }).join('')+'</div>';
+  var stepper='<div class="step" style="margin-top:8px">'+
+      '<button data-act="lanz" data-id="'+l.id+'" data-i="'+i+'" data-v="-1">−</button>'+
+      '<div class="val">'+(c.anzahl||1)+'×</div>'+
+      '<button data-act="lanz" data-id="'+l.id+'" data-i="'+i+'" data-v="1">+</button>'+
+    '</div>';
+  return '<div style="border:1.5px solid var(--ink);padding:12px;margin-bottom:10px">'+head+frakChips+volChips+stepper+'</div>';
+}
+// Behälter eines Leads als eigenständiges, editierbares Array verankern
+function ensureBins(l){
+  if(!l.behaelter||!l.behaelter.length){
+    l.behaelter=containersOf(l).map(function(c){ return {fraktion:c.fraktion,volumen:c.volumen,anzahl:c.anzahl||1}; });
+  }
+  return l.behaelter;
+}
+// Nach jeder Tonnen-Änderung: Score/Hot/Kalkulation/Primärfelder neu + speichern + syncen
+function recalcLead(l){
+  var dom=dominantContainer(l);
+  l.fraktion=dom.fraktion; l.volumen=dom.volumen; l.anzahl=totalAnzahl(l);
+  l.score=scoreLead(l); l.hot_lead=isHot(l);
+  var k=kalkulation(l);
+  l.kosten_monat=k.kosten_monat; l.ersparnis_monat=k.ersparnis_monat; l.ersparnis_jahr=k.ersparnis_jahr;
+  l.rss_marge_monat=k.rss_marge_monat; l.rss_marge_jahr=k.rss_marge_jahr;
+  l.updated_at=Date.now();
+  dbPut(stripRuntime(l)).then(function(){ syncLead(l); });
+  renderSheet();
+}
+function editBin(id,i,field,val){
+  var l=S.leads.find(function(x){return x.id===id;}); if(!l) return;
+  var bins=ensureBins(l); if(!bins[i]) return;
+  bins[i][field]=val; recalcLead(l);
+}
+function editBinAnz(id,i,delta){
+  var l=S.leads.find(function(x){return x.id===id;}); if(!l) return;
+  var bins=ensureBins(l); if(!bins[i]) return;
+  bins[i].anzahl=Math.max(1,(bins[i].anzahl||1)+delta); recalcLead(l);
+}
+function addBinLead(id){
+  var l=S.leads.find(function(x){return x.id===id;}); if(!l) return;
+  ensureBins(l).push({fraktion:'restmuell',volumen:240,anzahl:1}); recalcLead(l);
+}
+function delBinLead(id,i){
+  var l=S.leads.find(function(x){return x.id===id;}); if(!l) return;
+  var bins=ensureBins(l); bins.splice(i,1);
+  if(!bins.length) bins.push({fraktion:'restmuell',volumen:1100,anzahl:1});
+  recalcLead(l);
 }
 function VOLUMEN_FRAK(){
   var d=S.draft;
@@ -815,8 +1024,10 @@ async function loadStops(o){
 
 function startStop(p, o, frak){
   var d=freshDraft();
+  d.fromStop=true;
   d.preset={ firmenname:p.firmenname, adresse:p.adresse, telefon:p.telefon||'',
              website:p.website||'', place_id:p.place_id, ortsteil:o.name };
+  d.companyState='ok';          // Firma steht schon (aus der Route) – keine Auto-Suche
   d.fraktion=frak||'restmuell';
   if(p.lat!=null){ d.lat=p.lat; d.lng=p.lng; d.gpsState='ok'; d.accuracy=0; }
   S.draft=d; S.tab='erfassen';
@@ -974,6 +1185,10 @@ function renderSheet(){
         (l.notiz?kv('Notiz', l.notiz):'')+
       '</div>'+
 
+      '<span class="lab">Tonnen vor Ort (editierbar)</span>'+
+      containersOf(l).map(function(c,i){ return binBlockLead(l,c,i); }).join('')+
+      '<button class="cta ghost" data-act="laddbin" data-id="'+l.id+'" style="margin-top:0;margin-bottom:6px">+ Weitere Tonne</button>'+
+
       '<span class="lab">Firma / Kontakt (manuell editierbar)</span>'+
       '<input class="txt" style="margin-bottom:8px" data-edit="firmenname" data-id="'+l.id+'" value="'+esc(l.firmenname||'')+'" placeholder="Firmenname"/>'+
       '<input class="txt" style="margin-bottom:8px" data-edit="telefon" data-id="'+l.id+'" inputmode="tel" value="'+esc(l.telefon||'')+'" placeholder="Telefon"/>'+
@@ -1097,10 +1312,21 @@ function calcBreakdown(l,k){
 }
 function photoGallery(l){
   var u=photoURL(l), extras=extraPhotoURLs(l), html='';
-  if(u) html+='<img class="sh-photo" src="'+u+'" style="margin-bottom:8px"/>';
+  if(u){
+    html+='<div style="position:relative;margin-bottom:8px">'+
+      '<img class="sh-photo" src="'+u+'"/>'+
+      '<label style="position:absolute;right:8px;bottom:8px;background:var(--ink);color:var(--paper);font-size:11px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;padding:8px 10px;cursor:pointer">🔄 Hauptfoto tauschen'+
+        '<input type="file" accept="image/*" capture="environment" data-act="mainphoto" data-id="'+l.id+'" style="display:none"/></label>'+
+    '</div>';
+  }
   if(extras.length){
     html+='<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px">'+
-      extras.map(function(src){ return '<img src="'+src+'" style="width:84px;height:84px;object-fit:cover;border:1.5px solid var(--ink)"/>'; }).join('')+'</div>';
+      extras.map(function(src,i){
+        return '<div style="position:relative;width:84px;height:84px">'+
+          '<img src="'+src+'" style="width:84px;height:84px;object-fit:cover;border:1.5px solid var(--ink)"/>'+
+          '<button data-act="delphoto" data-id="'+l.id+'" data-i="'+i+'" style="position:absolute;top:-6px;right:-6px;width:22px;height:22px;border-radius:50%;background:var(--hot);color:#fff;border:0;font-weight:800;line-height:1;font-size:13px">×</button>'+
+        '</div>';
+      }).join('')+'</div>';
   }
   html+='<label class="cta ghost" style="margin-top:0;cursor:pointer;display:flex">+ Foto hinzufügen (Doku)'+
     '<input type="file" accept="image/*" capture="environment" data-act="addphoto" data-id="'+l.id+'" style="display:none"/></label>';
@@ -1145,7 +1371,15 @@ document.addEventListener('click',function(e){
   else if(act==='logo'){ S.draft.entsorger_logo=!S.draft.entsorger_logo; render(); }
   else if(act==='mic'){ startMic(t); }
   else if(act==='dictate'){ focusNote(); toast('Jetzt das 🎤 auf deiner Tastatur drücken'); }
-  else if(act==='clearpreset'){ S.draft.preset=null; render(); }
+  else if(act==='clearpreset'){ S.draft.preset=null; S.draft.fromStop=false; render(); }
+  else if(act==='findco'){ lookupCompany(S.draft); }
+  else if(act==='togglecands'){ S.draft.showCands=!S.draft.showCands; render(); }
+  else if(act==='dpickco'){ pickDraftCompany(+t.dataset.i); }
+  else if(act==='clearco'){                              // auf Freitext umstellen
+    var dd=S.draft; dd.preset={ firmenname:'', adresse:(dd.preset&&dd.preset.adresse)||'', telefon:'', website:'', place_id:'', ortsteil:(dd.preset&&dd.preset.ortsteil)||'', _manual:true };
+    dd.companyState='empty'; dd.showCands=false; render();
+    setTimeout(function(){ var i=document.querySelector('[data-act="manualfirma"]'); if(i) i.focus(); },30);
+  }
   else if(act==='openlast'){ if(S.lastSaved){ S.modal=S.lastSaved.id; S.lastSaved=null; render(); renderSheet(); } }
   else if(act==='dismisslast'){ S.lastSaved=null; render(); }
   else if(act==='save'){ saveDraft(); }
@@ -1184,6 +1418,12 @@ document.addEventListener('click',function(e){
     var dl=S.leads.find(function(x){return x.id===id;});
     if(dl && confirm('Lead löschen?\n'+(dl.firmenname||dl.adresse||'')+'\n'+behaelterSummary(dl))) delLead(id);
   }
+  else if(act==='lfrak'){ editBin(id,+t.dataset.i,'fraktion',v); }
+  else if(act==='lvol'){ editBin(id,+t.dataset.i,'volumen',parseInt(v,10)); }
+  else if(act==='lanz'){ editBinAnz(id,+t.dataset.i,parseInt(v,10)); }
+  else if(act==='laddbin'){ addBinLead(id); }
+  else if(act==='ldelbin'){ delBinLead(id,+t.dataset.i); }
+  else if(act==='delphoto'){ delLeadPhoto(id,+t.dataset.i); }
   else if(act==='pick'){ S.picker=id; renderSheet(); }
   else if(act==='pickclose'||act==='pickbg'&&e.target.id==='mbg'){ S.picker=null; renderSheet(); }
   else if(act==='setco'){ setCompany(id,parseInt(t.dataset.i,10)); }
@@ -1203,7 +1443,8 @@ document.addEventListener('click',function(e){
 document.querySelector('nav').addEventListener('click',function(e){
   var b=e.target.closest('button[data-tab]'); if(!b) return;
   S.tab=b.dataset.tab; S.modal=null; S.picker=null;
-  if(S.tab==='erfassen' && (!S.draft||!S.draft.photoBlob) && (!S.draft||S.draft.gpsState==='wait')){ if(!S.draft) S.draft=freshDraft(); getGPS(S.draft); }
+  if(S.tab==='erfassen'){ if(!S.draft) S.draft=freshDraft(); startGPSWatch(S.draft); }
+  else stopGPSWatch();                                   // Tracking nur im Erfassen-Tab (spart Akku)
   render();
 });
 
@@ -1211,6 +1452,7 @@ document.querySelector('nav').addEventListener('click',function(e){
 document.addEventListener('input',function(e){
   var t=e.target;
   if(t.dataset.act==='note'){ if(S.draft) S.draft.notiz=t.value; }
+  if(t.dataset.act==='manualfirma'){ var d=S.draft; if(d){ d.preset=d.preset||{firmenname:'',adresse:'',telefon:'',website:'',place_id:'',ortsteil:''}; d.preset.firmenname=t.value; d.preset._manual=true; } }
   if(t.dataset.key){ S.keys[t.dataset.key]=t.value.replace(/\s+/g,''); }  // Keys/URLs haben nie Leerzeichen
   if(t.dataset.edit){ var le=S.leads.find(function(x){return x.id===t.dataset.id;}); if(le){ le[t.dataset.edit]=t.value; } }
 });
@@ -1222,8 +1464,18 @@ document.addEventListener('change',async function(e){
     toast('Foto wird verarbeitet…');
     S.draft.photoBlob=await compressPhoto(t.files[0]);
     if(S.draft.gpsState!=='ok') getGPS(S.draft);
+    else maybeLookupCompany(S.draft);   // GPS steht -> Firma jetzt spätestens ziehen
     render();
     if(S.keys.gemini) analyzePhoto();  // Tonnen automatisch erkennen
+  }
+  // Hauptfoto eines bestehenden Leads austauschen
+  else if(t.dataset.act==='mainphoto' && t.files && t.files[0]){
+    var lm=S.leads.find(function(x){return x.id===t.dataset.id;}); if(!lm) return;
+    toast('Hauptfoto wird ersetzt…');
+    var nb=await compressPhoto(t.files[0]);
+    if(lm._url){ URL.revokeObjectURL(lm._url); lm._url=null; }   // alte Objekt-URL freigeben
+    lm.photoBlob=nb; lm.foto_url=null;                           // neu hochladen beim Sync
+    await dbPut(stripRuntime(lm)); syncLead(lm); renderSheet(); render(); toast('Hauptfoto ersetzt');
   }
   // weiteres Foto zu einem bestehenden Lead (Doku)
   else if(t.dataset.act==='addphoto' && t.files && t.files[0]){
@@ -1255,6 +1507,12 @@ async function delLead(id){
   if(supaOn() && S.online){   // auch zentral löschen, sonst kommt er beim nächsten Pull zurück
     fetch(supaBase()+'/rest/v1/leads?id=eq.'+encodeURIComponent(id),{ method:'DELETE', headers:supaHeaders() }).catch(function(){});
   }
+}
+async function delLeadPhoto(id,i){
+  var l=S.leads.find(function(x){return x.id===id;}); if(!l||!l.photos||!l.photos[i]) return;
+  l.photos.splice(i,1);
+  if(l._purls){ if(l._purls[i]) URL.revokeObjectURL(l._purls[i]); l._purls.splice(i,1); }
+  await dbPut(stripRuntime(l)); syncLead(l); renderSheet();
 }
 function setCompany(id,i){
   var l=S.leads.find(function(x){return x.id===id;}); if(!l||!l._candidates) return;
@@ -1352,7 +1610,7 @@ async function boot(){
   render();                               // sofort rendern – Erfassen läuft auch ohne DB
   try{ await openDB(); await loadLeads(); render(); }
   catch(e){ console.error(e); toast('Lokaler Speicher nicht verfügbar'); }
-  getGPS(S.draft);
+  startGPSWatch(S.draft);                 // Live-Tracking (Auto) + Auto-Firma beim ersten Fix
   loadRoute().then(render);
   if(S.online){ processOutbox().then(function(){ syncAll(); }); }
   // regelmäßig Team-Leads nachladen (alle 90 s), ohne Tipp-Eingaben zu stören
