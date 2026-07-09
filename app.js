@@ -82,7 +82,7 @@ var FRAKTION = {
 var VOLUMEN = [120,240,660,1100];
 var STATUS = ['neu','kontaktiert','angebot','gewonnen','verloren'];
 var STATUS_LBL = { neu:'Neu', kontaktiert:'Kontakt', angebot:'Angebot', gewonnen:'Gewonnen', verloren:'Verloren' };
-var APP_VERSION = 'v33 · GPS-Fix robuster · Aufkleber→Adresse+Firma · Galerie-Upload · Foto-Zoom';
+var APP_VERSION = 'v34 · Scan robuster (Thinking aus) · Lead-Notiz editierbar · GPS-Fix · Aufkleber-Scan';
 var WD = ['Sonntag','Montag','Dienstag','Mittwoch','Donnerstag','Freitag','Samstag'];
 // Places-Typen, die fast nie Gewerbekunden mit Tonne sind -> aus Route ausblenden
 var STOP_EXCLUDE = ['bus_stop','transit_station','locality','political','park','school',
@@ -246,6 +246,18 @@ function blobToB64(blob){
     r.readAsDataURL(blob);
   });
 }
+// Text aus einer Gemini-Antwort robust einsammeln: ALLE Parts aller Kandidaten
+// zusammenfassen (nicht nur parts[0]) und den finishReason mitgeben (MAX_TOKENS etc.).
+function geminiText(dd){
+  var out='', reason='';
+  var cs=(dd&&dd.candidates)||[];
+  for(var i=0;i<cs.length;i++){
+    if(cs[i].finishReason) reason=cs[i].finishReason;
+    var parts=cs[i].content&&cs[i].content.parts||[];
+    for(var j=0;j<parts.length;j++){ if(parts[j].text) out+=parts[j].text; }
+  }
+  return { text:out, reason:reason };
+}
 
 /* ---------- Bilderkennung (Gemini Vision) ---------- */
 function snapVol(v){ var o=[120,240,660,1100]; v=parseInt(v,10)||1100;
@@ -285,12 +297,11 @@ async function analyzePhoto(){
     var r=await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key='+encodeURIComponent(S.keys.gemini),{
       method:'POST', headers:{'Content-Type':'application/json'},
       body:JSON.stringify({ contents:[{parts:[{inlineData:{mimeType:'image/jpeg',data:b64}},{text:prompt}]}],
-        generationConfig:{temperature:0.1,maxOutputTokens:1200} })
+        generationConfig:{temperature:0.1,maxOutputTokens:2048,thinkingConfig:{thinkingBudget:0}} })
     });
     if(!r.ok){ var e=await r.json().catch(function(){return{};}); throw new Error((e.error&&e.error.message)||('HTTP '+r.status)); }
     var dd=await r.json();
-    var txt=dd.candidates&&dd.candidates[0]&&dd.candidates[0].content&&dd.candidates[0].content.parts&&
-            dd.candidates[0].content.parts[0]&&dd.candidates[0].content.parts[0].text;
+    var txt=geminiText(dd).text;
     var m=txt&&txt.match(/\{[\s\S]*\}/);
     if(!m) throw new Error('keine Tonnen erkannt');
     var res=JSON.parse(m[0]);
@@ -318,12 +329,11 @@ async function analyzeSign(lead, blob){
     var r=await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key='+encodeURIComponent(S.keys.gemini),{
       method:'POST', headers:{'Content-Type':'application/json'},
       body:JSON.stringify({ contents:[{parts:[{inlineData:{mimeType:'image/jpeg',data:b64}},{text:prompt}]}],
-        generationConfig:{temperature:0.1,maxOutputTokens:400} })
+        generationConfig:{temperature:0.1,maxOutputTokens:1024,thinkingConfig:{thinkingBudget:0}} })
     });
     if(!r.ok){ var e=await r.json().catch(function(){return{};}); throw new Error((e.error&&e.error.message)||('HTTP '+r.status)); }
     var dd=await r.json();
-    var txt=dd.candidates&&dd.candidates[0]&&dd.candidates[0].content&&dd.candidates[0].content.parts&&
-            dd.candidates[0].content.parts[0]&&dd.candidates[0].content.parts[0].text;
+    var txt=geminiText(dd).text;
     var m=txt&&txt.match(/\{[\s\S]*\}/);
     if(!m) throw new Error('nichts lesbar');
     var res=JSON.parse(m[0]);
@@ -374,14 +384,13 @@ async function scanBinLabel(blob, mode, leadId){
     var r=await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key='+encodeURIComponent(S.keys.gemini),{
       method:'POST', headers:{'Content-Type':'application/json'},
       body:JSON.stringify({ contents:[{parts:[{inlineData:{mimeType:'image/jpeg',data:b64}},{text:prompt}]}],
-        generationConfig:{temperature:0.1,maxOutputTokens:500} })
+        generationConfig:{temperature:0.1,maxOutputTokens:2048,thinkingConfig:{thinkingBudget:0}} })
     });
     if(!r.ok){ var e=await r.json().catch(function(){return{};}); throw new Error((e.error&&e.error.message)||('HTTP '+r.status)); }
     var dd=await r.json();
-    var txt=dd.candidates&&dd.candidates[0]&&dd.candidates[0].content&&dd.candidates[0].content.parts&&
-            dd.candidates[0].content.parts[0]&&dd.candidates[0].content.parts[0].text;
+    var gt=geminiText(dd), txt=gt.text;
     var m=txt&&txt.match(/\{[\s\S]*\}/);
-    if(!m) throw new Error('Aufkleber nicht lesbar');
+    if(!m) throw new Error(gt.reason==='MAX_TOKENS'?'Antwort zu lang (erneut versuchen)':(txt?('unlesbar: '+txt.slice(0,60)):'keine Antwort vom Modell'));
     var res=JSON.parse(m[0]);
     var strasse=String(res.strasse||'').trim(), hnr=String(res.hausnummer||'').trim();
     var ort=String(res.ort||'').trim(), plz=String(res.plz||'').trim(), behNr=String(res.behaelter_nr||'').trim();
@@ -1590,7 +1599,9 @@ function renderSheet(){
       '<input class="txt" style="margin-bottom:8px" data-edit="telefon" data-id="'+l.id+'" inputmode="tel" value="'+esc(l.telefon||'')+'" placeholder="Telefon"/>'+
       '<input class="txt" style="margin-bottom:8px" data-edit="adresse" data-id="'+l.id+'" value="'+esc(l.adresse||'')+'" placeholder="Adresse (Straße, Ort)"/>'+
       '<input class="txt" style="margin-bottom:8px" data-edit="website" data-id="'+l.id+'" inputmode="url" value="'+esc(l.website||'')+'" placeholder="Website (optional)"/>'+
-      '<button class="cta" data-act="saveedit" data-id="'+l.id+'" style="margin-top:0">Firma speichern</button>'+
+      '<span class="lab">Notiz (editierbar)</span>'+
+      '<textarea data-edit="notiz" data-id="'+l.id+'" placeholder="Freitext / Gesprächsnotiz…">'+esc(l.notiz||'')+'</textarea>'+
+      '<button class="cta" data-act="saveedit" data-id="'+l.id+'" style="margin-top:8px">Speichern</button>'+
       offerBox(l)+
       ((kalkulation(l).ersparnis_jahr>0)?'<button class="cta" data-act="angebot" data-id="'+l.id+'">📄 Angebot erstellen & speichern</button>':'')+
       angebotListe(l)+
@@ -1907,7 +1918,7 @@ document.addEventListener('click',function(e){
   else if(act==='saveedit'){
     var le=S.leads.find(function(x){return x.id===id;});
     if(le){ le.firmenname=(le.firmenname||'').trim(); le.enriched=true; dedupeFlag(le);
-      dbPut(stripRuntime(le)).then(function(){ syncLead(le); toast('Firma gespeichert'); render(); }); }
+      dbPut(stripRuntime(le)).then(function(){ syncLead(le); toast('Gespeichert'); render(); }); }
   }
   else if(act==='del'){ if(confirm('Lead löschen?')) delLead(id); }
   else if(act==='delquick'){
