@@ -82,7 +82,7 @@ var FRAKTION = {
 var VOLUMEN = [120,240,660,1100];
 var STATUS = ['neu','kontaktiert','angebot','gewonnen','verloren'];
 var STATUS_LBL = { neu:'Neu', kontaktiert:'Kontakt', angebot:'Angebot', gewonnen:'Gewonnen', verloren:'Verloren' };
-var APP_VERSION = 'v32 · Angebote speichern & einzeln löschen';
+var APP_VERSION = 'v33 · GPS-Fix robuster · Aufkleber→Adresse+Firma · Galerie-Upload · Foto-Zoom';
 var WD = ['Sonntag','Montag','Dienstag','Mittwoch','Donnerstag','Freitag','Samstag'];
 // Places-Typen, die fast nie Gewerbekunden mit Tonne sind -> aus Route ausblenden
 var STOP_EXCLUDE = ['bus_stop','transit_station','locality','political','park','school',
@@ -136,12 +136,13 @@ var S = {
   calcOpen: false,    // aufklappbare Detail-Rechnung im Lead-Sheet
   lastSyncError: null,// letzter Sync-Fehler (sichtbar in Setup)
   watchId: null,      // navigator.geolocation.watchPosition-ID (Live-Tracking im Auto)
-  gpsTick: null       // Intervall, das das Fix-Alter in der GPS-Pille aktualisiert
+  gpsTick: null,      // Intervall, das das Fix-Alter in der GPS-Pille aktualisiert
+  gpsRefreshing: false// gerade ein frischer Fix angefordert (verhindert Doppel-Requests)
 };
 function freshDraft(){
   return { photoBlob:null, lat:null, lng:null, accuracy:null, gpsState:'wait', gpsMsg:'', gpsTime:null,
            behaelter:[{fraktion:'restmuell',volumen:1100,anzahl:1}], rhythmus:'14t', rabatt:0.10,
-           entsorger_logo:true, entsorger:'', notiz:'', analyzing:false,
+           entsorger_logo:true, entsorger:'', notiz:'', analyzing:false, labelScanning:false,
            preset:null, fromStop:false,               // fromStop = aus Route-Stop (springt nach Speichern zu „Heute")
            companyState:'idle', companyCands:null, companyMsg:'', showCands:false };
   // preset = { firmenname, adresse, telefon, website, place_id, ortsteil }
@@ -335,6 +336,91 @@ async function analyzeSign(lead, blob){
   }catch(err){ lead._scanning=false; renderSheet(); toast('Schild: '+(err.message||'Fehler')); }
 }
 
+// Firma zu einer gelesenen Adresse finden (Aufkleber/Schild). Klassische Geocoding-API
+// geht mit referrer-beschränkten Keys nicht -> Places Text-Suche (liefert Firma + Geo).
+async function companiesAtAddress(query, biasLat, biasLng){
+  if(!S.keys.google || !S.online || !query) return [];
+  var bLat=(biasLat!=null)?biasLat:53.35, bLng=(biasLng!=null)?biasLng:9.92;   // Fallback: LK Harburg
+  var res=await placesSearchText(query, bLat, bLng, 2500, 8);
+  var top=res[0];
+  if(top && top.lat!=null){                       // an der getroffenen Adresse noch die Nachbarbetriebe ziehen
+    try{
+      var near=await placesNearby(top.lat, top.lng, 60, 8);
+      near.forEach(function(n){ if(!res.some(function(r){return r.place_id===n.place_id;})) res.push(n); });
+    }catch(e){}
+  }
+  return res.filter(function(p){ return p.firmenname && STOP_EXCLUDE.indexOf(p.primaryType)<0; });
+}
+
+// Amtlichen LK-Harburg-Behälter-Aufkleber lesen: Volumen + Fraktion + Grundstück-Adresse,
+// daraus die Tonne setzen UND die Firma an der Adresse suchen.  mode: 'draft' | 'lead'
+async function scanBinLabel(blob, mode, leadId){
+  if(!S.keys.gemini){ toast('Erst Gemini-Key in Setup'); return; }
+  var draft = mode==='draft' ? S.draft : null;
+  var lead  = mode==='lead'  ? S.leads.find(function(x){return x.id===leadId;}) : null;
+  if(mode==='lead' && !lead) return;
+  if(draft){ draft.labelScanning=true; render(); } else { lead._scanning=true; renderSheet(); }
+  var prompt=
+    'Auf dem Foto ist ein amtlicher Abfallbehälter-Aufkleber (Landkreis Harburg) auf einer Mülltonne.\n'+
+    'Lies GENAU ab, was auf dem Aufkleber steht:\n'+
+    '- Volumen in Litern (typisch 120, 240, 660 oder 1100)\n'+
+    '- Abfallart/Fraktion: Restabfall/Restmüll, Bioabfall, Papier oder Gelber Sack/Wertstoff\n'+
+    '- Behälter-Nr. (Ziffernfolge nach "Behälter-Nr.:")\n'+
+    '- Grundstück-Adresse unter "Ausgegeben für das Grundstück": Ort/Ortsteil, Straße + Hausnummer, ggf. PLZ\n'+
+    'Nur ablesen, was wirklich im Bild steht; unklare Felder leer lassen.\n'+
+    'Antworte NUR als JSON: {"volumen":1100,"fraktion":"restmuell","behaelter_nr":"","strasse":"","hausnummer":"","plz":"","ort":""}';
+  try{
+    var b64=await blobToB64(blob);
+    var r=await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key='+encodeURIComponent(S.keys.gemini),{
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({ contents:[{parts:[{inlineData:{mimeType:'image/jpeg',data:b64}},{text:prompt}]}],
+        generationConfig:{temperature:0.1,maxOutputTokens:500} })
+    });
+    if(!r.ok){ var e=await r.json().catch(function(){return{};}); throw new Error((e.error&&e.error.message)||('HTTP '+r.status)); }
+    var dd=await r.json();
+    var txt=dd.candidates&&dd.candidates[0]&&dd.candidates[0].content&&dd.candidates[0].content.parts&&
+            dd.candidates[0].content.parts[0]&&dd.candidates[0].content.parts[0].text;
+    var m=txt&&txt.match(/\{[\s\S]*\}/);
+    if(!m) throw new Error('Aufkleber nicht lesbar');
+    var res=JSON.parse(m[0]);
+    var strasse=String(res.strasse||'').trim(), hnr=String(res.hausnummer||'').trim();
+    var ort=String(res.ort||'').trim(), plz=String(res.plz||'').trim(), behNr=String(res.behaelter_nr||'').trim();
+    var strasseVoll=(strasse+' '+hnr).trim();
+    var adresse=[strasseVoll,[plz,ort].filter(Boolean).join(' ')].filter(Boolean).join(', ');
+    var bin=(res.volumen||res.fraktion)?normBin({fraktion:res.fraktion,volumen:res.volumen,anzahl:1}):null;
+    // Firma an der Adresse suchen (Straße + Ort als Query)
+    var query=strasseVoll?(strasseVoll+(ort?(', '+ort):'')):adresse;
+    var cands=[];
+    try{ cands=await companiesAtAddress(query,(draft&&draft.lat)||(lead&&lead.lat),(draft&&draft.lng)||(lead&&lead.lng)); }catch(e){}
+
+    if(draft){
+      if(bin) draft.behaelter=[bin];
+      draft.preset=draft.preset||{firmenname:'',adresse:'',telefon:'',website:'',place_id:'',ortsteil:''};
+      if(adresse) draft.preset.adresse=adresse;
+      if(behNr && (draft.notiz||'').indexOf(behNr)<0) draft.notiz=(draft.notiz?draft.notiz+' · ':'')+'Beh.-Nr. '+behNr;
+      if(cands.length && !draft.preset._manual){
+        var c=cands[0];
+        draft.preset.firmenname=c.firmenname; draft.preset.telefon=c.telefon||''; draft.preset.website=c.website||''; draft.preset.place_id=c.place_id||'';
+        if(c.adresse) draft.preset.adresse=c.adresse;
+      }
+      draft.companyCands=cands; draft.companyState=cands.length?'ok':'empty'; draft.showCands=false;
+      draft.labelScanning=false; render();
+      toast(cands.length?('Adresse + Firma: '+cands[0].firmenname):(adresse?('Adresse erkannt: '+adresse+' – Firma manuell'):'Aufkleber nicht lesbar'));
+    } else {
+      if(bin){ lead.behaelter=[bin]; }
+      if(adresse) lead.adresse=adresse;
+      if(behNr && (lead.notiz||'').indexOf(behNr)<0) lead.notiz=(lead.notiz?lead.notiz+' · ':'')+'Beh.-Nr. '+behNr;
+      if(cands.length){ applyCompany(lead,cands[0]); lead._candidates=cands; }
+      lead.enriched=true; lead._scanning=false; dedupeFlag(lead);
+      recalcLead(lead);                 // speichert + synct + renderSheet()
+      toast(cands.length?('Firma: '+cands[0].firmenname):(adresse?('Adresse: '+adresse+' – Firma manuell'):'Aufkleber nicht lesbar'));
+    }
+  }catch(err){
+    if(draft){ draft.labelScanning=false; render(); } else { lead._scanning=false; renderSheet(); }
+    toast('Aufkleber: '+(err.message||'Fehler'));
+  }
+}
+
 /* ---------- GPS ----------
    Im Auto ist ein einmaliger Fix schnell veraltet („Handy noch am alten Ort").
    Lösung: dauerhaftes Live-Tracking (watchPosition, maximumAge:0) solange man
@@ -379,28 +465,54 @@ function getGPS(draft){
     } else { gpsFail(draft,e); render(); }
   }, { enableHighAccuracy:true, timeout:15000, maximumAge:0 });
 }
+// Nur den Positions-Watch (neu) starten – ohne Tick/Company-Reset anzufassen.
+function rearmGPSWatch(draft){
+  if(S.watchId!=null){ try{ navigator.geolocation.clearWatch(S.watchId); }catch(e){} S.watchId=null; }
+  try{
+    S.watchId=navigator.geolocation.watchPosition(function(p){
+      var first=(draft.companyState==='idle');
+      gpsOk(draft,p);
+      if(S.tab==='erfassen') updateGpsPill(draft);   // nur die Pille – kein Full-Render (kein Flackern)
+      if(first) maybeLookupCompany(draft);
+    }, function(e){
+      if(draft.gpsState!=='ok'){ gpsFail(draft,e); if(S.tab==='erfassen') updateGpsPill(draft); }  // laufenden Fix bei Aussetzern behalten
+    }, { enableHighAccuracy:true, timeout:20000, maximumAge:0 });
+  }catch(e){}
+}
+// Frischen Fix ERZWINGEN (maximumAge:0) und den Watch danach neu bewaffnen.
+// Heilt den Kernbug: watchPosition liefert auf vielen Handys (v.a. iOS/Chrome) nach
+// einer Weile / nach Bildschirmsperre keine Updates mehr -> Standort klebt am alten Ort.
+function refreshFix(draft){
+  if(!navigator.geolocation || S.gpsRefreshing) return;
+  S.gpsRefreshing=true;
+  navigator.geolocation.getCurrentPosition(function(p){
+    S.gpsRefreshing=false; gpsOk(draft,p);
+    if(S.tab==='erfassen') updateGpsPill(draft);
+    rearmGPSWatch(draft);
+  }, function(){
+    S.gpsRefreshing=false; rearmGPSWatch(draft);
+  }, { enableHighAccuracy:true, timeout:15000, maximumAge:0 });
+}
 // Live-Tracking starten (nur im Erfassen-Tab): hält lat/lng dauerhaft aktuell.
 function startGPSWatch(draft){
   if(!gpsCommon(draft)){ render(); return; }
   stopGPSWatch();
   if(draft.gpsState!=='ok') draft.gpsState='wait';
-  try{
-    S.watchId=navigator.geolocation.watchPosition(function(p){
-      var first=(draft.companyState==='idle');
-      gpsOk(draft,p);
-      updateGpsPill(draft);            // nur die Pille aktualisieren – kein Full-Render (kein Flackern)
-      if(first) maybeLookupCompany(draft);
-    }, function(e){
-      if(draft.gpsState!=='ok'){ gpsFail(draft,e); updateGpsPill(draft); }  // laufenden Fix bei Aussetzern behalten
-    }, { enableHighAccuracy:true, timeout:20000, maximumAge:0 });
-  }catch(e){ /* watch nicht möglich -> einmaliger Fix reicht */ getGPS(draft); }
-  // Alter des Fixes jede Sekunde aktualisieren (watch feuert nicht, wenn man steht)
+  rearmGPSWatch(draft);
+  refreshFix(draft);                 // sofort einen garantiert frischen Fix holen
+  // Jede Sekunde: Fix-Alter aktualisieren + veralteten Fix aktiv nachfrischen.
   if(S.gpsTick) clearInterval(S.gpsTick);
-  S.gpsTick=setInterval(function(){ if(S.tab==='erfassen' && S.draft) updateGpsPill(S.draft); }, 1000);
+  S.gpsTick=setInterval(function(){
+    if(S.tab!=='erfassen' || !S.draft) return;
+    updateGpsPill(S.draft);
+    var age = S.draft.gpsTime ? (Date.now()-S.draft.gpsTime) : Infinity;
+    if(age>25000 && !S.gpsRefreshing) refreshFix(S.draft);   // Watch hängt -> nachfrischen
+  }, 1000);
 }
 function stopGPSWatch(){
   if(S.watchId!=null){ try{ navigator.geolocation.clearWatch(S.watchId); }catch(e){} S.watchId=null; }
   if(S.gpsTick){ clearInterval(S.gpsTick); S.gpsTick=null; }
+  S.gpsRefreshing=false;
 }
 function gpsAgeText(draft){
   if(draft.gpsState!=='ok'||!draft.gpsTime) return '';
@@ -488,7 +600,7 @@ async function lookupCompany(draft){
     }
     draft.companyState=cands.length?'ok':'empty';
   }catch(e){ draft.companyState='err'; draft.companyMsg=(e&&e.message)||'Fehler'; }
-  render();
+  safeRender();   // nicht neu rendern, wenn der Nutzer gerade Firma/Adresse tippt
 }
 function pickDraftCompany(i){
   var d=S.draft, c=d.companyCands&&d.companyCands[i]; if(!c) return;
@@ -500,6 +612,9 @@ function pickDraftCompany(i){
 /* ---------- Anreicherung (offline-first Outbox) ---------- */
 async function enrich(lead){
   if(!S.online || !S.keys.google) return;
+  // Ohne Koordinaten (z.B. Lead nur aus Aufkleber-Adresse) keine Nearby-Suche möglich
+  // -> als erledigt markieren, sonst endlose Retry-Schleife mit leeren Koordinaten.
+  if(lead.lat==null || lead.lng==null){ lead.enriched=true; await dbPut(stripRuntime(lead)); return; }
   try{
     // Places-only: die Nearby-Antwort liefert Firma UND formatierte Adresse.
     // (Die klassische Geocoding-API akzeptiert keine referrer-beschränkten Keys.)
@@ -550,7 +665,7 @@ function supaHeaders(extra){
 // rendert nur, wenn der Nutzer nicht gerade in einem Eingabefeld tippt
 function safeRender(){
   var a=document.activeElement;
-  if(a && a.dataset && (a.dataset.edit||a.dataset.act==='note'||a.dataset.key)) return;
+  if(a && a.dataset && (a.dataset.edit||a.dataset.act==='note'||a.dataset.act==='manualfirma'||a.dataset.act==='manualadr'||a.dataset.key)) return;
   render();
 }
 async function syncLead(lead){
@@ -742,7 +857,7 @@ function renderErfassen(){
   var html=''+
   '<div class="screen">'+
     '<h1 class="t">Tonne<br>erfassen</h1>'+
-    '<div class="sub">Foto → GPS → Firma (automatisch) → Tonnen prüfen → speichern.</div>'+
+    '<div class="sub">Foto → GPS → Firma (automatisch) → Tonnen prüfen → speichern.<br>Oder: <b>Behälter-Aufkleber scannen/hochladen</b> → Adresse &amp; Firma automatisch.</div>'+
     savedBanner+
     preBanner+
 
@@ -752,9 +867,20 @@ function renderErfassen(){
       '<input type="file" accept="image/*" capture="environment" data-act="photo"/>'+
     '</div>'+
 
+    // Vorher gemachte Fotos verwenden (ohne capture -> öffnet die Galerie statt Kamera)
+    '<label class="cta ghost" style="margin-top:8px;cursor:pointer;display:flex;justify-content:center">📁 Foto aus Galerie wählen'+
+      '<input type="file" accept="image/*" data-act="photogallery" style="display:none"/></label>'+
+
     (d.photoBlob && S.keys.gemini ?
       ('<button class="mic'+(d.analyzing?' rec':'')+'" data-act="analyze"'+(d.analyzing?' disabled':'')+'>'+
         (d.analyzing?'🔍 Bild wird analysiert…':'🔍 Tonnen aus Foto erkennen')+'</button>') : '')+
+
+    // Behälter-Aufkleber (LK Harburg) scannen/hochladen -> Adresse & Firma & Tonne automatisch.
+    // Ohne capture -> Kamera ODER vorhandenes Foto aus der Galerie (Lead aus Aufkleber erstellen).
+    (S.keys.gemini ?
+      ('<label class="cta ghost" style="margin-top:8px;cursor:pointer;display:flex;justify-content:center">'+
+        (d.labelScanning?'🏷️ Aufkleber wird gelesen…':'🏷️ Behälter-Aufkleber scannen/hochladen → Adresse & Firma')+
+        '<input type="file" accept="image/*" data-act="scanlabel" style="display:none"'+(d.labelScanning?' disabled':'')+'/></label>') : '')+
 
     '<div class="gps '+gpsCls+'" data-act="gps"><span class="dot"></span>'+esc(gpsTxt+gpsHint)+'</div>'+
     (d.gpsState==='err' ?
@@ -804,49 +930,38 @@ function firmaBlock(d){
   if(d.fromStop) return '';                       // Route-Stop hat oben schon sein Banner
   var st=d.companyState;
   var hasGps=d.lat!=null;
-  var pre=d.preset;
-  var head='<span class="lab">Firma (automatisch am Standort)</span>';
+  var pre=d.preset=d.preset||{firmenname:'',adresse:'',telefon:'',website:'',place_id:'',ortsteil:''};
+  var head='<span class="lab">Firma &amp; Adresse</span>';
 
-  // Auswahl-Liste (mehrere Betriebe in der Nähe)
+  // Statuszeile (Automatik-Feedback über den immer sichtbaren Feldern)
+  var status='';
+  if(st==='loading') status='<div class="note" style="margin:0 0 8px">🔎 Firma wird am Standort gesucht…</div>';
+  else if(st==='err') status='<div class="note" style="border:1.5px solid var(--hot);margin:0 0 8px">Firma: '+esc(d.companyMsg||'Fehler')+'</div>';
+  else if(st==='empty') status='<div class="note" style="margin:0 0 8px">Kein Betrieb automatisch gefunden – Namen unten eintragen.</div>';
+
+  // Immer editierbare Felder: Automatik füllt vor, manuell jederzeit überschreibbar
+  var fields=
+    '<input class="txt" style="margin:0 0 8px" data-act="manualfirma" value="'+esc(pre.firmenname||'')+'" placeholder="Firmenname (automatisch oder manuell)"/>'+
+    '<input class="txt" style="margin:0 0 8px" data-act="manualadr" value="'+esc(pre.adresse||'')+'" placeholder="Adresse (Straße, Ort)"/>';
+
+  // Auswahl-Liste (mehrere Betriebe an Standort/Adresse)
   var candList = (d.showCands && d.companyCands && d.companyCands.length) ?
-    ('<div style="border:1.5px solid var(--ink);border-top:0;margin-bottom:10px">'+
+    ('<div style="border:1.5px solid var(--ink);margin-bottom:8px">'+
       d.companyCands.map(function(c,i){
-        var on=pre&&pre.place_id===c.place_id;
-        return '<div data-act="dpickco" data-i="'+i+'" style="padding:10px 12px;border-top:1.5px solid var(--ink);'+(on?'background:var(--ink);color:var(--paper)':'')+'">'+
+        var on=pre&&pre.place_id&&pre.place_id===c.place_id;
+        return '<div data-act="dpickco" data-i="'+i+'" style="padding:10px 12px;'+(i?'border-top:1.5px solid var(--ink);':'')+(on?'background:var(--ink);color:var(--paper)':'')+'">'+
           '<b style="font-size:13px">'+esc(c.firmenname||'?')+'</b>'+
           '<div style="font-size:11px;opacity:.8">'+esc(c.adresse||'')+(c.typ?(' · '+esc(c.typ)):'')+'</div></div>';
       }).join('')+'</div>') : '';
 
-  var body;
-  if(st==='loading'){
-    body='<div class="toggle"><span>🔎 Firma wird gesucht…</span></div>';
-  } else if(pre && pre.firmenname){
-    body='<div style="border:1.5px solid var(--ink);padding:12px 14px;margin-bottom:0">'+
-        '<div style="font-weight:800;font-size:16px;text-transform:uppercase">'+esc(pre.firmenname)+'</div>'+
-        (pre.adresse?'<div style="font-size:12px;color:var(--muted)">'+esc(pre.adresse)+'</div>':'')+
-        (pre._manual?'<div style="font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-top:4px">manuell</div>':'')+
-      '</div>'+
-      candList+
-      '<div class="row two" style="margin-top:8px">'+
-        ((d.companyCands&&d.companyCands.length>1)?
-          '<button class="chip" data-act="togglecands">'+(d.showCands?'Auswahl schließen':'Andere Firma ('+d.companyCands.length+')')+'</button>':
-          '<button class="chip" data-act="findco"'+(hasGps?'':' disabled')+'>🔄 Neu suchen</button>')+
-        '<button class="chip" data-act="clearco">✎ Manuell</button>'+
-      '</div>';
-  } else if(st==='empty'){
-    body='<div class="note" style="margin-top:0">Kein Betrieb am Standort gefunden. Namen unten eintragen oder neu suchen.</div>'+
-      '<input class="txt" style="margin:8px 0" data-act="manualfirma" value="'+esc(pre?pre.firmenname||'':'')+'" placeholder="Firmenname manuell"/>'+
-      '<button class="chip" data-act="findco"'+(hasGps?'':' disabled')+'>🔄 Neu suchen</button>';
-  } else if(st==='err'){
-    body='<div class="note" style="border:1.5px solid var(--hot);margin-top:0">Firma: '+esc(d.companyMsg||'Fehler')+'</div>'+
-      '<input class="txt" style="margin:8px 0" data-act="manualfirma" value="'+esc(pre?pre.firmenname||'':'')+'" placeholder="Firmenname manuell"/>'+
-      '<button class="chip" data-act="findco"'+(hasGps?'':' disabled')+'>🔄 Erneut versuchen</button>';
-  } else {  // idle
-    body= hasGps
-      ? '<button class="chip" data-act="findco">🔎 Firma am Standort suchen</button>'
-      : '<div class="note" style="margin-top:0">Sobald GPS steht, wird die Firma automatisch gesucht.</div>';
-  }
-  return head+'<div style="margin-bottom:8px">'+body+'</div>';
+  var buttons='<div class="row two" style="margin-top:0">'+
+    ((d.companyCands&&d.companyCands.length>1)?
+      '<button class="chip" data-act="togglecands">'+(d.showCands?'Auswahl schließen':'Andere Firma ('+d.companyCands.length+')')+'</button>':
+      '<button class="chip" data-act="findco"'+(hasGps?'':' disabled')+'>'+(st==='loading'?'… sucht':'🔎 Firma am Standort')+'</button>')+
+    '<button class="chip" data-act="clearco">✎ Felder leeren</button>'+
+    '</div>';
+
+  return head+'<div style="margin-bottom:8px">'+status+fields+candList+buttons+'</div>';
 }
 function binBlock(c,i){
   var d=S.draft, multi=d.behaelter.length>1;
@@ -1642,29 +1757,71 @@ function photoGallery(l){
   var u=photoURL(l), extras=extraPhotoURLs(l), html='';
   if(u){
     html+='<div style="position:relative;margin-bottom:8px">'+
-      '<img class="sh-photo" src="'+u+'"/>'+
+      '<img class="sh-photo" src="'+u+'" data-act="zoom" style="cursor:zoom-in"/>'+
       '<label style="position:absolute;right:8px;bottom:8px;background:var(--ink);color:var(--paper);font-size:11px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;padding:8px 10px;cursor:pointer">🔄 Hauptfoto tauschen'+
-        '<input type="file" accept="image/*" capture="environment" data-act="mainphoto" data-id="'+l.id+'" style="display:none"/></label>'+
+        '<input type="file" accept="image/*" data-act="mainphoto" data-id="'+l.id+'" style="display:none"/></label>'+
+      '<div style="position:absolute;left:8px;bottom:8px;background:rgba(0,0,0,.55);color:#fff;font-size:10px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;padding:5px 8px;pointer-events:none">🔍 Tippen zum Zoomen</div>'+
     '</div>';
   }
   if(extras.length){
     html+='<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px">'+
       extras.map(function(src,i){
         return '<div style="position:relative;width:84px;height:84px">'+
-          '<img src="'+src+'" style="width:84px;height:84px;object-fit:cover;border:1.5px solid var(--ink)"/>'+
+          '<img src="'+src+'" data-act="zoom" style="width:84px;height:84px;object-fit:cover;border:1.5px solid var(--ink);cursor:zoom-in"/>'+
           '<button data-act="delphoto" data-id="'+l.id+'" data-i="'+i+'" style="position:absolute;top:-6px;right:-6px;width:22px;height:22px;border-radius:50%;background:var(--hot);color:#fff;border:0;font-weight:800;line-height:1;font-size:13px">×</button>'+
         '</div>';
       }).join('')+'</div>';
   }
-  html+='<label class="cta ghost" style="margin-top:0;cursor:pointer;display:flex">+ Foto hinzufügen (Doku)'+
-    '<input type="file" accept="image/*" capture="environment" data-act="addphoto" data-id="'+l.id+'" style="display:none"/></label>';
+  // Foto hinzufügen: Kamera ODER vorhandenes Galerie-Foto (ohne capture = Auswahl)
+  html+='<div class="row two" style="margin-top:0">'+
+    '<label class="cta ghost" style="margin-top:0;cursor:pointer;display:flex;justify-content:center">📷 Kamera'+
+      '<input type="file" accept="image/*" capture="environment" data-act="addphoto" data-id="'+l.id+'" style="display:none"/></label>'+
+    '<label class="cta ghost" style="margin-top:0;cursor:pointer;display:flex;justify-content:center">📁 Galerie'+
+      '<input type="file" accept="image/*" data-act="addphoto" data-id="'+l.id+'" style="display:none"/></label>'+
+  '</div>';
   if(S.keys.gemini){
     html+='<label class="cta'+(l._scanning?'':' ghost')+'" style="margin-top:8px;cursor:pointer;display:flex">'+
-      (l._scanning?'🏷️ Schild wird gelesen…':'🏷️ Firmenschild scannen → Firma/Adresse')+
-      '<input type="file" accept="image/*" capture="environment" data-act="scansign" data-id="'+l.id+'" style="display:none"/></label>';
+      (l._scanning?'🏷️ wird gelesen…':'🏷️ Behälter-Aufkleber scannen → Adresse & Firma')+
+      '<input type="file" accept="image/*" data-act="scanbinlabel" data-id="'+l.id+'" style="display:none"'+(l._scanning?' disabled':'')+'/></label>';
+    html+='<label class="cta ghost" style="margin-top:8px;cursor:pointer;display:flex">'+
+      '🪧 Firmenschild scannen → Firma/Adresse'+
+      '<input type="file" accept="image/*" data-act="scansign" data-id="'+l.id+'" style="display:none"'+(l._scanning?' disabled':'')+'/></label>';
   }
   return html;
 }
+/* Vollbild-Lightbox mit Zoom (Tippen = Stufen) + Verschieben (Ziehen/Scrollen).
+   Für Aufkleber/Schilder auf bereits erfassten Lead-Fotos lesbar machen. */
+function openLightbox(src){
+  if(!src) return;
+  closeLightbox();
+  var ov=document.createElement('div');
+  ov.id='lightbox';
+  ov.style.cssText='position:fixed;inset:0;z-index:9999;background:#000;display:flex;flex-direction:column';
+  var bar=document.createElement('div');
+  bar.style.cssText='flex:0 0 auto;display:flex;justify-content:space-between;align-items:center;padding:10px 14px;color:#fff';
+  bar.innerHTML='<span style="font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;opacity:.8">Tippen = zoomen · ziehen = verschieben</span>';
+  var x=document.createElement('button');
+  x.textContent='✕ Schließen';
+  x.style.cssText='background:#fff;color:#000;border:0;font-weight:800;padding:8px 12px;border-radius:4px;cursor:pointer';
+  x.onclick=closeLightbox;
+  bar.appendChild(x);
+  var scroll=document.createElement('div');
+  // display:block + img margin:auto -> zentriert wenn klein, voll scrollbar wenn gezoomt
+  // (Flex-Zentrierung würde bei Übergröße den linken Rand abschneiden).
+  scroll.style.cssText='flex:1 1 auto;overflow:auto;-webkit-overflow-scrolling:touch;touch-action:pan-x pan-y pinch-zoom;text-align:center';
+  var img=document.createElement('img');
+  img.src=src;
+  img.style.cssText='display:block;width:100%;height:auto;margin:0 auto;transition:width .15s';
+  var levels=[100,200,320,480], li=0;
+  img.addEventListener('click',function(){ li=(li+1)%levels.length; img.style.width=levels[li]+'%'; });
+  scroll.appendChild(img);
+  ov.appendChild(bar); ov.appendChild(scroll);
+  ov.addEventListener('click',function(e){ if(e.target===ov||e.target===scroll) closeLightbox(); });
+  document.body.appendChild(ov);
+}
+function closeLightbox(){ var o=document.getElementById('lightbox'); if(o) o.remove(); }
+document.addEventListener('keydown',function(e){ if(e.key==='Escape') closeLightbox(); });
+
 function renderPicker(){
   var p=S.picker; var l=S.leads.find(function(x){return x.id===p;});
   if(!l||!l._candidates){ S.picker=null; renderSheet(); return; }
@@ -1703,8 +1860,8 @@ document.addEventListener('click',function(e){
   else if(act==='findco'){ lookupCompany(S.draft); }
   else if(act==='togglecands'){ S.draft.showCands=!S.draft.showCands; render(); }
   else if(act==='dpickco'){ pickDraftCompany(+t.dataset.i); }
-  else if(act==='clearco'){                              // auf Freitext umstellen
-    var dd=S.draft; dd.preset={ firmenname:'', adresse:(dd.preset&&dd.preset.adresse)||'', telefon:'', website:'', place_id:'', ortsteil:(dd.preset&&dd.preset.ortsteil)||'', _manual:true };
+  else if(act==='clearco'){                              // Firma+Adresse leeren, manuell weiter
+    var dd=S.draft; dd.preset={ firmenname:'', adresse:'', telefon:'', website:'', place_id:'', ortsteil:(dd.preset&&dd.preset.ortsteil)||'', _manual:true };
     dd.companyState='empty'; dd.showCands=false; render();
     setTimeout(function(){ var i=document.querySelector('[data-act="manualfirma"]'); if(i) i.focus(); },30);
   }
@@ -1762,6 +1919,7 @@ document.addEventListener('click',function(e){
   else if(act==='lanz'){ editBinAnz(id,+t.dataset.i,parseInt(v,10)); }
   else if(act==='laddbin'){ addBinLead(id); }
   else if(act==='ldelbin'){ delBinLead(id,+t.dataset.i); }
+  else if(act==='zoom'){ openLightbox(t.src||t.getAttribute('src')); }
   else if(act==='delphoto'){ delLeadPhoto(id,+t.dataset.i); }
   else if(act==='pick'){ S.picker=id; renderSheet(); }
   else if(act==='pickclose'||act==='pickbg'&&e.target.id==='mbg'){ S.picker=null; renderSheet(); }
@@ -1792,6 +1950,7 @@ document.addEventListener('input',function(e){
   var t=e.target;
   if(t.dataset.act==='note'){ if(S.draft) S.draft.notiz=t.value; }
   if(t.dataset.act==='manualfirma'){ var d=S.draft; if(d){ d.preset=d.preset||{firmenname:'',adresse:'',telefon:'',website:'',place_id:'',ortsteil:''}; d.preset.firmenname=t.value; d.preset._manual=true; } }
+  if(t.dataset.act==='manualadr'){ var da=S.draft; if(da){ da.preset=da.preset||{firmenname:'',adresse:'',telefon:'',website:'',place_id:'',ortsteil:''}; da.preset.adresse=t.value; da.preset._manual=true; } }
   if(t.dataset.key){ S.keys[t.dataset.key]=t.value.replace(/\s+/g,''); }  // Keys/URLs haben nie Leerzeichen
   if(t.dataset.edit){ var le=S.leads.find(function(x){return x.id===t.dataset.id;}); if(le){ le[t.dataset.edit]=t.value; } }
 });
@@ -1799,14 +1958,27 @@ document.addEventListener('input',function(e){
 document.addEventListener('change',async function(e){
   var t=e.target;
   if(t.dataset.act==='gemeinde'){ switchGemeinde(t.value); return; }
-  if(t.dataset.act==='photo' && t.files && t.files[0]){
+  if((t.dataset.act==='photo'||t.dataset.act==='photogallery') && t.files && t.files[0]){
     S.lastSaved=null;
     toast('Foto wird verarbeitet…');
     S.draft.photoBlob=await compressPhoto(t.files[0]);
-    if(S.draft.gpsState!=='ok') getGPS(S.draft);
-    else maybeLookupCompany(S.draft);   // GPS steht -> Firma jetzt spätestens ziehen
+    // Kamerafoto = der Moment, in dem der Standort zählt: IMMER frisch orten (egal was
+    // der evtl. hängende Watch lieferte). Galerie-Foto entstand ggf. woanders/früher ->
+    // Standort nicht überschreiben, nur wenn noch keiner da ist.
+    var fromCam = t.dataset.act==='photo';
+    var fresh = !S.draft.gpsTime || (Date.now()-S.draft.gpsTime>8000);
+    if(fromCam && (S.draft.gpsState!=='ok' || fresh)) refreshFix(S.draft);
+    else maybeLookupCompany(S.draft);   // GPS frisch/vorhanden -> Firma jetzt spätestens ziehen
     render();
     if(S.keys.gemini) analyzePhoto();  // Tonnen automatisch erkennen
+  }
+  // Behälter-Aufkleber im Erfassen scannen -> Adresse + Firma + Tonne
+  else if(t.dataset.act==='scanlabel' && t.files && t.files[0]){
+    S.lastSaved=null;
+    var lblBlob=await compressPhoto(t.files[0]);
+    if(!S.draft.photoBlob) S.draft.photoBlob=lblBlob;   // noch kein Hauptfoto -> Aufkleber nehmen
+    render();
+    scanBinLabel(lblBlob,'draft');
   }
   // Hauptfoto eines bestehenden Leads austauschen
   else if(t.dataset.act==='mainphoto' && t.files && t.files[0]){
@@ -1832,6 +2004,14 @@ document.addEventListener('change',async function(e){
     lz.photos=lz.photos||[]; lz.photos.push(bb);
     await dbPut(stripRuntime(lz)); renderSheet();
     analyzeSign(lz, bb);
+  }
+  // Behälter-Aufkleber am bestehenden Lead scannen -> Adresse + Firma + Tonne
+  else if(t.dataset.act==='scanbinlabel' && t.files && t.files[0]){
+    var lb=S.leads.find(function(x){return x.id===t.dataset.id;}); if(!lb) return;
+    var lbb=await compressPhoto(t.files[0]);
+    lb.photos=lb.photos||[]; lb.photos.push(lbb);
+    await dbPut(stripRuntime(lb)); renderSheet();
+    scanBinLabel(lbb,'lead',lb.id);
   }
 });
 
@@ -1919,6 +2099,11 @@ function doExport(fmt){
 /* ---------- Online / Offline ---------- */
 window.addEventListener('online',function(){ S.online=true; render(); toast('Online – synchronisiere'); processOutbox().then(function(){ syncAll(); }); });
 window.addEventListener('offline',function(){ S.online=false; render(); });
+// Zurück aus Hintergrund (Bildschirm entsperrt / App gewechselt): Standort ist jetzt
+// fast sicher veraltet und der Watch oft tot -> sofort frisch orten.
+document.addEventListener('visibilitychange',function(){
+  if(document.visibilityState==='visible' && S.tab==='erfassen' && S.draft){ refreshFix(S.draft); }
+});
 
 /* ---------- Passcode-Gate ----------
    SHA-256 des Passcodes. Default-Passcode: "rss-harburg".
