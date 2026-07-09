@@ -82,7 +82,7 @@ var FRAKTION = {
 var VOLUMEN = [120,240,660,1100];
 var STATUS = ['neu','kontaktiert','angebot','gewonnen','verloren'];
 var STATUS_LBL = { neu:'Neu', kontaktiert:'Kontakt', angebot:'Angebot', gewonnen:'Gewonnen', verloren:'Verloren' };
-var APP_VERSION = 'v34 · Scan robuster (Thinking aus) · Lead-Notiz editierbar · GPS-Fix · Aufkleber-Scan';
+var APP_VERSION = 'v35 · Foto-Zoom (echtes Pinch) · Scan robuster · Lead-Notiz';
 var WD = ['Sonntag','Montag','Dienstag','Mittwoch','Donnerstag','Freitag','Samstag'];
 // Places-Typen, die fast nie Gewerbekunden mit Tonne sind -> aus Route ausblenden
 var STOP_EXCLUDE = ['bus_stop','transit_station','locality','political','park','school',
@@ -1800,35 +1800,61 @@ function photoGallery(l){
   }
   return html;
 }
-/* Vollbild-Lightbox mit Zoom (Tippen = Stufen) + Verschieben (Ziehen/Scrollen).
-   Für Aufkleber/Schilder auf bereits erfassten Lead-Fotos lesbar machen. */
+/* Vollbild-Lightbox mit echtem Pinch-Zoom + Ziehen + Doppeltipp.
+   Eigene Touch-Gesten (CSS-Transform), weil die Viewport-Meta (maximum-scale=1)
+   natives Pinch-Zoom sperrt. Für Aufkleber/Schilder auf Lead-Fotos lesbar machen. */
 function openLightbox(src){
   if(!src) return;
   closeLightbox();
   var ov=document.createElement('div');
   ov.id='lightbox';
-  ov.style.cssText='position:fixed;inset:0;z-index:9999;background:#000;display:flex;flex-direction:column';
-  var bar=document.createElement('div');
-  bar.style.cssText='flex:0 0 auto;display:flex;justify-content:space-between;align-items:center;padding:10px 14px;color:#fff';
-  bar.innerHTML='<span style="font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;opacity:.8">Tippen = zoomen · ziehen = verschieben</span>';
+  ov.style.cssText='position:fixed;inset:0;z-index:9999;background:#000;overflow:hidden;touch-action:none';
+  var hint=document.createElement('div');
+  hint.style.cssText='position:absolute;left:0;right:0;bottom:0;z-index:2;text-align:center;color:#fff;pointer-events:none;padding:12px';
+  hint.innerHTML='<span style="font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;background:rgba(0,0,0,.5);padding:6px 10px;border-radius:4px">2 Finger zoomen · ziehen · Doppeltipp</span>';
   var x=document.createElement('button');
-  x.textContent='✕ Schließen';
-  x.style.cssText='background:#fff;color:#000;border:0;font-weight:800;padding:8px 12px;border-radius:4px;cursor:pointer';
+  x.textContent='✕';
+  x.style.cssText='position:absolute;top:12px;right:12px;z-index:3;background:#fff;color:#000;border:0;font-weight:800;font-size:20px;width:42px;height:42px;border-radius:50%;cursor:pointer';
   x.onclick=closeLightbox;
-  bar.appendChild(x);
-  var scroll=document.createElement('div');
-  // display:block + img margin:auto -> zentriert wenn klein, voll scrollbar wenn gezoomt
-  // (Flex-Zentrierung würde bei Übergröße den linken Rand abschneiden).
-  scroll.style.cssText='flex:1 1 auto;overflow:auto;-webkit-overflow-scrolling:touch;touch-action:pan-x pan-y pinch-zoom;text-align:center';
   var img=document.createElement('img');
-  img.src=src;
-  img.style.cssText='display:block;width:100%;height:auto;margin:0 auto;transition:width .15s';
-  var levels=[100,200,320,480], li=0;
-  img.addEventListener('click',function(){ li=(li+1)%levels.length; img.style.width=levels[li]+'%'; });
-  scroll.appendChild(img);
-  ov.appendChild(bar); ov.appendChild(scroll);
-  ov.addEventListener('click',function(e){ if(e.target===ov||e.target===scroll) closeLightbox(); });
+  img.src=src; img.draggable=false;
+  img.style.cssText='position:absolute;top:50%;left:50%;max-width:100vw;max-height:100vh;will-change:transform;user-select:none;-webkit-user-drag:none';
+  ov.appendChild(img); ov.appendChild(hint); ov.appendChild(x);
   document.body.appendChild(ov);
+
+  var scale=1, tx=0, ty=0;
+  function apply(){ img.style.transform='translate(-50%,-50%) translate('+tx+'px,'+ty+'px) scale('+scale+')'; }
+  apply();
+  function dist(t){ return Math.hypot(t[0].clientX-t[1].clientX, t[0].clientY-t[1].clientY); }
+
+  var mode=null, sDist=0, sScale=1, sx=0, sy=0, sTx=0, sTy=0, lastTap=0;
+  ov.addEventListener('touchstart',function(e){
+    if(e.target===x) return;                         // Schließen-Button normal tippbar lassen
+    if(e.touches.length===2){
+      mode='pinch'; sDist=dist(e.touches); sScale=scale; sTx=tx; sTy=ty;
+    } else if(e.touches.length===1){
+      var now=Date.now();
+      if(now-lastTap<300){ if(scale>1){scale=1;tx=0;ty=0;}else{scale=2.5;} apply(); mode=null; lastTap=0; e.preventDefault(); return; }
+      lastTap=now; mode='pan'; sx=e.touches[0].clientX; sy=e.touches[0].clientY; sTx=tx; sTy=ty;
+    }
+    e.preventDefault();
+  },{passive:false});
+  ov.addEventListener('touchmove',function(e){
+    if(mode==='pinch' && e.touches.length===2){
+      scale=Math.min(6,Math.max(1, sScale*(dist(e.touches)/(sDist||1)))); apply();
+    } else if(mode==='pan' && e.touches.length===1 && scale>1){
+      tx=sTx+(e.touches[0].clientX-sx); ty=sTy+(e.touches[0].clientY-sy); apply();
+    }
+    e.preventDefault();
+  },{passive:false});
+  ov.addEventListener('touchend',function(e){
+    if(scale<=1){ scale=1; tx=0; ty=0; apply(); }
+    if(!e.touches.length) mode=null;
+  });
+  // Desktop
+  img.addEventListener('dblclick',function(e){ if(scale>1){scale=1;tx=0;ty=0;}else{scale=2.5;} apply(); e.stopPropagation(); });
+  ov.addEventListener('wheel',function(e){ e.preventDefault(); scale=Math.min(6,Math.max(1, scale - e.deltaY*0.0025)); if(scale<=1){tx=0;ty=0;} apply(); },{passive:false});
+  ov.addEventListener('click',function(e){ if(e.target===ov && scale<=1) closeLightbox(); });   // Tippen auf schwarzen Rand schließt (nur unzoomed)
 }
 function closeLightbox(){ var o=document.getElementById('lightbox'); if(o) o.remove(); }
 document.addEventListener('keydown',function(e){ if(e.key==='Escape') closeLightbox(); });
