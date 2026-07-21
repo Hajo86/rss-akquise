@@ -83,7 +83,7 @@ var FRAKTION = {
 var VOLUMEN = [120,240,660,1100];
 var STATUS = ['neu','kontaktiert','angebot','gewonnen','verloren'];
 var STATUS_LBL = { neu:'Neu', kontaktiert:'Kontakt', angebot:'Angebot', gewonnen:'Gewonnen', verloren:'Verloren' };
-var APP_VERSION = 'v40 · Ansprechpartner je Lead (Name/Rolle/Durchwahl/E-Mail) – Anrufen & Angebotsversand nutzen ihn';
+var APP_VERSION = 'v41 · Neues Angebots-PDF (RSS-Logo, Absender RSS UG, nur Entsorgungspreis je Turnus – keine Ersparnis)';
 var WD = ['Sonntag','Montag','Dienstag','Mittwoch','Donnerstag','Freitag','Samstag'];
 // Places-Typen, die fast nie Gewerbekunden mit Tonne sind -> aus Route ausblenden
 var STOP_EXCLUDE = ['bus_stop','transit_station','locality','political','park','school',
@@ -160,6 +160,18 @@ function saveKeys(k){ S.keys = k; localStorage.setItem('rss_keys', JSON.stringif
 var $app = document.getElementById('app');
 function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
 function eur(n){ return Math.round(n).toLocaleString('de-DE') + ' €'; }
+function eur2(n){ return (Number(n)||0).toLocaleString('de-DE',{minimumFractionDigits:2,maximumFractionDigits:2}) + ' €'; }
+// Absender für Kunden-Angebote (RSS Recycling Solution Service UG i. Gr.)
+var RSS_ABSENDER = {
+  firma:'RSS Recycling Solution Service UG',
+  zusatz:'(i. Gr.)',
+  strasse:'Barmbeker Straße 23a',
+  ort:'22303 Hamburg',
+  gf:'Sören Rohde',
+  tel:'+49 176 14081987',
+  mail:'rohde@rss-entsorgung.de',
+  web:'rss-entsorgung.de'
+};
 var _toastT;
 function toast(msg){
   var t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show');
@@ -1156,21 +1168,21 @@ function advanceStatus(id,to){
 // mailto-assistierter Angebotsversand: Mail im eigenen Programm vorbereiten (kein Backend)
 function mailOffer(id){
   var l=S.leads.find(function(x){return x.id===id;}); if(!l) return;
-  var k=kalkulation(l); var pct=Math.round((k.rabatt||0.10)*100);
   var firma=l.firmenname||'Ihr Betrieb';
-  var subj='Ihr Einsparpotenzial bei der Abfallentsorgung – RSS';
+  var subj='Ihr Angebot – Gewerbliche Abfallentsorgung · RSS';
   var body=''
     +apAnrede(l)+'\n\n'
-    +'vielen Dank für das Gespräch. Auf Basis Ihrer aktuellen kommunalen Abfallgebühren '
-    +'haben wir für '+firma+' folgendes Einsparpotenzial ermittelt:\n\n'
-    +'• Ihre Kosten heute (kommunal): '+eur(k.kosten_monat)+' / Monat\n'
-    +'• Mit RSS (inkl. gesetzlicher Pflichttonne): '+eur(k.neu_gesamt_monat)+' / Monat\n'
-    +'• Ihre Ersparnis: '+eur(k.ersparnis_jahr)+' / Jahr ('+pct+' % günstiger)\n\n'
-    +'Das vollständige Angebot finden Sie im Anhang (PDF).\n\n'
-    +'Sie behalten Ihre gesetzliche Pflichttonne; Ihre gewerbliche Restabfallentsorgung '
-    +'übernehmen wir – kein Aufwand für Sie. Antworten Sie einfach auf diese Mail oder rufen Sie an.\n\n'
+    +'vielen Dank für das Gespräch. Anbei unser Angebot für die gewerbliche '
+    +'Abfallentsorgung an Ihrem Standort ('+firma+') – mit einem transparenten Festpreis '
+    +'(siehe PDF im Anhang).\n\n'
+    +'Wir übernehmen die komplette gewerbliche Restabfallentsorgung; die gesetzliche '
+    +'Pflichttonne verbleibt beim Landkreis. Ein Ansprechpartner, kein Umstellungsaufwand.\n\n'
+    +'Antworten Sie einfach auf diese Mail oder rufen Sie uns an – wir richten alles ein.\n\n'
     +'Mit freundlichen Grüßen\n'
-    +'RSS – Recycling Solution Service · Landkreis Harburg';
+    +RSS_ABSENDER.gf+'\n'
+    +RSS_ABSENDER.firma+' '+RSS_ABSENDER.zusatz+'\n'
+    +RSS_ABSENDER.strasse+' · '+RSS_ABSENDER.ort+'\n'
+    +'Tel. '+RSS_ABSENDER.tel+' · '+RSS_ABSENDER.mail;
   var href='mailto:'+encodeURIComponent(apMail(l))
     +'?subject='+encodeURIComponent(subj)+'&body='+encodeURIComponent(body);
   window.location.href=href;
@@ -1925,47 +1937,96 @@ function offerBox(l){
 // snap = eingefrorenes Angebot (angebotSnapshot) – so bleibt ein gespeichertes Angebot
 // unverändert, auch wenn der Lead später bearbeitet wird.
 function buildAngebot(snap){
-  var k=snap.k;
-  var pct=Math.round((k.rabatt||0.10)*100);
+  var A=RSS_ABSENDER;
   var datum=new Date(snap.created_at).toLocaleDateString('de-DE',{day:'2-digit',month:'long',year:'numeric'});
+  var nr=String(snap.id||'').replace('ang-','').slice(0,10);
   var firma=esc(snap.firmenname||'Ihr Betrieb');
   var adr=esc(snap.adresse||'');
+  var ap=esc(snap.ap_name||'');
+  var leistung=esc(behaelterSummary(snap));
+  var p=snap.preis||{woe:{monat:0,leerung:0},vt:{monat:0,leerung:0}};
+  var chosenVt=(snap.turnus!=='woe');
+  var logoHtml=(typeof RSS_LOGO!=='undefined' && RSS_LOGO)
+    ? '<img src="'+RSS_LOGO+'" alt="RSS – Recycling Solution Service" style="width:200px;max-width:55%;height:auto;display:block"/>'
+    : '<div class="mark">RSS</div>';
+  var preisZelle=function(v){ return v>0 ? eur2(v) : 'auf Anfrage'; };
+  var row=function(lbl,turnus,leerung,monat,on){
+    return '<tr'+(on?' class="on"':'')+'>'+
+      '<td>'+lbl+(on?' <span class="badge">gewählt</span>':'')+'</td>'+
+      '<td>'+turnus+'</td>'+
+      '<td class="r">'+preisZelle(leerung)+'</td>'+
+      '<td class="r"><b>'+preisZelle(monat)+'</b></td></tr>';
+  };
   return '<!DOCTYPE html><html lang="de"><head><meta charset="utf-8"/>'+
   '<meta name="viewport" content="width=device-width,initial-scale=1"/><title>Angebot '+firma+'</title>'+
   '<style>*{box-sizing:border-box}body{font-family:Helvetica,Arial,sans-serif;color:#000;max-width:720px;margin:0 auto;padding:28px;line-height:1.5}'+
-  '.mark{display:inline-flex;width:46px;height:46px;border:2.5px solid #000;align-items:center;justify-content:center;font-weight:800;font-size:14px}'+
-  'h1{font-size:24px;font-weight:800;text-transform:uppercase;letter-spacing:-.5px;margin:18px 0 2px}'+
-  '.sub{color:#555;font-size:13px;margin-bottom:24px}'+
-  'table{width:100%;border-collapse:collapse;margin:18px 0}td{padding:10px 8px;border-bottom:1px solid #ddd;font-size:15px}'+
-  '.big{background:#000;color:#fff;padding:18px;text-align:center;margin:18px 0}'+
-  '.big .e{font-size:30px;font-weight:800}.big .l{font-size:11px;letter-spacing:.1em;text-transform:uppercase}'+
-  '.note{font-size:11px;color:#777;margin-top:24px;line-height:1.6}'+
-  '.btn{background:#000;color:#fff;border:0;padding:12px 18px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;cursor:pointer}'+
+  '.head{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:2px solid #000;padding-bottom:12px}'+
+  '.mark{display:inline-flex;width:44px;height:44px;border:2.5px solid #000;align-items:center;justify-content:center;font-weight:800;font-size:13px}'+
+  '.brand b{font-size:15px;font-weight:800;text-transform:uppercase;letter-spacing:.02em}'+
+  '.brand div{font-size:11px;color:#555}'+
+  '.meta{text-align:right;font-size:12px;color:#333}'+
+  '.meta b{font-size:13px}'+
+  'h1{font-size:22px;font-weight:800;text-transform:uppercase;letter-spacing:-.5px;margin:22px 0 4px}'+
+  '.grid{display:flex;gap:24px;margin:14px 0 6px;font-size:13px}'+
+  '.grid .box{flex:1}.grid .lab{font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#888;margin-bottom:3px}'+
+  'table{width:100%;border-collapse:collapse;margin:16px 0}'+
+  'th{font-size:10px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:#666;text-align:left;border-bottom:2px solid #000;padding:8px}'+
+  'td{padding:11px 8px;border-bottom:1px solid #ddd;font-size:15px}'+
+  'th.r,td.r{text-align:right}'+
+  'tr.on td{background:#f2f2f2}'+
+  '.badge{font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;background:#000;color:#fff;padding:1px 6px;margin-left:6px}'+
+  '.note{font-size:11px;color:#777;margin-top:20px;line-height:1.6}'+
+  '.foot{border-top:1px solid #ccc;margin-top:26px;padding-top:12px;font-size:10.5px;color:#666;line-height:1.6}'+
+  '.btn{background:#000;color:#fff;border:0;padding:12px 18px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;cursor:pointer;margin-top:18px}'+
   '@media print{.btn{display:none}body{padding:0}}</style></head><body>'+
-  '<div class="mark">RSS</div>'+
-  '<h1>Angebot zur<br>Abfallentsorgung</h1>'+
-  '<div class="sub">RSS – Recycling Solution Service · Landkreis Harburg · '+datum+'</div>'+
-  '<div style="margin-bottom:8px"><b>An:</b> '+firma+(adr?(' · '+adr):'')+'</div>'+
-  '<p>vielen Dank für Ihr Interesse. Auf Basis Ihrer aktuellen kommunalen Abfallgebühren haben wir folgendes Einsparpotenzial für Sie ermittelt:</p>'+
+
+  '<div class="head">'+
+    '<div>'+logoHtml+
+      '<div class="brand" style="margin-top:8px"><b>'+esc(A.firma)+' '+esc(A.zusatz)+'</b><div>'+esc(A.strasse)+' · '+esc(A.ort)+'</div></div>'+
+    '</div>'+
+    '<div class="meta"><b>Angebot</b><br>Nr. '+esc(nr)+'<br>'+datum+'</div>'+
+  '</div>'+
+
+  '<h1>Angebot – Gewerbliche<br>Abfallentsorgung</h1>'+
+
+  '<div class="grid">'+
+    '<div class="box"><div class="lab">Für</div><b>'+firma+'</b>'+(ap?('<br>z. Hd. '+ap):'')+(adr?('<br>'+adr):'')+'</div>'+
+    '<div class="box"><div class="lab">Leistung</div>Gewerbliche Restabfallentsorgung<br>'+leistung+'</div>'+
+  '</div>'+
+
   '<table>'+
-    '<tr><td>Ihre Kosten heute (kommunal)</td><td style="text-align:right;font-weight:800">'+eur(k.kosten_monat)+' / Monat</td></tr>'+
-    '<tr><td>Mit RSS (inkl. gesetzlicher Pflichttonne)</td><td style="text-align:right;font-weight:800">'+eur(k.neu_gesamt_monat)+' / Monat</td></tr>'+
-    '<tr><td>Erfasste Behälter</td><td style="text-align:right">'+esc(behaelterSummary(snap))+'</td></tr>'+
+    '<tr><th>Leistung</th><th>Turnus</th><th class="r">Preis / Leerung</th><th class="r">Preis / Monat</th></tr>'+
+    row('Restabfallentsorgung · '+leistung, '14-täglich', p.vt.leerung, p.vt.monat, chosenVt)+
+    row('Restabfallentsorgung · '+leistung, 'wöchentlich', p.woe.leerung, p.woe.monat, !chosenVt)+
   '</table>'+
-  '<div class="big"><div class="l">Ihre Ersparnis</div><div class="e">'+eur(k.ersparnis_jahr)+' / Jahr</div>'+
-    '<div class="l" style="margin-top:4px">'+eur(k.ersparnis_monat)+' pro Monat · '+pct+' % günstiger</div></div>'+
-  '<p>Sie behalten Ihre gesetzlich vorgeschriebene Pflichttonne beim Landkreis; Ihre gewerbliche Restabfallentsorgung übernehmen wir über unseren Entsorgungspartner. Kein Aufwand für Sie – wir kümmern uns um die Umstellung.</p>'+
-  '<p style="margin-top:18px"><b>Nächster Schritt:</b> Antworten Sie einfach auf dieses Angebot oder rufen Sie uns an – wir richten alles ein.</p>'+
+  '<div class="note">Preise netto zzgl. gesetzl. MwSt. Ein Festpreis – inkl. Behältergestellung, Abfuhr und Entsorgung. Keine versteckten Zuschläge.</div>'+
+
+  '<p style="font-size:14px;margin-top:18px">Wir übernehmen die gewerbliche Restabfallentsorgung an Ihrem Standort – ein Ansprechpartner, kein Umstellungsaufwand. Die gesetzliche Pflichtrestmülltonne verbleibt beim Landkreis.</p>'+
+  '<p style="font-size:14px"><b>Nächster Schritt:</b> Antworten Sie einfach auf dieses Angebot oder rufen Sie uns an – wir richten alles ein.</p>'+
+
   '<button class="btn" onclick="window.print()">Als PDF speichern / Drucken</button>'+
-  '<div class="note">Unverbindliches Angebot, freibleibend. Ersparnis bezogen auf die Abfallgebührensatzung des Landkreises Harburg (Stand 2026) und einen Abfuhrrhythmus '+(k.rhythmus==='woe'?'wöchentlich':'14-täglich')+'. Tatsächliche Werte je nach Vertrag und Rhythmus. Keine Rechtsberatung.</div>'+
+
+  '<div class="foot">'+
+    '<b>'+esc(A.firma)+' '+esc(A.zusatz)+'</b> · '+esc(A.strasse)+' · '+esc(A.ort)+'<br>'+
+    'Geschäftsführer: '+esc(A.gf)+' · Tel. '+esc(A.tel)+' · '+esc(A.mail)+' · '+esc(A.web)+'<br>'+
+    'Angebot freibleibend. Preise netto zzgl. gesetzl. MwSt. Laufzeit und Kündigung nach Vereinbarung. Keine Rechtsberatung.'+
+  '</div>'+
   '</body></html>';
 }
 // Angebot als Snapshot einfrieren (bleibt erhalten, auch wenn der Lead sich ändert)
 function angebotSnapshot(l){
+  var base=kalkulation(l);
+  var kw=kalkulation(Object.assign({},l,{rhythmus:'woe'}));   // wöchentlich
+  var kv=kalkulation(Object.assign({},l,{rhythmus:'14t'}));   // 14-täglich
   return { id:'ang-'+Date.now()+'-'+Math.floor(Math.random()*1e4), created_at:Date.now(),
-    firmenname:l.firmenname||'', adresse:l.adresse||'',
+    firmenname:l.firmenname||'', adresse:l.adresse||'', ap_name:l.ap_name||'',
     behaelter:containersOf(l).map(function(c){ return {fraktion:c.fraktion,volumen:c.volumen,anzahl:c.anzahl||1}; }),
-    k:kalkulation(l) };
+    turnus:base.rhythmus,
+    preis:{
+      woe:{ monat:kw.rss_preis_monat, leerung:kw.rss_preis_monat/(52/12) },
+      vt: { monat:kv.rss_preis_monat, leerung:kv.rss_preis_monat/(26/12) }
+    },
+    k:base };   // k nur intern (Angebotsliste im Sheet), NICHT im Kundendokument
 }
 function openAngebotDoc(snap){
   var blob=new Blob([buildAngebot(snap)],{type:'text/html'});
