@@ -83,7 +83,7 @@ var FRAKTION = {
 var VOLUMEN = [120,240,660,1100];
 var STATUS = ['neu','kontaktiert','angebot','gewonnen','verloren'];
 var STATUS_LBL = { neu:'Neu', kontaktiert:'Kontakt', angebot:'Angebot', gewonnen:'Gewonnen', verloren:'Verloren' };
-var APP_VERSION = 'v38 · CRM aufgeräumt: Akquise-Cockpit oben, Bearbeiten einklappbar, Erstkontakt/Nachfass-Anzeige, Historie löschbar, CRM-Reset';
+var APP_VERSION = 'v39 · Pipeline Drag&Drop (beide Richtungen), Wiedervorlagen präsenter: „Meine Termine heute"-Overlay + Nav-Badge';
 var WD = ['Sonntag','Montag','Dienstag','Mittwoch','Donnerstag','Freitag','Samstag'];
 // Places-Typen, die fast nie Gewerbekunden mit Tonne sind -> aus Route ausblenden
 var STOP_EXCLUDE = ['bus_stop','transit_station','locality','political','park','school',
@@ -130,6 +130,7 @@ var S = {
   gemeindeId: null,   // aktuell geladene Gemeinde
   termineIndex: null, // data/termine-index.json: Datum -> [{id,name,r[],p[]}] (ganzer LK, für Erinnerung)
   showReminder: false,// „Nächste Abfuhr"-Overlay beim App-Start
+  showFollowups: false,// „Meine Termine heute" (fällige Wiedervorlagen) als Start-Overlay
   routeLoading: false,// verhindert Doppel-Fetch beim Rendern
   routeDate: null,    // angezeigtes ISO-Datum (Default = heute)
   stops: {},          // Gebietsname -> [Zielkunden]  (on demand)
@@ -842,6 +843,8 @@ function render(){
 
   renderSheet();
   renderReminderOverlay();
+  renderFollowupOverlay();
+  updateNavBadge();
 }
 
 function renderErfassen(){
@@ -1204,7 +1207,7 @@ function renderBoard(){
   return '<div class="board">'+ STATUS.map(function(s){
     var ls=S.leads.filter(function(l){return l.status===s;}).sort(function(a,b){return b.score-a.score;});
     var sum=ls.reduce(function(a,l){return a+(kalkulation(l).ersparnis_jahr||0);},0);
-    return '<div class="bcol"><div class="bch"><span>'+STATUS_LBL[s]+' · '+ls.length+'</span>'+
+    return '<div class="bcol" data-status="'+s+'"><div class="bch"><span>'+STATUS_LBL[s]+' · '+ls.length+'</span>'+
       '<span class="bsum">'+eur(sum)+'/J</span></div>'+
       '<div class="bcards">'+ (ls.length?ls.map(boardCard).join(''):'<div class="bempty">—</div>') +'</div>'+
     '</div>';
@@ -1212,14 +1215,13 @@ function renderBoard(){
 }
 function boardCard(l){
   var co=l.firmenname||(l.enriched?'Unbekannt':'…');
-  var nx=nextStatus(l.status);
   return '<div class="bcard" data-act="open" data-id="'+l.id+'">'+
+    '<div class="bgrip" data-grip title="Ziehen zum Verschieben">⠿</div>'+
     '<div class="bco">'+esc(co)+(l.hot_lead?' <span class="tag hot">🔥</span>':'')+'</div>'+
     '<div class="bmeta"><span class="bscore">'+l.score+'</span>'+
       '<span class="bsav">'+eur(kalkulation(l).ersparnis_jahr)+'/J</span></div>'+
     '<div class="bcontact">'+contactBadge(l)+'</div>'+
     (l.wiedervorlage?'<div class="bwv'+(wvDue(l)?' due':'')+'">WV '+wvLabel(l.wiedervorlage)+'</div>':'')+
-    (nx?'<button class="badv" data-act="advance" data-id="'+l.id+'" data-v="'+nx+'">→ '+STATUS_LBL[nx]+'</button>':'')+
   '</div>';
 }
 // „Heute nachfassen" – fällige Wiedervorlagen (für Heute-Tab)
@@ -1588,6 +1590,48 @@ function renderReminderOverlay(){
     '</div></div>';
   if(ex) ex.remove();
   document.body.insertAdjacentHTML('beforeend',html);
+}
+
+// „Meine Termine heute" – Start-Overlay mit den fälligen Wiedervorlagen
+function dismissFollowups(){ localStorage.setItem('rss_fu_dismissed', todayISO()); S.showFollowups=false; render(); }
+function renderFollowupOverlay(){
+  var ex=document.getElementById('fuov');
+  if(!S.showFollowups){ if(ex) ex.remove(); return; }
+  var due=dueFollowups();
+  if(!due.length){ if(ex) ex.remove(); S.showFollowups=false; return; }
+  var rows=due.slice(0,20).map(function(l){
+    return '<button data-act="openfulead" data-id="'+l.id+'" '+
+      'style="display:block;width:100%;text-align:left;border:0;border-bottom:1px solid #333;background:transparent;color:var(--paper);padding:12px 2px">'+
+      '<div style="display:flex;justify-content:space-between;gap:8px;align-items:center">'+
+        '<b style="font-size:15px">'+esc(l.firmenname||'Unbekannt')+'</b>'+
+        '<span style="font-size:11px;font-weight:800;color:#ffb3b3;white-space:nowrap">WV '+wvLabel(l.wiedervorlage)+'</span>'+
+      '</div>'+
+      '<div style="font-size:12px;color:#bbb;margin-top:2px">'+esc(l.adresse||'')+'</div>'+
+      '<div style="font-size:11px;color:#ddd;margin-top:3px">'+STATUS_LBL[l.status]+' · '+
+        (callCount(l)===0?'Erstkontakt':'Nachfass')+(l.telefon?(' · ☎ '+esc(l.telefon)):' · kein Tel')+'</div>'+
+    '</button>';
+  }).join('');
+  var html='<div id="fuov" data-act="fuovbg" style="position:fixed;inset:0;z-index:70;background:rgba(0,0,0,.6);display:flex;align-items:flex-end">'+
+    '<div style="background:var(--ink);color:var(--paper);width:100%;max-width:680px;margin:0 auto;max-height:82vh;overflow-y:auto;padding:18px 16px 26px">'+
+      '<div style="display:flex;justify-content:space-between;align-items:center">'+
+        '<div style="font-size:13px;font-weight:800;letter-spacing:.1em;text-transform:uppercase">☎ Meine Termine heute · '+due.length+'</div>'+
+        '<button data-act="dismissfu" style="background:var(--paper);color:var(--ink);font-size:16px;font-weight:800;padding:4px 11px;border:0;line-height:1">×</button>'+
+      '</div>'+
+      '<div style="font-size:12px;color:#bbb;margin:4px 0 10px">Fällige Wiedervorlagen – tippen zum Öffnen und Anrufen.</div>'+
+      rows+
+      '<button data-act="dismissfu" style="width:100%;margin-top:14px;background:var(--paper);color:var(--ink);padding:13px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;border:0">Erledigt für heute</button>'+
+    '</div></div>';
+  if(ex) ex.remove();
+  document.body.insertAdjacentHTML('beforeend',html);
+}
+// Rotes Zähler-Badge am „Heute"-Tab (fällige Wiedervorlagen)
+function updateNavBadge(){
+  var btn=document.querySelector('nav button[data-tab="heute"]'); if(!btn) return;
+  var n=dueFollowups().length;
+  var b=btn.querySelector('.navbadge');
+  if(!n){ if(b) b.remove(); return; }
+  if(!b){ b=document.createElement('span'); b.className='navbadge'; btn.appendChild(b); }
+  b.textContent=n>99?'99+':String(n);
 }
 
 function renderHeute(){
@@ -2088,6 +2132,8 @@ function mount(html){
    EVENTS (delegation)
    ===================================================================== */
 document.addEventListener('click',function(e){
+  if(e.target.closest('[data-grip]')) return;            // Ziehgriff öffnet nie das Sheet
+  if(boardDrag && boardDrag.moved){ boardDrag=null; return; } // gerade gezogen -> Klick verschlucken
   var t=e.target.closest('[data-act]'); if(!t) return;
   var act=t.dataset.act, v=t.dataset.v, id=t.dataset.id;
 
@@ -2129,6 +2175,8 @@ document.addEventListener('click',function(e){
     if(gp&&pl) startStop(pl,{name:gp.name},'restmuell');
   }
   else if(act==='dismissreminder'||(act==='rmdbg'&&e.target.id==='rmd')){ dismissReminder(); }
+  else if(act==='dismissfu'||(act==='fuovbg'&&e.target.id==='fuov')){ dismissFollowups(); }
+  else if(act==='openfulead'){ S.showFollowups=false; S.tab='leads'; S.modal=id; render(); renderSheet(); }
   else if(act==='openreminder'){ S.showReminder=true; render(); }   // Übersicht erneut öffnen
   else if(act==='remindgo'){ gotoRoute(t.dataset.id, v); }
   else if(act==='filter'){ S.filter=v; render(); }
@@ -2200,6 +2248,59 @@ document.querySelector('nav').addEventListener('click',function(e){
   else stopGPSWatch();                                   // Tracking nur im Erfassen-Tab (spart Akku)
   render();
 });
+
+/* ---------- Pipeline: Drag & Drop (Pointer Events – Touch + Maus) ----------
+   Karte am ⠿-Griff aufnehmen, über eine Statusspalte ziehen, loslassen -> Status ändert sich
+   (in BEIDE Richtungen, z. B. Angebot zurück auf Kontakt). Board scrollt automatisch am Rand. */
+var boardDrag=null;
+document.addEventListener('pointerdown',function(e){
+  var grip=e.target.closest('[data-grip]'); if(!grip) return;
+  var card=grip.closest('.bcard'); if(!card) return;
+  e.preventDefault();
+  var rect=card.getBoundingClientRect();
+  var clone=card.cloneNode(true); clone.classList.add('bdrag');
+  clone.style.width=rect.width+'px'; clone.style.left=rect.left+'px'; clone.style.top=rect.top+'px';
+  document.body.appendChild(clone);
+  card.classList.add('bghost');
+  boardDrag={ id:card.dataset.id, clone:clone, card:card, dx:e.clientX-rect.left, dy:e.clientY-rect.top,
+              sx:e.clientX, sy:e.clientY, moved:false, to:null };
+  try{ grip.setPointerCapture(e.pointerId); }catch(_){}
+  window.addEventListener('pointermove',boardMove);
+  window.addEventListener('pointerup',boardUp,{once:true});
+  window.addEventListener('pointercancel',boardUp,{once:true});
+},{passive:false});
+function boardMove(e){
+  if(!boardDrag) return;
+  if(!boardDrag.moved && Math.abs(e.clientX-boardDrag.sx)+Math.abs(e.clientY-boardDrag.sy)<6) return;
+  boardDrag.moved=true;
+  boardDrag.clone.style.left=(e.clientX-boardDrag.dx)+'px';
+  boardDrag.clone.style.top=(e.clientY-boardDrag.dy)+'px';
+  var el=document.elementFromPoint(e.clientX,e.clientY);   // Clone hat pointer-events:none
+  var col=el&&el.closest?el.closest('.bcol'):null;
+  var cols=document.querySelectorAll('.bcol');
+  for(var i=0;i<cols.length;i++) cols[i].classList.toggle('bover',cols[i]===col);
+  boardDrag.to=col?col.getAttribute('data-status'):null;
+  var board=document.querySelector('.board');
+  if(board){ var b=board.getBoundingClientRect();
+    if(e.clientX>b.right-44) board.scrollLeft+=14;
+    else if(e.clientX<b.left+44) board.scrollLeft-=14; }
+}
+function boardUp(){
+  window.removeEventListener('pointermove',boardMove);
+  var d=boardDrag; if(!d){ return; }
+  if(d.clone&&d.clone.parentNode) d.clone.parentNode.removeChild(d.clone);
+  var covers=document.querySelectorAll('.bcol.bover'); for(var i=0;i<covers.length;i++) covers[i].classList.remove('bover');
+  if(d.card) d.card.classList.remove('bghost');
+  if(d.moved && d.to){
+    var l=S.leads.find(function(x){return x.id===d.id;});
+    if(l && l.status!==d.to){ advanceStatus(d.id,d.to); }   // setzt Status + Historie + speichert + render
+    else render();
+    boardDrag=null;                                         // sofort freigeben (kein Sheet-Öffnen)
+  } else {
+    // kein echter Drag -> boardDrag bleibt kurz stehen, Klick-Handler räumt auf/öffnet Sheet
+    if(!d.moved) boardDrag=null;
+  }
+}
 
 // Inputs (no re-render to keep focus)
 document.addEventListener('input',function(e){
@@ -2392,7 +2493,9 @@ async function tryGate(){
 async function boot(){
   S.draft=freshDraft();
   render();                               // sofort rendern – Erfassen läuft auch ohne DB
-  try{ await openDB(); await loadLeads(); render(); }
+  try{ await openDB(); await loadLeads();
+    if(dueFollowups().length && localStorage.getItem('rss_fu_dismissed')!==todayISO()) S.showFollowups=true;
+    render(); }
   catch(e){ console.error(e); toast('Lokaler Speicher nicht verfügbar'); }
   startGPSWatch(S.draft);                 // Live-Tracking (Auto) + Auto-Firma beim ersten Fix
   loadTermineIndex().then(function(){     // landkreisweite Restmüll-Erinnerung als Start-Overlay
