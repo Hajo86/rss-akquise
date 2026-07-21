@@ -83,7 +83,7 @@ var FRAKTION = {
 var VOLUMEN = [120,240,660,1100];
 var STATUS = ['neu','kontaktiert','angebot','gewonnen','verloren'];
 var STATUS_LBL = { neu:'Neu', kontaktiert:'Kontakt', angebot:'Angebot', gewonnen:'Gewonnen', verloren:'Verloren' };
-var APP_VERSION = 'v36 · Entsorgungspartner Veolia (EK-Kalkulation), Partner im Kundenangebot neutral';
+var APP_VERSION = 'v37 · Akquise-CRM: Pipeline-Board, Anruf-Log, Wiedervorlage, Kontakt-Historie, mailto-Angebot';
 var WD = ['Sonntag','Montag','Dienstag','Mittwoch','Donnerstag','Freitag','Samstag'];
 // Places-Typen, die fast nie Gewerbekunden mit Tonne sind -> aus Route ausblenden
 var STOP_EXCLUDE = ['bus_stop','transit_station','locality','political','park','school',
@@ -118,6 +118,7 @@ var S = {
   draft: null,
   filter: 'alle',
   sort: 'score',
+  leadView: 'list',    // 'list' | 'board' (Pipeline-Kanban) im Leads-Tab
   modal: null,         // lead id im Detail-Sheet
   picker: null,        // { leadId, candidates } Firmen-Auswahl
   online: navigator.onLine,
@@ -725,6 +726,12 @@ function fromRow(rl, local){
     place_id:rl.place_id||'', adresse:rl.adresse||'', notiz:rl.notiz||'',
     status:rl.status||'neu', score:rl.score, hot_lead:rl.hot_lead,
     kosten_monat:rl.kosten_monat, ersparnis_monat:rl.ersparnis_monat, ersparnis_jahr:rl.ersparnis_jahr,
+    // CRM-Felder (lokal-first – noch nicht in Supabase-Spalten; beim Pull aus local erhalten,
+    // wie angebote). Fürs Team-Sync später ALTER TABLE + in toRow aufnehmen (siehe README).
+    email:(rl.email!=null?rl.email:((local&&local.email)||'')),
+    wiedervorlage:(rl.wiedervorlage!=null?rl.wiedervorlage:((local&&local.wiedervorlage)||null)),
+    naechste_aktion:(rl.naechste_aktion!=null?rl.naechste_aktion:((local&&local.naechste_aktion)||'')),
+    historie:(rl.historie!=null?rl.historie:((local&&local.historie)||[])),
     enriched:true, sync_state:'synced', duplikat:false
   };
 }
@@ -1066,6 +1073,152 @@ function VOLUMEN_FRAK(){
   }).join('');
 }
 
+/* ================= CRM: Historie, Wiedervorlage, Anruf-Log, Board =================
+   Neue Felder (email, wiedervorlage, naechste_aktion, historie) sind LOKAL-FIRST:
+   in IndexedDB persistiert (stripRuntime behält sie), aber noch NICHT in Supabase
+   gepusht (toRow unverändert) -> kein Bruch der Live-Sync. Team-Sync = ALTER TABLE
+   + Felder in toRow aufnehmen (siehe README). */
+function histOf(l){ return Array.isArray(l.historie)?l.historie:[]; }
+function pushHist(l,typ,text){ l.historie=histOf(l).concat([{ ts:Date.now(), typ:typ, text:text||'' }]); }
+function crmSave(l,msg){ l.updated_at=Date.now(); dbPut(stripRuntime(l)).then(function(){ syncLead(l); }); if(msg) toast(msg); }
+function isoPlusDays(n){ var d=new Date(); d.setDate(d.getDate()+n); return isoOf(d); }
+function wvLabel(iso){ if(!iso) return ''; var d=new Date(iso+'T00:00:00'); return d.toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit'}); }
+function wvDue(l){ return l.wiedervorlage && l.wiedervorlage<=todayISO() && l.status!=='gewonnen' && l.status!=='verloren'; }
+function nextStatus(s){ var i=STATUS.indexOf(s); if(i<0||i>=3) return null; return STATUS[i+1]; }
+var HIST_ICON={ anruf:'☎', mail:'✉', notiz:'✎', status:'⇄' };
+
+// Anruf-Ergebnis -> Status + Wiedervorlage-Kadenz (aus telefonleitfaden.md §6/§7) + Historie
+var CALL_OUTCOMES=[
+  { k:'erreicht',  lbl:'Erreicht',        status:'kontaktiert', wv:0,  txt:'Erreicht – gesprochen' },
+  { k:'termin',    lbl:'Termin',          status:'kontaktiert', wv:1,  txt:'Termin vereinbart' },
+  { k:'angebot',   lbl:'Angebot gewünscht',status:'angebot',    wv:4,  txt:'Angebot gewünscht' },
+  { k:'nicht',     lbl:'Nicht erreicht',  status:'kontaktiert', wv:4,  txt:'Nicht erreicht' },
+  { k:'spaeter',   lbl:'Später (30 T)',   status:'kontaktiert', wv:30, txt:'Wiedervorlage – später anrufen' },
+  { k:'kein',      lbl:'Kein Interesse',  status:'verloren',    wv:-1, txt:'Kein Interesse' }
+];
+function logCall(id,key){
+  var l=S.leads.find(function(x){return x.id===id;}); if(!l) return;
+  var o=CALL_OUTCOMES.find(function(x){return x.k===key;}); if(!o) return;
+  l.status=o.status;
+  l.wiedervorlage = o.wv<0 ? null : isoPlusDays(o.wv);
+  pushHist(l,'anruf',o.txt+(l.wiedervorlage?(' · WV '+wvLabel(l.wiedervorlage)):''));
+  crmSave(l,'Anruf geloggt · '+o.lbl); renderSheet(); if(S.tab!=='leads') render();
+}
+function setWV(id,days){
+  var l=S.leads.find(function(x){return x.id===id;}); if(!l) return;
+  l.wiedervorlage = days==null ? null : isoPlusDays(days);
+  pushHist(l,'notiz', days==null?'Wiedervorlage entfernt':('Wiedervorlage gesetzt: '+wvLabel(l.wiedervorlage)));
+  crmSave(l, days==null?'Wiedervorlage entfernt':('Wiedervorlage: '+wvLabel(l.wiedervorlage))); renderSheet();
+}
+function addHistNote(id){
+  var l=S.leads.find(function(x){return x.id===id;}); if(!l) return;
+  var inp=document.getElementById('histnote-'+id); var v=inp?inp.value.trim():''; if(!v){ toast('Notiz leer'); return; }
+  pushHist(l,'notiz',v); crmSave(l,'Notiz gespeichert'); renderSheet();
+}
+function advanceStatus(id,to){
+  var l=S.leads.find(function(x){return x.id===id;}); if(!l) return;
+  l.status=to; pushHist(l,'status','Status → '+STATUS_LBL[to]); crmSave(l); render(); renderSheet();
+}
+// mailto-assistierter Angebotsversand: Mail im eigenen Programm vorbereiten (kein Backend)
+function mailOffer(id){
+  var l=S.leads.find(function(x){return x.id===id;}); if(!l) return;
+  var k=kalkulation(l); var pct=Math.round((k.rabatt||0.10)*100);
+  var firma=l.firmenname||'Ihr Betrieb';
+  var subj='Ihr Einsparpotenzial bei der Abfallentsorgung – RSS';
+  var body=''
+    +'Guten Tag,\n\n'
+    +'vielen Dank für das Gespräch. Auf Basis Ihrer aktuellen kommunalen Abfallgebühren '
+    +'haben wir für '+firma+' folgendes Einsparpotenzial ermittelt:\n\n'
+    +'• Ihre Kosten heute (kommunal): '+eur(k.kosten_monat)+' / Monat\n'
+    +'• Mit RSS (inkl. gesetzlicher Pflichttonne): '+eur(k.neu_gesamt_monat)+' / Monat\n'
+    +'• Ihre Ersparnis: '+eur(k.ersparnis_jahr)+' / Jahr ('+pct+' % günstiger)\n\n'
+    +'Das vollständige Angebot finden Sie im Anhang (PDF).\n\n'
+    +'Sie behalten Ihre gesetzliche Pflichttonne; Ihre gewerbliche Restabfallentsorgung '
+    +'übernehmen wir – kein Aufwand für Sie. Antworten Sie einfach auf diese Mail oder rufen Sie an.\n\n'
+    +'Mit freundlichen Grüßen\n'
+    +'RSS – Recycling Solution Service · Landkreis Harburg';
+  var href='mailto:'+encodeURIComponent(l.email||'')
+    +'?subject='+encodeURIComponent(subj)+'&body='+encodeURIComponent(body);
+  window.location.href=href;
+  l.status='angebot'; pushHist(l,'mail','Angebot per Mail vorbereitet'+(l.email?(' an '+l.email):' (Empfänger im Mailprogramm eintragen)'));
+  l.wiedervorlage=isoPlusDays(4);
+  crmSave(l,'Mail vorbereitet · Status → Angebot · WV +4 Tage'); renderSheet();
+  toast('💡 Angebots-PDF via „Angebot erstellen" speichern & anhängen');
+}
+
+// Kontakt-Historie/Timeline im Lead-Sheet
+function historieBlock(l){
+  var h=histOf(l).slice().sort(function(a,b){return b.ts-a.ts;});
+  var items = h.length ? h.map(function(e){
+    var d=new Date(e.ts).toLocaleString('de-DE',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
+    return '<div class="hitem"><span class="hic">'+(HIST_ICON[e.typ]||'•')+'</span>'+
+      '<span class="htx">'+esc(e.text)+'<span class="hts">'+d+'</span></span></div>';
+  }).join('') : '<div class="note" style="margin:0">Noch keine Kontakte protokolliert.</div>';
+  return '<span class="lab">Kontakt-Historie ('+h.length+')</span>'+
+    '<div class="hlist">'+items+'</div>'+
+    '<div class="hadd"><input class="txt" id="histnote-'+l.id+'" placeholder="Gesprächsnotiz / Ergebnis…"/>'+
+    '<button class="chip" data-act="addhist" data-id="'+l.id+'">+ Notiz</button></div>';
+}
+// Anruf-Ergebnis-Schnellauswahl + Wiedervorlage-Buttons
+function callCrmBlock(l){
+  var wv = l.wiedervorlage
+    ? '<div class="wvrow'+(wvDue(l)?' due':'')+'">Wiedervorlage: <b>'+wvLabel(l.wiedervorlage)+'</b>'+(wvDue(l)?' · FÄLLIG':'')+
+        ' <button data-act="setwv" data-id="'+l.id+'" data-v="clear">×</button></div>'
+    : '';
+  return '<span class="lab">Anruf-Ergebnis loggen</span>'+
+    '<div class="callgrid">'+ CALL_OUTCOMES.map(function(o){
+      return '<button data-act="callresult" data-id="'+l.id+'" data-v="'+o.k+'">'+o.lbl+'</button>';
+    }).join('')+'</div>'+
+    wv+
+    '<div class="wvset"><span>Wiedervorlage:</span>'+
+      [['+1 T',1],['+4 T',4],['+7 T',7],['+14 T',14],['+30 T',30]].map(function(p){
+        return '<button data-act="setwv" data-id="'+l.id+'" data-v="'+p[1]+'">'+p[0]+'</button>';
+      }).join('')+'</div>';
+}
+
+// Pipeline-Board (Pipedrive-Optik): Spalte je Status
+function renderBoard(){
+  return '<div class="board">'+ STATUS.map(function(s){
+    var ls=S.leads.filter(function(l){return l.status===s;}).sort(function(a,b){return b.score-a.score;});
+    var sum=ls.reduce(function(a,l){return a+(kalkulation(l).ersparnis_jahr||0);},0);
+    return '<div class="bcol"><div class="bch"><span>'+STATUS_LBL[s]+' · '+ls.length+'</span>'+
+      '<span class="bsum">'+eur(sum)+'/J</span></div>'+
+      '<div class="bcards">'+ (ls.length?ls.map(boardCard).join(''):'<div class="bempty">—</div>') +'</div>'+
+    '</div>';
+  }).join('')+'</div>';
+}
+function boardCard(l){
+  var co=l.firmenname||(l.enriched?'Unbekannt':'…');
+  var nx=nextStatus(l.status);
+  return '<div class="bcard" data-act="open" data-id="'+l.id+'">'+
+    '<div class="bco">'+esc(co)+(l.hot_lead?' <span class="tag hot">🔥</span>':'')+'</div>'+
+    '<div class="bmeta"><span class="bscore">'+l.score+'</span>'+
+      '<span class="bsav">'+eur(kalkulation(l).ersparnis_jahr)+'/J</span></div>'+
+    (l.wiedervorlage?'<div class="bwv'+(wvDue(l)?' due':'')+'">WV '+wvLabel(l.wiedervorlage)+'</div>':'')+
+    (nx?'<button class="badv" data-act="advance" data-id="'+l.id+'" data-v="'+nx+'">→ '+STATUS_LBL[nx]+'</button>':'')+
+  '</div>';
+}
+// „Heute nachfassen" – fällige Wiedervorlagen (für Heute-Tab)
+function dueFollowups(){
+  var t=todayISO();
+  return S.leads.filter(function(l){ return l.wiedervorlage && l.wiedervorlage<=t && l.status!=='gewonnen' && l.status!=='verloren'; })
+    .sort(function(a,b){ return a.wiedervorlage<b.wiedervorlage?-1:(a.wiedervorlage>b.wiedervorlage?1:(b.score-a.score)); });
+}
+function followupBlock(){
+  var due=dueFollowups(); if(!due.length) return '';
+  return '<div class="section" style="border-color:var(--hot);margin-bottom:14px">'+
+    '<h3 style="color:var(--hot)">☎ Heute nachfassen · '+due.length+'</h3>'+
+    due.slice(0,15).map(function(l){
+      return '<div class="lead" data-act="open" data-id="'+l.id+'" style="margin:8px 0 0">'+
+        '<div class="bd"><div class="co">'+esc(l.firmenname||'Unbekannt')+'</div>'+
+        '<div class="ad">'+esc(l.adresse||'')+' · WV '+wvLabel(l.wiedervorlage)+'</div>'+
+        '<div class="meta"><span class="tag fill">'+STATUS_LBL[l.status]+'</span>'+
+          (l.telefon?'<span class="tag">☎ '+esc(l.telefon)+'</span>':'<span class="tag" style="border-color:var(--muted);color:var(--muted)">kein Tel</span>')+
+          '<div class="scorebox"><div class="n">'+l.score+'</div><div class="l">Score</div></div></div>'+
+        '</div></div>';
+    }).join('')+'</div>';
+}
+
 function renderLeads(){
   var leads=S.leads.slice();
   if(S.filter!=='alle') leads=leads.filter(function(l){ return l.status===S.filter; });
@@ -1095,10 +1248,17 @@ function renderLeads(){
     list=leads.map(leadCard).join('');
   }
 
+  var viewbar='<div class="bar">'+
+    '<button class="'+(S.leadView==='list'?'on':'')+'" data-act="leadview" data-v="list">≣ Liste</button>'+
+    '<button class="'+(S.leadView==='board'?'on':'')+'" data-act="leadview" data-v="board">▦ Pipeline</button>'+
+    '</div>';
+
+  var main = (S.leadView==='board') ? renderBoard() : (bar+sortbar+list);
+
   $app.innerHTML='<div class="screen">'+
     '<h1 class="t">Leads</h1>'+
     '<div class="sub">'+S.leads.length+' gesamt · '+hot+' hot · '+eur(sum)+'/J Marge-Potenzial</div>'+
-    bar+sortbar+list+'</div>';
+    viewbar+main+'</div>';
 }
 function leadCard(l){
   var u=photoURL(l);
@@ -1406,8 +1566,9 @@ function renderReminderOverlay(){
 }
 
 function renderHeute(){
+  var fu=followupBlock();
   if(!S.route){
-    $app.innerHTML='<div class="screen"><h1 class="t">Heute</h1>'+
+    $app.innerHTML='<div class="screen"><h1 class="t">Heute</h1>'+ fu +
       '<div class="sub">Abfuhrkalender wird geladen…</div>'+
       '<div class="empty"><div class="big">Keine Routendaten</div>'+
       '<div class="sm">Beim Offline-Erststart die App einmal online öffnen, damit der Kalender lädt.</div></div></div>';
@@ -1447,7 +1608,7 @@ function renderHeute(){
   var selLbl = sel===today ? ('heute · '+dateLabel(sel)) : dateLabel(sel);
 
   $app.innerHTML='<div class="screen">'+
-    '<h1 class="t">Heute</h1>'+
+    '<h1 class="t">Heute</h1>'+ fu +
     '<button class="cta ghost" data-act="openreminder" style="margin:0 0 10px">▤ Übersicht · alle Gemeinden</button>'+
     gemSel+
     '<div class="sub">'+esc(S.route.gemeinde)+' · '+esc(selLbl)+' · '+due.length+' Gebiete mit Restmüll</div>'+
@@ -1598,6 +1759,7 @@ function renderSheet(){
       '<span class="lab">Firma / Kontakt (manuell editierbar)</span>'+
       '<input class="txt" style="margin-bottom:8px" data-edit="firmenname" data-id="'+l.id+'" value="'+esc(l.firmenname||'')+'" placeholder="Firmenname"/>'+
       '<input class="txt" style="margin-bottom:8px" data-edit="telefon" data-id="'+l.id+'" inputmode="tel" value="'+esc(l.telefon||'')+'" placeholder="Telefon"/>'+
+      '<input class="txt" style="margin-bottom:8px" data-edit="email" data-id="'+l.id+'" inputmode="email" value="'+esc(l.email||'')+'" placeholder="E-Mail (für Angebotsversand)"/>'+
       '<input class="txt" style="margin-bottom:8px" data-edit="adresse" data-id="'+l.id+'" value="'+esc(l.adresse||'')+'" placeholder="Adresse (Straße, Ort)"/>'+
       '<input class="txt" style="margin-bottom:8px" data-edit="website" data-id="'+l.id+'" inputmode="url" value="'+esc(l.website||'')+'" placeholder="Website (optional)"/>'+
       '<span class="lab">Notiz (editierbar)</span>'+
@@ -1605,6 +1767,7 @@ function renderSheet(){
       '<button class="cta" data-act="saveedit" data-id="'+l.id+'" style="margin-top:8px">Speichern</button>'+
       offerBox(l)+
       ((kalkulation(l).ersparnis_jahr>0)?'<button class="cta" data-act="angebot" data-id="'+l.id+'">📄 Angebot erstellen & speichern</button>':'')+
+      ((kalkulation(l).ersparnis_jahr>0)?'<button class="cta ghost" data-act="mailoffer" data-id="'+l.id+'" style="margin-top:8px">✉ Angebot per Mail vorbereiten</button>':'')+
       angebotListe(l)+
 
       ((l._candidates&&l._candidates.length>1)?
@@ -1619,6 +1782,8 @@ function renderSheet(){
         (l.telefon?'<a class="pri" href="tel:'+esc(l.telefon)+'">▸ Anrufen</a>':'<button class="pri" data-act="noop">Kein Telefon</button>')+
         (l.lat?'<a href="https://www.google.com/maps?q='+l.lat+','+l.lng+'" target="_blank">Route</a>':'')+
       '</div>'+
+      callCrmBlock(l)+
+      historieBlock(l)+
       (l.website?'<div class="actions" style="grid-template-columns:1fr;margin-top:8px"><a href="'+esc(l.website)+'" target="_blank">Website</a></div>':'')+
       '<div class="actions" style="grid-template-columns:1fr;margin-top:8px"><button data-act="del" data-id="'+l.id+'" style="border-color:#ff2d2d;color:#ff2d2d">Lead löschen</button></div>'+
     '</div></div></div>';
@@ -1972,6 +2137,13 @@ document.addEventListener('click',function(e){
   else if(act==='savekeys'){ collectKeys(); saveKeys(S.keys); toast('Gespeichert'); render(); processOutbox(); syncAll(); }
   else if(act==='sync'){ toast('Synchronisiere…'); processOutbox().then(function(){ syncAll({toast:true}); }); }
   else if(act==='export'){ doExport(v); }
+  // ---- CRM ----
+  else if(act==='leadview'){ S.leadView=v; render(); }
+  else if(act==='callresult'){ logCall(id,v); }
+  else if(act==='setwv'){ setWV(id, v==='clear'?null:parseInt(v,10)); }
+  else if(act==='addhist'){ addHistNote(id); }
+  else if(act==='mailoffer'){ mailOffer(id); }
+  else if(act==='advance'){ advanceStatus(id,v); }
 },false);
 
 // Tab-Nav
@@ -2123,9 +2295,12 @@ function doExport(fmt){
     blob=new Blob([JSON.stringify(S.leads.map(toRow),null,2)],{type:'application/json'});
     name='rss-leads.json';
   } else {
-    var cols=['firmenname','adresse','telefon','tonnen','anzahl','score','hot_lead','status','kosten_monat','ersparnis_jahr','abfuhrtag','lat','lng'];
+    var cols=['firmenname','adresse','telefon','email','tonnen','anzahl','score','hot_lead','status','wiedervorlage','kontakte','kosten_monat','ersparnis_jahr','abfuhrtag','lat','lng'];
     var rows=[cols.join(';')].concat(S.leads.map(function(l){
-      return cols.map(function(c){ var x = c==='tonnen' ? behaelterSummary(l) : l[c]; return '"'+String(x==null?'':x).replace(/"/g,'""')+'"'; }).join(';');
+      return cols.map(function(c){
+        var x = c==='tonnen' ? behaelterSummary(l) : (c==='kontakte' ? histOf(l).length : l[c]);
+        return '"'+String(x==null?'':x).replace(/"/g,'""')+'"';
+      }).join(';');
     }));
     blob=new Blob(['﻿'+rows.join('\n')],{type:'text/csv'});
     name='rss-leads.csv';

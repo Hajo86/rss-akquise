@@ -150,6 +150,20 @@ create policy "photos anon read"   on storage.objects for select to anon
 Auf **jedem** Gerät in der App unter **Setup → Team-Sync** eintragen. Fertig – alle teilen sich
 die Leads.
 
+**5. CRM-Felder team-weit teilen (ab v37, optional):** Die Akquise-CRM-Felder (Wiedervorlage,
+Kontakt-Historie, E-Mail) sind zunächst **lokal-first** (nur auf dem Gerät, wie `angebote`) und
+werden noch **nicht** zu Supabase gepusht — so bricht die bestehende Sync garantiert nicht.
+Um sie team-weit zu synchronisieren, einmalig die Spalten anlegen …
+```sql
+alter table leads add column if not exists email text;
+alter table leads add column if not exists wiedervorlage date;
+alter table leads add column if not exists naechste_aktion text;
+alter table leads add column if not exists historie jsonb;
+```
+… **und** danach die vier Felder in `app.js` → `toRow()` mit aufnehmen (aktuell bewusst
+auskommentiert/weggelassen). Ohne diesen zweiten Schritt bleiben die CRM-Felder gerätelokal
+(via CSV/JSON-Export sicherbar).
+
 **Sync-Verhalten:** Beim Speichern/Ändern wird hochgeladen; alle 90 s (und bei „Jetzt
 synchronisieren", App-Start, Online-Wechsel) werden fremde Leads heruntergeladen und gemergt
 (`updated_at` entscheidet bei Konflikten). Löschen entfernt auch zentral. Offline gespeicherte

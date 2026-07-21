@@ -239,6 +239,52 @@ nav button.on{color:var(--ink);border-top-color:var(--ink)}
   font-weight:800;font-size:14px;letter-spacing:.08em;text-transform:uppercase}
 #gate .err{color:var(--hot);font-size:12px;font-weight:800;margin-top:14px;min-height:16px;
   letter-spacing:.04em;text-transform:uppercase}
+
+/* ===== CRM: Pipeline-Board ===== */
+.board{display:flex;gap:10px;overflow-x:auto;padding-bottom:8px;-webkit-overflow-scrolling:touch}
+.bcol{flex:0 0 220px;border:1.5px solid var(--ink);display:flex;flex-direction:column;background:var(--paper)}
+.bch{background:var(--ink);color:var(--paper);padding:8px 10px;display:flex;justify-content:space-between;
+  align-items:baseline;gap:6px;font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;position:sticky;top:0}
+.bch .bsum{font-size:10px;color:#bdbdbd;white-space:nowrap}
+.bcards{padding:8px;display:flex;flex-direction:column;gap:8px;min-height:40px}
+.bempty{color:var(--muted);font-size:12px;font-weight:700;text-align:center;padding:10px 0}
+.bcard{border:1.5px solid var(--ink);padding:9px 10px;cursor:pointer;background:var(--paper)}
+.bcard .bco{font-weight:800;font-size:13px;text-transform:uppercase;line-height:1.15;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bcard .bmeta{display:flex;justify-content:space-between;align-items:baseline;margin-top:6px}
+.bcard .bscore{font-size:18px;font-weight:800;line-height:1}
+.bcard .bsav{font-size:11px;font-weight:700;color:var(--muted)}
+.bcard .bwv{margin-top:6px;font-size:10px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;
+  border:1.2px solid var(--ink);padding:2px 5px;display:inline-block}
+.bcard .bwv.due{background:var(--hot);color:#fff;border-color:var(--hot)}
+.bcard .badv{margin-top:8px;width:100%;border:1.2px solid var(--ink);background:var(--paper);
+  padding:5px;font-size:10px;font-weight:800;letter-spacing:.05em;text-transform:uppercase}
+.bcard .badv:active{background:var(--ink);color:var(--paper)}
+
+/* ===== CRM: Anruf-Log / Wiedervorlage ===== */
+.callgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:8px}
+.callgrid button{border:1.5px solid var(--ink);padding:9px 4px;font-size:10px;font-weight:800;
+  letter-spacing:.02em;text-transform:uppercase;background:var(--paper);line-height:1.15}
+.callgrid button:active{background:var(--ink);color:var(--paper)}
+.wvrow{border:1.5px solid var(--ink);padding:8px 10px;font-size:13px;font-weight:700;margin-bottom:8px;
+  display:flex;align-items:center;gap:8px}
+.wvrow.due{border-color:var(--hot);color:var(--hot)}
+.wvrow button{margin-left:auto;border:1.5px solid currentColor;width:26px;height:26px;font-weight:800;background:var(--paper)}
+.wvset{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-bottom:6px}
+.wvset span{font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.wvset button{border:1.5px solid var(--ink);padding:6px 9px;font-size:11px;font-weight:800;background:var(--paper)}
+.wvset button:active{background:var(--ink);color:var(--paper)}
+
+/* ===== CRM: Kontakt-Historie ===== */
+.hlist{border:1.5px solid var(--ink);max-height:220px;overflow-y:auto;margin-bottom:8px}
+.hitem{display:flex;gap:9px;padding:8px 10px;border-bottom:1px solid var(--faint)}
+.hitem:last-child{border-bottom:0}
+.hitem .hic{font-size:14px;flex:none;width:16px;text-align:center}
+.hitem .htx{font-size:13px;font-weight:600;line-height:1.35}
+.hitem .hts{display:block;font-size:10px;font-weight:700;color:var(--muted);letter-spacing:.04em;margin-top:1px}
+.hadd{display:flex;gap:6px}
+.hadd input{flex:1}
+.hadd button{flex:none;padding:0 14px;border:1.5px solid var(--ink);font-weight:800;background:var(--paper)}
 </style>
 </head>
 <body>
