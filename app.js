@@ -83,7 +83,7 @@ var FRAKTION = {
 var VOLUMEN = [120,240,660,1100];
 var STATUS = ['neu','kontaktiert','angebot','gewonnen','verloren'];
 var STATUS_LBL = { neu:'Neu', kontaktiert:'Kontakt', angebot:'Angebot', gewonnen:'Gewonnen', verloren:'Verloren' };
-var APP_VERSION = 'v42 · „Angebot teilen" – ein Tap, Datei + Text ans Teilen-Menü (Mail/WhatsApp) via Web Share, Desktop-Fallback';
+var APP_VERSION = 'v43 · Echtes PDF-Angebot (jsPDF, Vektor) beim Teilen/Öffnen + automatische Wiedervorlage bei Status Angebot';
 var WD = ['Sonntag','Montag','Dienstag','Mittwoch','Donnerstag','Freitag','Samstag'];
 // Places-Typen, die fast nie Gewerbekunden mit Tonne sind -> aus Route ausblenden
 var STOP_EXCLUDE = ['bus_stop','transit_station','locality','political','park','school',
@@ -1110,6 +1110,10 @@ function isoPlusDays(n){ var d=new Date(); d.setDate(d.getDate()+n); return isoO
 function wvLabel(iso){ if(!iso) return ''; var d=new Date(iso+'T00:00:00'); return d.toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit'}); }
 function wvDue(l){ return l.wiedervorlage && l.wiedervorlage<=todayISO() && l.status!=='gewonnen' && l.status!=='verloren'; }
 function nextStatus(s){ var i=STATUS.indexOf(s); if(i<0||i>=3) return null; return STATUS[i+1]; }
+// Nachfass-Termin sicherstellen (setzt WV nur, wenn keiner/überfällig) – standard 4 Tage
+function ensureFollowup(l,days){ if(!l.wiedervorlage || l.wiedervorlage<todayISO()){ l.wiedervorlage=isoPlusDays(days||4); return true; } return false; }
+// Immer wenn ein Lead auf „Angebot" geht: automatisch einen Nachfass-Termin hinterlegen
+function onStatusAngebot(l){ if(ensureFollowup(l,4)){ pushHist(l,'notiz','Nachfass-Termin automatisch: '+wvLabel(l.wiedervorlage)); return true; } return false; }
 var HIST_ICON={ anruf:'☎', mail:'✉', notiz:'✎', status:'⇄' };
 // Anzahl protokollierter Anrufe -> Erstkontakt vs. Nachfass
 function callCount(l){ return histOf(l).filter(function(e){return e.typ==='anruf';}).length; }
@@ -1163,7 +1167,9 @@ function addHistNote(id){
 }
 function advanceStatus(id,to){
   var l=S.leads.find(function(x){return x.id===id;}); if(!l) return;
-  l.status=to; pushHist(l,'status','Status → '+STATUS_LBL[to]); crmSave(l); render(); renderSheet();
+  l.status=to; pushHist(l,'status','Status → '+STATUS_LBL[to]);
+  if(to==='angebot') onStatusAngebot(l);            // Nachfass-Termin automatisch
+  crmSave(l); render(); renderSheet();
 }
 // mailto-assistierter Angebotsversand: Mail im eigenen Programm vorbereiten (kein Backend)
 function mailOffer(id){
@@ -1204,29 +1210,31 @@ function shareText(l){
     +'Mit freundlichen Grüßen\n'+RSS_ABSENDER.gf+'\n'+RSS_ABSENDER.firma+' '+RSS_ABSENDER.zusatz+'\n'
     +'Tel. '+RSS_ABSENDER.tel+' · '+RSS_ABSENDER.mail;
 }
-function angebotDateiname(l){
+function angebotDateiname(l,ext){
   var f=(l.firmenname||'Angebot').replace(/[^0-9A-Za-zäöüÄÖÜß ._-]/g,'').replace(/\s+/g,'-').slice(0,40)||'Angebot';
-  return 'RSS-Angebot-'+f+'.html';
+  return 'RSS-Angebot-'+f+'.'+(ext||'pdf');
 }
 // EIN Knopf: Angebot erzeugen + über das Teilen-Menü (Mail/WhatsApp) mit Datei UND Text weitergeben.
 // Web Share Level 2 (Handy) hängt die Datei an; Desktop-Fallback: PDF öffnen + Mailentwurf.
 async function shareAngebot(id){
   var l=S.leads.find(function(x){return x.id===id;}); if(!l) return;
   var snap=angebotSnapshot(l);
-  var html=buildAngebot(snap);
   var text=shareText(l);
   var firma=l.firmenname||'Ihr Betrieb';
   l.angebote=l.angebote||[]; l.angebote.unshift(snap);   // Angebot mitprotokollieren
   var logAndSave=function(msg,note){
-    l.status='angebot'; pushHist(l,'mail',note); l.wiedervorlage=isoPlusDays(4);
+    l.status='angebot'; pushHist(l,'mail',note); l.wiedervorlage=isoPlusDays(4);  // Nachfass-Termin automatisch
     l.updated_at=Date.now(); dbPut(stripRuntime(l)).then(function(){ syncLead(l); });
     if(msg) toast(msg); renderSheet();
   };
+  // Datei bauen – echtes PDF bevorzugt, HTML als Fallback (jsPDF nicht geladen)
+  var pdfDoc=buildAngebotPDF(snap), file;
+  if(pdfDoc){ file=new File([pdfDoc.output('blob')], angebotDateiname(l,'pdf'), {type:'application/pdf'}); }
+  else { file=new File([buildAngebot(snap)], angebotDateiname(l,'html'), {type:'text/html'}); }
   try{
-    var file=new File([html], angebotDateiname(l), {type:'text/html'});
     if(navigator.canShare && navigator.canShare({files:[file]})){
       await navigator.share({ files:[file], title:'Angebot – '+firma, text:text });
-      logAndSave('Angebot geteilt · Status → Angebot · WV +4', 'Angebot geteilt (Datei + Text)'+(apMail(l)?(' → '+apMail(l)):''));
+      logAndSave('Angebot geteilt · Status → Angebot · WV +4', 'Angebot geteilt ('+(pdfDoc?'PDF':'Datei')+' + Text)'+(apMail(l)?(' → '+apMail(l)):''));
       return;
     }
   }catch(e){ if(e && e.name==='AbortError'){ renderSheet(); return; } }   // Nutzer hat abgebrochen
@@ -1978,6 +1986,90 @@ function offerBox(l){
     (S.calcOpen?calcBreakdown(l,k):'')+
   '</div></div>';
 }
+// Echtes PDF (Vektor, scharfer Text) via jsPDF – identisches Layout wie das HTML-Angebot.
+function jsPDFCtor(){ return (window.jspdf && window.jspdf.jsPDF) || null; }
+function buildAngebotPDF(snap){
+  var J=jsPDFCtor(); if(!J) return null;
+  var A=RSS_ABSENDER;
+  var doc=new J({unit:'mm',format:'a4'});
+  var M=18, R=192;                         // Ränder: Inhalt von 18..192 mm
+  var GRAY=[110,110,110], LIGHT=[242,242,242], LINE=[210,210,210], ORANGE=[232,117,43];
+  var datum=new Date(snap.created_at).toLocaleDateString('de-DE',{day:'2-digit',month:'long',year:'numeric'});
+  var nr=String(snap.id||'').replace('ang-','').slice(0,10);
+  var firma=snap.firmenname||'Ihr Betrieb';
+  var leistung=behaelterSummary(snap);
+  var p=snap.preis||{woe:{monat:0,leerung:0},vt:{monat:0,leerung:0}};
+  var chosenVt=(snap.turnus!=='woe');
+  var money=function(v){ return v>0?eur2(v):'auf Anfrage'; };
+  var g=function(){ doc.setTextColor(GRAY[0],GRAY[1],GRAY[2]); };
+  var blk=function(){ doc.setTextColor(0,0,0); };
+
+  // Logo (2:1) + Kopf rechts
+  try{ if(typeof RSS_LOGO!=='undefined' && RSS_LOGO) doc.addImage(RSS_LOGO,'PNG',M,13,54,27); }catch(e){}
+  doc.setFont('helvetica','bold'); doc.setFontSize(13); blk(); doc.text('Angebot',R,18,{align:'right'});
+  doc.setFont('helvetica','normal'); doc.setFontSize(10); g();
+  doc.text('Nr. '+nr,R,24,{align:'right'}); doc.text(datum,R,29,{align:'right'});
+
+  // Absender + Trennlinie
+  doc.setFont('helvetica','bold'); doc.setFontSize(11); blk(); doc.text(A.firma+' '+A.zusatz,M,48);
+  doc.setFont('helvetica','normal'); doc.setFontSize(9.5); g(); doc.text(A.strasse+' · '+A.ort,M,53);
+  doc.setDrawColor(0,0,0); doc.setLineWidth(0.5); doc.line(M,57,R,57);
+
+  // Titel
+  doc.setFont('helvetica','bold'); doc.setFontSize(19); blk();
+  doc.text('Angebot – Gewerbliche',M,70); doc.text('Abfallentsorgung',M,79);
+
+  // Für / Leistung
+  var y=93;
+  doc.setFont('helvetica','bold'); doc.setFontSize(8); g();
+  doc.text('FÜR',M,y); doc.text('LEISTUNG',M+92,y);
+  doc.setFontSize(11); blk(); doc.text(firma,M,y+6);
+  doc.setFont('helvetica','normal'); doc.setFontSize(10);
+  var fy=y+11;
+  if(snap.ap_name){ doc.text('z. Hd. '+snap.ap_name,M,fy); fy+=5; }
+  if(snap.adresse){ doc.text(doc.splitTextToSize(snap.adresse,80),M,fy); }
+  doc.text('Gewerbliche Restabfallentsorgung',M+92,y+6);
+  doc.text(doc.splitTextToSize(leistung,72),M+92,y+11);
+
+  // Preistabelle
+  var ty=124, cTurnus=112, cLeerR=158, cMonR=R;
+  doc.setFont('helvetica','bold'); doc.setFontSize(8); g();
+  doc.text('LEISTUNG',M,ty); doc.text('TURNUS',cTurnus,ty);
+  doc.text('PREIS / LEERUNG',cLeerR,ty,{align:'right'}); doc.text('PREIS / MONAT',cMonR,ty,{align:'right'});
+  doc.setDrawColor(0,0,0); doc.setLineWidth(0.4); doc.line(M,ty+2.5,R,ty+2.5);
+
+  var row=function(ry,turnus,leerung,monat,on){
+    if(on){ doc.setFillColor(LIGHT[0],LIGHT[1],LIGHT[2]); doc.rect(M-2,ry-5.5,(R-M)+4,13,'F'); }
+    doc.setFont('helvetica','normal'); doc.setFontSize(10.5); blk();
+    doc.text(doc.splitTextToSize('Restabfallentsorgung · '+leistung,86),M,ry);
+    doc.setFontSize(10.5); doc.text(turnus,cTurnus,ry);
+    if(on){ doc.setFont('helvetica','bold'); doc.setFontSize(7.5); doc.setTextColor(ORANGE[0],ORANGE[1],ORANGE[2]); doc.text('» gewählt',cTurnus,ry+4.5); blk(); }
+    doc.setFont('helvetica','normal'); doc.setFontSize(10.5); doc.text(money(leerung),cLeerR,ry,{align:'right'});
+    doc.setFont('helvetica','bold'); doc.text(money(monat),cMonR,ry,{align:'right'});
+    doc.setDrawColor(LINE[0],LINE[1],LINE[2]); doc.setLineWidth(0.2); doc.line(M,ry+7.5,R,ry+7.5);
+  };
+  row(ty+11,'14-täglich',p.vt.leerung,p.vt.monat,chosenVt);
+  row(ty+24,'wöchentlich',p.woe.leerung,p.woe.monat,!chosenVt);
+
+  // Hinweis + Text
+  var yn=ty+36; doc.setFont('helvetica','normal'); doc.setFontSize(8.5); g();
+  doc.text(doc.splitTextToSize('Preise netto zzgl. gesetzl. MwSt. Ein Festpreis – inkl. Behältergestellung, Abfuhr und Entsorgung. Keine versteckten Zuschläge.',R-M),M,yn);
+  var yt=yn+10; doc.setFontSize(10.5); blk();
+  doc.text(doc.splitTextToSize('Wir übernehmen die gewerbliche Restabfallentsorgung an Ihrem Standort – ein Ansprechpartner, kein Umstellungsaufwand. Die gesetzliche Pflichtrestmülltonne verbleibt beim Landkreis.',R-M),M,yt);
+  var yc=yt+16; doc.setFont('helvetica','bold'); doc.text('Nächster Schritt:',M,yc);
+  doc.setFont('helvetica','normal'); doc.text(doc.splitTextToSize('Antworten Sie einfach auf dieses Angebot oder rufen Sie uns an – wir richten alles ein.',R-M-30),M+30,yc);
+
+  // Fuß
+  var yf=270; doc.setDrawColor(LINE[0],LINE[1],LINE[2]); doc.setLineWidth(0.3); doc.line(M,yf,R,yf);
+  doc.setFontSize(8.5); g();
+  doc.setFont('helvetica','bold'); doc.text(A.firma+' '+A.zusatz,M,yf+6);
+  doc.setFont('helvetica','normal');
+  doc.text('Barmbeker Straße 23a · 22303 Hamburg · Geschäftsführer: '+A.gf,M,yf+11);
+  doc.text('Tel. '+A.tel+' · '+A.mail+' · '+A.web,M,yf+15.5);
+  doc.text('Angebot freibleibend. Preise netto zzgl. gesetzl. MwSt. Laufzeit und Kündigung nach Vereinbarung.',M,yf+20);
+  return doc;
+}
+
 // Kundendokument: druck-/teilbares Angebot (ohne interne Marge!)
 // snap = eingefrorenes Angebot (angebotSnapshot) – so bleibt ein gespeichertes Angebot
 // unverändert, auch wenn der Lead später bearbeitet wird.
@@ -2074,7 +2166,9 @@ function angebotSnapshot(l){
     k:base };   // k nur intern (Angebotsliste im Sheet), NICHT im Kundendokument
 }
 function openAngebotDoc(snap){
-  var blob=new Blob([buildAngebot(snap)],{type:'text/html'});
+  var doc=buildAngebotPDF(snap);                       // echtes PDF bevorzugt
+  if(doc){ var u=doc.output('bloburl'); var wp=window.open(u,'_blank'); if(!wp) location.href=u; return; }
+  var blob=new Blob([buildAngebot(snap)],{type:'text/html'});   // Fallback: HTML
   var url=URL.createObjectURL(blob);
   var w=window.open(url,'_blank');
   if(!w){ location.href=url; }   // Popup blockiert -> im selben Tab öffnen
@@ -2502,7 +2596,8 @@ function collectKeys(){
 }
 async function setStatus(id,v){
   var l=S.leads.find(function(x){return x.id===id;}); if(!l) return;
-  l.status=v; await dbPut(stripRuntime(l)); syncLead(l); render();
+  l.status=v; if(v==='angebot') onStatusAngebot(l);   // Nachfass-Termin automatisch
+  l.updated_at=Date.now(); await dbPut(stripRuntime(l)); syncLead(l); render(); renderSheet();
 }
 async function delLead(id){
   await dbDel(id); S.leads=S.leads.filter(function(l){return l.id!==id;}); S.modal=null; render();
