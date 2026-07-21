@@ -285,6 +285,19 @@ nav button.on{color:var(--ink);border-top-color:var(--ink)}
 .hadd{display:flex;gap:6px}
 .hadd input{flex:1}
 .hadd button{flex:none;padding:0 14px;border:1.5px solid var(--ink);font-weight:800;background:var(--paper)}
+.hitem .hdel{flex:none;width:24px;align-self:flex-start;border:1px solid var(--faint);background:var(--paper);
+  color:var(--muted);font-size:16px;font-weight:800;line-height:1;border-radius:2px}
+.hitem .hdel:active{background:var(--hot);color:#fff;border-color:var(--hot)}
+
+/* Kontaktstatus-Badge (Erstkontakt / Nachfass) */
+.cbadge{font-size:9px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;
+  padding:2px 6px;border:1.2px solid var(--ink);display:inline-block;white-space:nowrap}
+.cbadge.new{border-style:dashed;color:var(--muted)}
+.cbadge.rep{background:var(--ink);color:var(--paper)}
+.bcard .bcontact{margin-top:6px}
+
+/* Lead-Sheet Kopfzeile: Badges nebeneinander */
+.leadtop{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:12px}
 </style>
 </head>
 <body>
