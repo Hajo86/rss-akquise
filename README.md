@@ -159,6 +159,10 @@ alter table leads add column if not exists email text;
 alter table leads add column if not exists wiedervorlage date;
 alter table leads add column if not exists naechste_aktion text;
 alter table leads add column if not exists historie jsonb;
+alter table leads add column if not exists ap_name text;
+alter table leads add column if not exists ap_rolle text;
+alter table leads add column if not exists ap_telefon text;
+alter table leads add column if not exists ap_email text;
 ```
 … **und** danach die vier Felder in `app.js` → `toRow()` mit aufnehmen (aktuell bewusst
 auskommentiert/weggelassen). Ohne diesen zweiten Schritt bleiben die CRM-Felder gerätelokal

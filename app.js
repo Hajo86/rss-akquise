@@ -83,7 +83,7 @@ var FRAKTION = {
 var VOLUMEN = [120,240,660,1100];
 var STATUS = ['neu','kontaktiert','angebot','gewonnen','verloren'];
 var STATUS_LBL = { neu:'Neu', kontaktiert:'Kontakt', angebot:'Angebot', gewonnen:'Gewonnen', verloren:'Verloren' };
-var APP_VERSION = 'v39 · Pipeline Drag&Drop (beide Richtungen), Wiedervorlagen präsenter: „Meine Termine heute"-Overlay + Nav-Badge';
+var APP_VERSION = 'v40 · Ansprechpartner je Lead (Name/Rolle/Durchwahl/E-Mail) – Anrufen & Angebotsversand nutzen ihn';
 var WD = ['Sonntag','Montag','Dienstag','Mittwoch','Donnerstag','Freitag','Samstag'];
 // Places-Typen, die fast nie Gewerbekunden mit Tonne sind -> aus Route ausblenden
 var STOP_EXCLUDE = ['bus_stop','transit_station','locality','political','park','school',
@@ -733,6 +733,10 @@ function fromRow(rl, local){
     email:(rl.email!=null?rl.email:((local&&local.email)||'')),
     wiedervorlage:(rl.wiedervorlage!=null?rl.wiedervorlage:((local&&local.wiedervorlage)||null)),
     naechste_aktion:(rl.naechste_aktion!=null?rl.naechste_aktion:((local&&local.naechste_aktion)||'')),
+    ap_name:(rl.ap_name!=null?rl.ap_name:((local&&local.ap_name)||'')),
+    ap_rolle:(rl.ap_rolle!=null?rl.ap_rolle:((local&&local.ap_rolle)||'')),
+    ap_telefon:(rl.ap_telefon!=null?rl.ap_telefon:((local&&local.ap_telefon)||'')),
+    ap_email:(rl.ap_email!=null?rl.ap_email:((local&&local.ap_email)||'')),
     historie:(rl.historie!=null?rl.historie:((local&&local.historie)||[])),
     enriched:true, sync_state:'synced', duplikat:false
   };
@@ -1085,6 +1089,11 @@ function VOLUMEN_FRAK(){
 function histOf(l){ return Array.isArray(l.historie)?l.historie:[]; }
 function pushHist(l,typ,text){ l.historie=histOf(l).concat([{ ts:Date.now(), typ:typ, text:text||'' }]); }
 function crmSave(l,msg){ l.updated_at=Date.now(); dbPut(stripRuntime(l)).then(function(){ syncLead(l); }); if(msg) toast(msg); }
+// Ansprechpartner: eigene Durchwahl/Mail bevorzugen, sonst Firmen-Kontakt
+function apTel(l){ return ((l.ap_telefon||'').trim())||((l.telefon||'').trim()); }
+function apMail(l){ return ((l.ap_email||'').trim())||((l.email||'').trim()); }
+function apLabel(l){ return l.ap_name ? (l.ap_name+(l.ap_rolle?(' · '+l.ap_rolle):'')) : ''; }
+function apAnrede(l){ return l.ap_name ? ('Guten Tag '+l.ap_name+',') : 'Guten Tag,'; }
 function isoPlusDays(n){ var d=new Date(); d.setDate(d.getDate()+n); return isoOf(d); }
 function wvLabel(iso){ if(!iso) return ''; var d=new Date(iso+'T00:00:00'); return d.toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit'}); }
 function wvDue(l){ return l.wiedervorlage && l.wiedervorlage<=todayISO() && l.status!=='gewonnen' && l.status!=='verloren'; }
@@ -1151,7 +1160,7 @@ function mailOffer(id){
   var firma=l.firmenname||'Ihr Betrieb';
   var subj='Ihr Einsparpotenzial bei der Abfallentsorgung – RSS';
   var body=''
-    +'Guten Tag,\n\n'
+    +apAnrede(l)+'\n\n'
     +'vielen Dank für das Gespräch. Auf Basis Ihrer aktuellen kommunalen Abfallgebühren '
     +'haben wir für '+firma+' folgendes Einsparpotenzial ermittelt:\n\n'
     +'• Ihre Kosten heute (kommunal): '+eur(k.kosten_monat)+' / Monat\n'
@@ -1162,10 +1171,10 @@ function mailOffer(id){
     +'übernehmen wir – kein Aufwand für Sie. Antworten Sie einfach auf diese Mail oder rufen Sie an.\n\n'
     +'Mit freundlichen Grüßen\n'
     +'RSS – Recycling Solution Service · Landkreis Harburg';
-  var href='mailto:'+encodeURIComponent(l.email||'')
+  var href='mailto:'+encodeURIComponent(apMail(l))
     +'?subject='+encodeURIComponent(subj)+'&body='+encodeURIComponent(body);
   window.location.href=href;
-  l.status='angebot'; pushHist(l,'mail','Angebot per Mail vorbereitet'+(l.email?(' an '+l.email):' (Empfänger im Mailprogramm eintragen)'));
+  l.status='angebot'; pushHist(l,'mail','Angebot per Mail vorbereitet'+(apMail(l)?(' an '+apMail(l)):' (Empfänger im Mailprogramm eintragen)'));
   l.wiedervorlage=isoPlusDays(4);
   crmSave(l,'Mail vorbereitet · Status → Angebot · WV +4 Tage'); renderSheet();
   toast('💡 Angebots-PDF via „Angebot erstellen" speichern & anhängen');
@@ -1822,7 +1831,9 @@ function renderSheet(){
       '<div style="margin-top:10px">'+
         kv('Tonnen', behaelterSummary(l))+
         kv('Entsorger', l.entsorger||(l.entsorger_logo?'erkennbar (Name?)':'unbekannt'))+
-        kv('Telefon', l.telefon||'—')+
+        kv('Ansprechpartner', apLabel(l)||'— (unter Bearbeiten eintragen)')+
+        kv('Telefon', apTel(l)||'—')+
+        (apMail(l)?kv('E-Mail', apMail(l)):'')+
       '</div>'+
 
       // ==== AKQUISE-COCKPIT (oben, immer sichtbar) ====
@@ -1832,7 +1843,7 @@ function renderSheet(){
       }).join('')+'</div>'+
 
       '<div class="actions" style="margin-top:12px">'+
-        (l.telefon?'<a class="pri" href="tel:'+esc(l.telefon)+'">▸ Anrufen</a>':'<button class="pri" data-act="secedit" data-id="'+l.id+'">Telefon eintragen</button>')+
+        (apTel(l)?'<a class="pri" href="tel:'+esc(apTel(l))+'">▸ Anrufen'+(l.ap_name?(' · '+esc(l.ap_name.split(' ')[0])):'')+'</a>':'<button class="pri" data-act="secedit" data-id="'+l.id+'">Telefon eintragen</button>')+
         (l.lat?'<a href="https://www.google.com/maps?q='+l.lat+','+l.lng+'" target="_blank">Route</a>':'')+
       '</div>'+
       callCrmBlock(l)+
@@ -1846,16 +1857,22 @@ function renderSheet(){
       angebotListe(l)+
 
       // ==== BEARBEITEN (einklappbar) ====
-      '<button class="cta ghost" data-act="secedit" data-id="'+l.id+'" style="margin-top:18px">'+(S.secEdit?'▴ Bearbeiten schließen':'▾ Bearbeiten (Tonnen · Firma · Notiz)')+'</button>'+
+      '<button class="cta ghost" data-act="secedit" data-id="'+l.id+'" style="margin-top:18px">'+(S.secEdit?'▴ Bearbeiten schließen':'▾ Bearbeiten (Ansprechpartner · Firma · Tonnen · Notiz)')+'</button>'+
       (S.secEdit ? (
+        '<span class="lab">Ansprechpartner (Entscheider)</span>'+
+        '<input class="txt" style="margin-bottom:8px" data-edit="ap_name" data-id="'+l.id+'" value="'+esc(l.ap_name||'')+'" placeholder="Name (z. B. Herr Müller)"/>'+
+        '<input class="txt" style="margin-bottom:8px" data-edit="ap_rolle" data-id="'+l.id+'" value="'+esc(l.ap_rolle||'')+'" placeholder="Rolle/Funktion (Inhaber, GF, Einkauf…)"/>'+
+        '<input class="txt" style="margin-bottom:8px" data-edit="ap_telefon" data-id="'+l.id+'" inputmode="tel" value="'+esc(l.ap_telefon||'')+'" placeholder="Durchwahl / Mobil des Ansprechpartners"/>'+
+        '<input class="txt" style="margin-bottom:8px" data-edit="ap_email" data-id="'+l.id+'" inputmode="email" value="'+esc(l.ap_email||'')+'" placeholder="E-Mail des Ansprechpartners"/>'+
+
         '<span class="lab">Tonnen vor Ort</span>'+
         containersOf(l).map(function(c,i){ return binBlockLead(l,c,i); }).join('')+
         '<button class="cta ghost" data-act="laddbin" data-id="'+l.id+'" style="margin-top:0;margin-bottom:6px">+ Weitere Tonne</button>'+
 
-        '<span class="lab">Firma / Kontakt</span>'+
+        '<span class="lab">Firma (allgemein)</span>'+
         '<input class="txt" style="margin-bottom:8px" data-edit="firmenname" data-id="'+l.id+'" value="'+esc(l.firmenname||'')+'" placeholder="Firmenname"/>'+
-        '<input class="txt" style="margin-bottom:8px" data-edit="telefon" data-id="'+l.id+'" inputmode="tel" value="'+esc(l.telefon||'')+'" placeholder="Telefon"/>'+
-        '<input class="txt" style="margin-bottom:8px" data-edit="email" data-id="'+l.id+'" inputmode="email" value="'+esc(l.email||'')+'" placeholder="E-Mail (für Angebotsversand)"/>'+
+        '<input class="txt" style="margin-bottom:8px" data-edit="telefon" data-id="'+l.id+'" inputmode="tel" value="'+esc(l.telefon||'')+'" placeholder="Firmen-Telefon (Zentrale)"/>'+
+        '<input class="txt" style="margin-bottom:8px" data-edit="email" data-id="'+l.id+'" inputmode="email" value="'+esc(l.email||'')+'" placeholder="Firmen-E-Mail (allgemein)"/>'+
         '<input class="txt" style="margin-bottom:8px" data-edit="adresse" data-id="'+l.id+'" value="'+esc(l.adresse||'')+'" placeholder="Adresse (Straße, Ort)"/>'+
         '<input class="txt" style="margin-bottom:8px" data-edit="website" data-id="'+l.id+'" inputmode="url" value="'+esc(l.website||'')+'" placeholder="Website (optional)"/>'+
         '<span class="lab">Notiz (Stammdaten)</span>'+
@@ -2442,7 +2459,7 @@ function doExport(fmt){
     blob=new Blob([JSON.stringify(S.leads.map(toRow),null,2)],{type:'application/json'});
     name='rss-leads.json';
   } else {
-    var cols=['firmenname','adresse','telefon','email','tonnen','anzahl','score','hot_lead','status','wiedervorlage','kontakte','kosten_monat','ersparnis_jahr','abfuhrtag','lat','lng'];
+    var cols=['firmenname','ap_name','ap_rolle','ap_telefon','ap_email','adresse','telefon','email','tonnen','anzahl','score','hot_lead','status','wiedervorlage','kontakte','kosten_monat','ersparnis_jahr','abfuhrtag','lat','lng'];
     var rows=[cols.join(';')].concat(S.leads.map(function(l){
       return cols.map(function(c){
         var x = c==='tonnen' ? behaelterSummary(l) : (c==='kontakte' ? histOf(l).length : l[c]);
