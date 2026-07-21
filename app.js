@@ -4,7 +4,7 @@
    =================================================================== */
 
 /* ---------- CONFIG: Scoring + Kostenmodell ----------
-   Werte geerdet in echten LK-Harburg/Remondis-Zahlen (Stand 2026):
+   Werte geerdet in echten LK-Harburg/Veolia-Zahlen (Stand 2026):
    1100 L Restmüll Markt ~150 €/14-täglich … ~300 €/wöchentlich.
    Default = mittlere Annahme (Abfuhrrhythmus bei Capture unbekannt),
    im Lead-Detail editierbar. Alles hier ist anpassbar. */
@@ -13,7 +13,7 @@ var CONFIG = {
   fraktFaktor: { restmuell:1.0, bio:0.5, papier:0.3, gelb:0.2 }
 };
 
-/* ===== Echte Kalkulation: LK Harburg Satzung 2026 + Remondis-EK =====
+/* ===== Echte Kalkulation: LK Harburg Satzung 2026 + Veolia-EK =====
    Kommunale Restmüll-Jahresgebühr (€/Jahr, inkl. Grundgebühr).
    rhythmus: 'woe'=wöchentlich, '14t'=14-täglich, '4woe'=4-wöchentlich.
    660 L gibt es kommunal NICHT (private Größe). */
@@ -28,10 +28,11 @@ var TARIF = {
   },
   pflichtJahr: 77.90   // kleinste Pflichttonne (40 L 4-wö) — bleibt IMMER
 };
-// Remondis-EK netto: Miete €/Monat + variabel €/Leerung (nur 1100 L bekannt)
-var REMONDIS = {
-  restmuell: { 1100: { miete:3.10, leerung:44.75 } },  // 36,90 + 6,80 CO2 + 1,05 Krise
-  papier:    { 1100: { miete:3.10, leerung:10.85 } }   // 9,80 + 1,05 Krise
+// Veolia-EK netto: Miete €/Monat + variabel €/Leerung (Preisliste ULB, gültig bis 31.12.2026)
+// 1100 L = 1,1 cbm ULB. Leerung = Grundpreis + CO2-/Maut-Pauschale (7,10) + BEHG-Pauschale (5,05 €/cbm, nur Restmüll).
+var VEOLIA = {
+  restmuell: { 1100: { miete:4.00, leerung:42.66 } },  // 30,00 + 7,10 CO2/Maut + 5,56 BEHG (5,05×1,1 cbm)
+  papier:    { 1100: { miete:4.00, leerung:12.10 } }   // 5,00 + 7,10 CO2/Maut (kein BEHG auf Papier)
 };
 var LEER_MT = { 'woe':52/12, '14t':26/12, '4woe':13/12 };  // Leerungen pro Monat
 var RABATT  = 0.10;   // Kunde spart 10 % seiner Kommunalkosten
@@ -50,16 +51,16 @@ function kalkulation(x){
       var t=TARIF.restmuell[c.volumen];
       var jahr=t?(t[rh]!=null?t[rh]:t['14t']):null;
       if(jahr!=null) kommunal+=(jahr/12)*n; else privat=true;        // 660 L = privat
-      var ek=REMONDIS.restmuell[c.volumen];
+      var ek=VEOLIA.restmuell[c.volumen];
       if(ek) ekRest+=(ek.miete+ek.leerung*LEER_MT[rh])*n; else unbekannteEK=true;
     } else if(c.fraktion==='papier' && c.volumen>=1100){
-      var ekp=REMONDIS.papier[1100]; ekPap+=(ekp.miete+ekp.leerung*LEER_MT[rh])*n; papier1100=true;
+      var ekp=VEOLIA.papier[1100]; ekPap+=(ekp.miete+ekp.leerung*LEER_MT[rh])*n; papier1100=true;
       // 240-L-Papier: kommunal gratis -> 0
     } // bio/gelb: kommunal inklusive -> 0
   });
   var pflicht  = TARIF.pflichtJahr/12;        // 6,49 €/Mt – Kunde zahlt an die Stadt
   var rssPreis = kommunal*(1-rabatt);          // 10 % unter Kommunal
-  var ekGesamt = ekRest + ekPap;               // RSS-Kosten (Remondis-EK; Papier RSS-getragen)
+  var ekGesamt = ekRest + ekPap;               // RSS-Kosten (Veolia-EK; Papier RSS-getragen)
   var margeMt  = rssPreis - ekGesamt;
   var neuGesamt= rssPreis + pflicht;           // neue Gesamtkosten des Kunden
   var ersparnisMt = kommunal - neuGesamt;      // = kommunal*rabatt − Pflichttonne
@@ -82,7 +83,7 @@ var FRAKTION = {
 var VOLUMEN = [120,240,660,1100];
 var STATUS = ['neu','kontaktiert','angebot','gewonnen','verloren'];
 var STATUS_LBL = { neu:'Neu', kontaktiert:'Kontakt', angebot:'Angebot', gewonnen:'Gewonnen', verloren:'Verloren' };
-var APP_VERSION = 'v35 · Foto-Zoom (echtes Pinch) · Scan robuster · Lead-Notiz';
+var APP_VERSION = 'v36 · Entsorgungspartner Veolia (EK-Kalkulation), Partner im Kundenangebot neutral';
 var WD = ['Sonntag','Montag','Dienstag','Mittwoch','Donnerstag','Freitag','Samstag'];
 // Places-Typen, die fast nie Gewerbekunden mit Tonne sind -> aus Route ausblenden
 var STOP_EXCLUDE = ['bus_stop','transit_station','locality','political','park','school',
@@ -1632,7 +1633,7 @@ function offerBox(l){
   '</div>';
   var opt = (k.ersparnis_monat<=0 && k.kosten_monat>0) ?
     '<div class="note" style="border:1px solid var(--hot);color:var(--hot);padding:8px 10px;margin-top:8px">Bei dieser Größe spart der Kunde nichts — die Pflichttonne frisst den Rabatt. Lohnt sich erst bei großen Tonnen (1.100 L).</div>' : '';
-  var warn = (k.ek_unvollstaendig?'<div class="note">⚠ Remondis-EK nur für 1.100 L hinterlegt — kleinere Volumen unvollständig.</div>':'')+
+  var warn = (k.ek_unvollstaendig?'<div class="note">⚠ Veolia-EK nur für 1.100 L hinterlegt — kleinere Volumen unvollständig.</div>':'')+
              (k.privat?'<div class="note">⚠ 660 L hat keinen Kommunaltarif (private Größe).</div>':'');
   var pct=Math.round((k.rabatt||0.10)*100);
   var rabBtns='<div style="font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;margin:4px 0 6px">Kundenrabatt: '+pct+' %</div>'+
@@ -1640,7 +1641,7 @@ function offerBox(l){
     [5,10,15,20,25].map(function(p){
       return '<button class="chip'+(pct===p?' on':'')+'" data-act="rabatt" data-id="'+l.id+'" data-v="'+p+'">'+p+'%</button>';
     }).join('')+'</div>';
-  return '<div class="offerbox"><div class="oh">Kalkulation (LK Harburg + Remondis)</div><div class="ob">'+
+  return '<div class="offerbox"><div class="oh">Kalkulation (LK Harburg + Veolia)</div><div class="ob">'+
     rhyBtns+ rabBtns+
     kv('Kommunalkosten heute / Mt', eur(k.kosten_monat))+
     kv('Kunde spart ('+pct+' %)', eur(k.ersparnis_monat)+'/Mt · '+eur(k.ersparnis_jahr)+'/J')+
@@ -1684,7 +1685,7 @@ function buildAngebot(snap){
   '</table>'+
   '<div class="big"><div class="l">Ihre Ersparnis</div><div class="e">'+eur(k.ersparnis_jahr)+' / Jahr</div>'+
     '<div class="l" style="margin-top:4px">'+eur(k.ersparnis_monat)+' pro Monat · '+pct+' % günstiger</div></div>'+
-  '<p>Sie behalten Ihre gesetzlich vorgeschriebene Pflichttonne beim Landkreis; Ihre gewerbliche Restabfallentsorgung übernehmen wir über unseren Partner Remondis. Kein Aufwand für Sie – wir kümmern uns um die Umstellung.</p>'+
+  '<p>Sie behalten Ihre gesetzlich vorgeschriebene Pflichttonne beim Landkreis; Ihre gewerbliche Restabfallentsorgung übernehmen wir über unseren Entsorgungspartner. Kein Aufwand für Sie – wir kümmern uns um die Umstellung.</p>'+
   '<p style="margin-top:18px"><b>Nächster Schritt:</b> Antworten Sie einfach auf dieses Angebot oder rufen Sie uns an – wir richten alles ein.</p>'+
   '<button class="btn" onclick="window.print()">Als PDF speichern / Drucken</button>'+
   '<div class="note">Unverbindliches Angebot, freibleibend. Ersparnis bezogen auf die Abfallgebührensatzung des Landkreises Harburg (Stand 2026) und einen Abfuhrrhythmus '+(k.rhythmus==='woe'?'wöchentlich':'14-täglich')+'. Tatsächliche Werte je nach Vertrag und Rhythmus. Keine Rechtsberatung.</div>'+
@@ -1743,8 +1744,8 @@ function angebotListe(l){
 }
 function calcBreakdown(l,k){
   var pct=Math.round((k.rabatt||0.10)*100);
-  var ekZeilen = '· Remondis Restmüll: <b>'+eur(k.ek_rest_monat)+'/Mt</b><br>'+
-    (k.papier1100 ? '· Remondis Papier (1.100 L, RSS-getragen): <b>'+eur(k.ek_pap_monat)+'/Mt</b><br>' : '');
+  var ekZeilen = '· Veolia Restmüll: <b>'+eur(k.ek_rest_monat)+'/Mt</b><br>'+
+    (k.papier1100 ? '· Veolia Papier (1.100 L, RSS-getragen): <b>'+eur(k.ek_pap_monat)+'/Mt</b><br>' : '');
   return '<div class="note" style="border:1.5px solid var(--ink);padding:12px;margin-top:8px;line-height:1.6">'+
     '<b style="text-transform:uppercase">So entsteht die Rechnung</b><br><br>'+
 
@@ -1757,11 +1758,11 @@ function calcBreakdown(l,k){
     '<b>③ Kunde spart:</b> '+eur(k.kosten_monat)+' − '+eur(k.neu_gesamt_monat)+' = <b>'+eur(k.ersparnis_monat)+'/Mt ('+eur(k.ersparnis_jahr)+'/J)</b><br>'+
     '<span style="color:var(--muted)">Das ist '+pct+' % minus die Pflichttonne ('+eur(k.pflicht_monat)+'/Mt) — die zahlt der Kunde ja weiter.</span><br><br>'+
 
-    '<b>④ RSS-Marge = RSS-Preis − Remondis-EK:</b><br>'+ ekZeilen +
+    '<b>④ RSS-Marge = RSS-Preis − Veolia-EK:</b><br>'+ ekZeilen +
     eur(k.rss_preis_monat)+' − '+eur(k.rss_kosten_monat)+' = <b>'+eur(k.rss_marge_monat)+'/Mt ('+eur(k.rss_marge_jahr)+'/Jahr)</b><br><br>'+
 
     '<span style="color:var(--muted)">Die Pflichtmülltonne ist keine RSS-Kost (Kunde zahlt sie an die Stadt), schmälert aber seine Ersparnis. '+
-    'Papier bis 240 L bleibt kommunal gratis; eine 1.100-L-Papiertonne stellt RSS über Remondis (in der Marge berücksichtigt).</span>'+
+    'Papier bis 240 L bleibt kommunal gratis; eine 1.100-L-Papiertonne stellt RSS über Veolia (in der Marge berücksichtigt).</span>'+
   '</div>';
 }
 function photoGallery(l){
