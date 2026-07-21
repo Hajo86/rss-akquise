@@ -83,7 +83,7 @@ var FRAKTION = {
 var VOLUMEN = [120,240,660,1100];
 var STATUS = ['neu','kontaktiert','angebot','gewonnen','verloren'];
 var STATUS_LBL = { neu:'Neu', kontaktiert:'Kontakt', angebot:'Angebot', gewonnen:'Gewonnen', verloren:'Verloren' };
-var APP_VERSION = 'v41 · Neues Angebots-PDF (RSS-Logo, Absender RSS UG, nur Entsorgungspreis je Turnus – keine Ersparnis)';
+var APP_VERSION = 'v42 · „Angebot teilen" – ein Tap, Datei + Text ans Teilen-Menü (Mail/WhatsApp) via Web Share, Desktop-Fallback';
 var WD = ['Sonntag','Montag','Dienstag','Mittwoch','Donnerstag','Freitag','Samstag'];
 // Places-Typen, die fast nie Gewerbekunden mit Tonne sind -> aus Route ausblenden
 var STOP_EXCLUDE = ['bus_stop','transit_station','locality','political','park','school',
@@ -1192,6 +1192,51 @@ function mailOffer(id){
   toast('💡 Angebots-PDF via „Angebot erstellen" speichern & anhängen');
 }
 
+// Begleittext fürs Teilen/Mail (ohne Ersparnis)
+function shareText(l){
+  var firma=l.firmenname||'Ihr Betrieb';
+  return apAnrede(l)+'\n\n'
+    +'anbei unser Angebot für die gewerbliche Abfallentsorgung an Ihrem Standort ('+firma+') '
+    +'mit transparentem Festpreis.\n\n'
+    +'Wir übernehmen die komplette gewerbliche Restabfallentsorgung; die gesetzliche Pflichttonne '
+    +'verbleibt beim Landkreis. Ein Ansprechpartner, kein Umstellungsaufwand.\n\n'
+    +'Bei Fragen einfach antworten oder anrufen.\n\n'
+    +'Mit freundlichen Grüßen\n'+RSS_ABSENDER.gf+'\n'+RSS_ABSENDER.firma+' '+RSS_ABSENDER.zusatz+'\n'
+    +'Tel. '+RSS_ABSENDER.tel+' · '+RSS_ABSENDER.mail;
+}
+function angebotDateiname(l){
+  var f=(l.firmenname||'Angebot').replace(/[^0-9A-Za-zäöüÄÖÜß ._-]/g,'').replace(/\s+/g,'-').slice(0,40)||'Angebot';
+  return 'RSS-Angebot-'+f+'.html';
+}
+// EIN Knopf: Angebot erzeugen + über das Teilen-Menü (Mail/WhatsApp) mit Datei UND Text weitergeben.
+// Web Share Level 2 (Handy) hängt die Datei an; Desktop-Fallback: PDF öffnen + Mailentwurf.
+async function shareAngebot(id){
+  var l=S.leads.find(function(x){return x.id===id;}); if(!l) return;
+  var snap=angebotSnapshot(l);
+  var html=buildAngebot(snap);
+  var text=shareText(l);
+  var firma=l.firmenname||'Ihr Betrieb';
+  l.angebote=l.angebote||[]; l.angebote.unshift(snap);   // Angebot mitprotokollieren
+  var logAndSave=function(msg,note){
+    l.status='angebot'; pushHist(l,'mail',note); l.wiedervorlage=isoPlusDays(4);
+    l.updated_at=Date.now(); dbPut(stripRuntime(l)).then(function(){ syncLead(l); });
+    if(msg) toast(msg); renderSheet();
+  };
+  try{
+    var file=new File([html], angebotDateiname(l), {type:'text/html'});
+    if(navigator.canShare && navigator.canShare({files:[file]})){
+      await navigator.share({ files:[file], title:'Angebot – '+firma, text:text });
+      logAndSave('Angebot geteilt · Status → Angebot · WV +4', 'Angebot geteilt (Datei + Text)'+(apMail(l)?(' → '+apMail(l)):''));
+      return;
+    }
+  }catch(e){ if(e && e.name==='AbortError'){ renderSheet(); return; } }   // Nutzer hat abgebrochen
+  // Fallback (Desktop / kein Datei-Teilen): Angebot öffnen + Mailentwurf mit Text
+  openAngebotDoc(snap);
+  var href='mailto:'+encodeURIComponent(apMail(l))+'?subject='+encodeURIComponent('Ihr Angebot – Gewerbliche Abfallentsorgung · RSS')+'&body='+encodeURIComponent(text);
+  window.location.href=href;
+  logAndSave('Angebot geöffnet + Mailentwurf · PDF anhängen', 'Angebot erstellt (Desktop: PDF + Mailentwurf)');
+}
+
 // Kontakt-Historie/Timeline im Lead-Sheet
 function historieBlock(l){
   var h=histOf(l).slice().sort(function(a,b){return b.ts-a.ts;});
@@ -1864,8 +1909,8 @@ function renderSheet(){
       // ==== ANGEBOT ====
       '<span class="lab">Angebot</span>'+
       offerBox(l)+
-      ((kalkulation(l).ersparnis_jahr>0)?'<button class="cta" data-act="angebot" data-id="'+l.id+'">📄 Angebot erstellen & speichern</button>':'')+
-      ((kalkulation(l).ersparnis_jahr>0)?'<button class="cta ghost" data-act="mailoffer" data-id="'+l.id+'" style="margin-top:8px">✉ Angebot per Mail vorbereiten</button>':'')+
+      ((kalkulation(l).rss_preis_monat>0)?'<button class="cta" data-act="shareangebot" data-id="'+l.id+'">📎 Angebot teilen (Mail / WhatsApp)</button>':'')+
+      ((kalkulation(l).rss_preis_monat>0)?'<button class="cta ghost" data-act="openoffer" data-id="'+l.id+'" style="margin-top:8px">📄 Angebot öffnen / drucken</button>':'')+
       angebotListe(l)+
 
       // ==== BEARBEITEN (einklappbar) ====
@@ -2312,6 +2357,8 @@ document.addEventListener('click',function(e){
   else if(act==='setwv'){ setWV(id, v==='clear'?null:parseInt(v,10)); }
   else if(act==='addhist'){ addHistNote(id); }
   else if(act==='mailoffer'){ mailOffer(id); }
+  else if(act==='shareangebot'){ shareAngebot(id); }
+  else if(act==='openoffer'){ var lo=S.leads.find(function(x){return x.id===id;}); if(lo) openAngebotDoc(angebotSnapshot(lo)); }
   else if(act==='advance'){ advanceStatus(id,v); }
   else if(act==='delhist'){ delHist(id,v); }
   else if(act==='resetcrm'){ resetCrm(id); }
