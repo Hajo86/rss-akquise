@@ -150,10 +150,11 @@ create policy "photos anon read"   on storage.objects for select to anon
 Auf **jedem** Gerät in der App unter **Setup → Team-Sync** eintragen. Fertig – alle teilen sich
 die Leads.
 
-**5. CRM-Felder team-weit teilen (ab v37, optional):** Die Akquise-CRM-Felder (Wiedervorlage,
-Kontakt-Historie, E-Mail) sind zunächst **lokal-first** (nur auf dem Gerät, wie `angebote`) und
-werden noch **nicht** zu Supabase gepusht — so bricht die bestehende Sync garantiert nicht.
-Um sie team-weit zu synchronisieren, einmalig die Spalten anlegen …
+**5. CRM-/Kontakt-Felder team-weit syncen (ab v44 automatisch):** Wiedervorlage, Kontakt-Historie,
+E-Mail und **Ansprechpartner** (ap_*) werden ab v44 **automatisch mitsynchronisiert, sobald die
+Spalten existieren**. Fehlen sie serverseitig, erkennt die App das an der Server-Antwort und schaltet
+für die Sitzung auf lokal-first zurück (kein Sync-Bruch, kein Datenverlust). **Damit Löschungen und
+Ansprechpartner geräteübergreifend ankommen, einmalig die Spalten anlegen** (SQL Editor):
 ```sql
 alter table leads add column if not exists email text;
 alter table leads add column if not exists wiedervorlage date;
@@ -164,9 +165,9 @@ alter table leads add column if not exists ap_rolle text;
 alter table leads add column if not exists ap_telefon text;
 alter table leads add column if not exists ap_email text;
 ```
-… **und** danach die vier Felder in `app.js` → `toRow()` mit aufnehmen (aktuell bewusst
-auskommentiert/weggelassen). Ohne diesen zweiten Schritt bleiben die CRM-Felder gerätelokal
-(via CSV/JSON-Export sicherbar).
+Ein zweiter Code-Schritt ist **nicht** mehr nötig – `toRow()` nimmt die Felder automatisch auf.
+Konfliktauflösung: last-write-wins über `updated_at`; eine echte Löschung (Spalte = null) setzt sich
+beim Pull durch (`'feld' in rl`-Prüfung unterscheidet „gelöscht" von „Spalte fehlt").
 
 **Sync-Verhalten:** Beim Speichern/Ändern wird hochgeladen; alle 90 s (und bei „Jetzt
 synchronisieren", App-Start, Online-Wechsel) werden fremde Leads heruntergeladen und gemergt

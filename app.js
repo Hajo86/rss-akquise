@@ -83,7 +83,7 @@ var FRAKTION = {
 var VOLUMEN = [120,240,660,1100];
 var STATUS = ['neu','kontaktiert','angebot','gewonnen','verloren'];
 var STATUS_LBL = { neu:'Neu', kontaktiert:'Kontakt', angebot:'Angebot', gewonnen:'Gewonnen', verloren:'Verloren' };
-var APP_VERSION = 'v43 · Echtes PDF-Angebot (jsPDF, Vektor) beim Teilen/Öffnen + automatische Wiedervorlage bei Status Angebot';
+var APP_VERSION = 'v44 · Fix Team-Sync: Kontakt-/CRM-Felder werden synchronisiert (auto, selbstheilend), Löschungen bleiben gelöscht';
 var WD = ['Sonntag','Montag','Dienstag','Mittwoch','Donnerstag','Freitag','Samstag'];
 // Places-Typen, die fast nie Gewerbekunden mit Tonne sind -> aus Route ausblenden
 var STOP_EXCLUDE = ['bus_stop','transit_station','locality','political','park','school',
@@ -120,6 +120,8 @@ var S = {
   sort: 'score',
   leadView: 'list',    // 'list' | 'board' (Pipeline-Kanban) im Leads-Tab
   secEdit: false,      // Lead-Sheet: Bearbeiten-Bereich (Tonnen/Firma/Notiz) auf/zu
+  crmSync: true,       // Kontakt-/CRM-Felder mit Supabase syncen? auto-false, falls Spalten fehlen
+
   modal: null,         // lead id im Detail-Sheet
   picker: null,        // { leadId, candidates } Firmen-Auswahl
   online: navigator.onLine,
@@ -705,16 +707,24 @@ async function syncLead(lead){
         method:'POST', headers:supaHeaders({'Content-Type':'image/jpeg','x-upsert':'true'}), body:lead.photoBlob });
       if(up.ok) lead.foto_url=base+'/storage/v1/object/public/lead-photos/'+path;
     }
-    var res=await fetch(base+'/rest/v1/leads?on_conflict=id',{
+    var doPost=function(){ return fetch(base+'/rest/v1/leads?on_conflict=id',{
       method:'POST', headers:supaHeaders({'Content-Type':'application/json','Prefer':'resolution=merge-duplicates,return=minimal'}),
-      body:JSON.stringify([toRow(lead)]) });
-    if(res.ok){ lead.sync_state='synced'; S.lastSyncError=null; }
-    else { lead.sync_state='pending'; var et=await res.text(); S.lastSyncError='Push '+res.status+': '+(et||'').slice(0,160); }
+      body:JSON.stringify([toRow(lead)]) }); };
+    var res=await doPost();
+    if(!res.ok){
+      var et=await res.text();
+      // CRM-Spalten fehlen serverseitig? -> einmalig auf lokal-first zurückschalten und erneut pushen
+      if(res.status===400 && S.crmSync!==false && /column|PGRST204|schema cache|Could not find/i.test(et)){
+        S.crmSync=false; res=await doPost(); et = res.ok ? null : await res.text();
+      }
+      if(res.ok){ lead.sync_state='synced'; S.lastSyncError=null; }
+      else { lead.sync_state='pending'; S.lastSyncError='Push '+res.status+': '+((et||'')+'').slice(0,160); }
+    } else { lead.sync_state='synced'; S.lastSyncError=null; }
   }catch(e){ lead.sync_state='pending'; S.lastSyncError='Netzwerk: '+(e&&e.message||'Fehler'); }
   await dbPut(stripRuntime(lead));
 }
 function toRow(l){
-  return { id:l.id, created_at:new Date(l.created_at).toISOString(),
+  var row={ id:l.id, created_at:new Date(l.created_at).toISOString(),
     updated_at:new Date(l.updated_at||l.created_at).toISOString(), abfuhrtag:l.abfuhrtag,
     lat:l.lat, lng:l.lng, accuracy:l.accuracy, foto_url:l.foto_url||null,
     fraktion:l.fraktion, volumen:l.volumen, anzahl:l.anzahl, entsorger_logo:l.entsorger_logo, entsorger:l.entsorger||null,
@@ -724,6 +734,14 @@ function toRow(l){
     status:l.status, score:l.score, hot_lead:l.hot_lead,
     // int-Spalten -> auf ganze Euro runden (sonst lehnt Postgres Kommazahlen mit 400 ab)
     kosten_monat:rnd(l.kosten_monat), ersparnis_monat:rnd(l.ersparnis_monat), ersparnis_jahr:rnd(l.ersparnis_jahr) };
+  // Kontakt-/CRM-Felder mitsynchronisieren, SOBALD die Spalten existieren. Fehlen sie serverseitig,
+  // schaltet syncLead S.crmSync=false (dann fallen diese Felder weg -> lokal-first, kein Sync-Bruch).
+  if(S.crmSync!==false){
+    row.email=l.email||null; row.wiedervorlage=l.wiedervorlage||null; row.naechste_aktion=l.naechste_aktion||null;
+    row.ap_name=l.ap_name||null; row.ap_rolle=l.ap_rolle||null; row.ap_telefon=l.ap_telefon||null; row.ap_email=l.ap_email||null;
+    row.historie=(l.historie&&l.historie.length)?l.historie:null;
+  }
+  return row;
 }
 function rnd(n){ return (n==null||isNaN(n))?null:Math.round(n); }
 function fromRow(rl, local){
@@ -740,16 +758,16 @@ function fromRow(rl, local){
     place_id:rl.place_id||'', adresse:rl.adresse||'', notiz:rl.notiz||'',
     status:rl.status||'neu', score:rl.score, hot_lead:rl.hot_lead,
     kosten_monat:rl.kosten_monat, ersparnis_monat:rl.ersparnis_monat, ersparnis_jahr:rl.ersparnis_jahr,
-    // CRM-Felder (lokal-first – noch nicht in Supabase-Spalten; beim Pull aus local erhalten,
-    // wie angebote). Fürs Team-Sync später ALTER TABLE + in toRow aufnehmen (siehe README).
-    email:(rl.email!=null?rl.email:((local&&local.email)||'')),
-    wiedervorlage:(rl.wiedervorlage!=null?rl.wiedervorlage:((local&&local.wiedervorlage)||null)),
-    naechste_aktion:(rl.naechste_aktion!=null?rl.naechste_aktion:((local&&local.naechste_aktion)||'')),
-    ap_name:(rl.ap_name!=null?rl.ap_name:((local&&local.ap_name)||'')),
-    ap_rolle:(rl.ap_rolle!=null?rl.ap_rolle:((local&&local.ap_rolle)||'')),
-    ap_telefon:(rl.ap_telefon!=null?rl.ap_telefon:((local&&local.ap_telefon)||'')),
-    ap_email:(rl.ap_email!=null?rl.ap_email:((local&&local.ap_email)||'')),
-    historie:(rl.historie!=null?rl.historie:((local&&local.historie)||[])),
+    // CRM-Felder: 'feld' in rl unterscheidet „Spalte existiert (auch null=gelöscht) -> Remote gewinnt"
+    // von „Spalte fehlt (nicht migriert) -> lokalen Wert behalten". Sonst käme eine echte Löschung wieder.
+    email:('email' in rl)?(rl.email||''):((local&&local.email)||''),
+    wiedervorlage:('wiedervorlage' in rl)?(rl.wiedervorlage||null):((local&&local.wiedervorlage)||null),
+    naechste_aktion:('naechste_aktion' in rl)?(rl.naechste_aktion||''):((local&&local.naechste_aktion)||''),
+    ap_name:('ap_name' in rl)?(rl.ap_name||''):((local&&local.ap_name)||''),
+    ap_rolle:('ap_rolle' in rl)?(rl.ap_rolle||''):((local&&local.ap_rolle)||''),
+    ap_telefon:('ap_telefon' in rl)?(rl.ap_telefon||''):((local&&local.ap_telefon)||''),
+    ap_email:('ap_email' in rl)?(rl.ap_email||''):((local&&local.ap_email)||''),
+    historie:('historie' in rl)?(rl.historie||[]):((local&&local.historie)||[]),
     enriched:true, sync_state:'synced', duplikat:false
   };
 }
@@ -2417,7 +2435,7 @@ document.addEventListener('click',function(e){
   }
   else if(act==='saveedit'){
     var le=S.leads.find(function(x){return x.id===id;});
-    if(le){ le.firmenname=(le.firmenname||'').trim(); le.enriched=true; dedupeFlag(le);
+    if(le){ le.firmenname=(le.firmenname||'').trim(); le.enriched=true; le.updated_at=Date.now(); dedupeFlag(le);
       dbPut(stripRuntime(le)).then(function(){ syncLead(le); toast('Gespeichert'); render(); }); }
   }
   else if(act==='del'){ if(confirm('Lead löschen?')) delLead(id); }
