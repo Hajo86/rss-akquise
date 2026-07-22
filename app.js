@@ -83,7 +83,7 @@ var FRAKTION = {
 var VOLUMEN = [120,240,660,1100];
 var STATUS = ['neu','kontaktiert','angebot','gewonnen','verloren'];
 var STATUS_LBL = { neu:'Neu', kontaktiert:'Kontakt', angebot:'Angebot', gewonnen:'Gewonnen', verloren:'Verloren' };
-var APP_VERSION = 'v53 · Website oben im Lead + „Anreichern": Website-Impressum → Ansprechpartner + E-Mail (CORS-Proxy)';
+var APP_VERSION = 'v54 · Gratis-Deeplinks „Nachschlagen": Northdata · Handelsregister · Google (GF/Impressum im Browser)';
 var WD = ['Sonntag','Montag','Dienstag','Mittwoch','Donnerstag','Freitag','Samstag'];
 // Places-Typen, die fast nie Gewerbekunden mit Tonne sind -> aus Route ausblenden
 var STOP_EXCLUDE = ['bus_stop','transit_station','locality','political','park','school',
@@ -665,6 +665,16 @@ async function enrich(lead){
     await dbPut(stripRuntime(lead));
     syncLead(lead);
   }catch(err){ /* bleibt pending, nächster online-Versuch */ }
+}
+// Gratis-Deeplinks zum Nachschlagen (GF/Handelsregister/Impressum) – öffnen im Browser, keine API-Kosten
+function lookupLinks(l){
+  if(!l.firmenname) return '';
+  var name=l.firmenname, adr=l.adresse||'';
+  var nd='https://www.northdata.de/?query='+encodeURIComponent(name);
+  var hr='https://www.google.com/search?q='+encodeURIComponent(name+' handelsregister geschäftsführer');
+  var gg='https://www.google.com/search?q='+encodeURIComponent(name+' '+adr+' impressum');
+  var a=function(u,t){ return '<a href="'+esc(u)+'" target="_blank" style="text-decoration:underline;white-space:nowrap">'+t+'</a>'; };
+  return '<div class="note" style="margin-top:6px">Nachschlagen: '+a(nd,'Northdata')+' · '+a(hr,'Handelsregister')+' · '+a(gg,'Google')+'</div>';
 }
 // Anreicherung: Website-Impressum -> Ansprechpartner (GF/Inhaber) + E-Mail (§5 DDG/TMG, in DE Pflichtangabe)
 async function enrichImpressum(id){
@@ -2045,6 +2055,7 @@ function renderSheet(){
         (l.website?'<a class="cta ghost" href="'+esc(httpize(l.website))+'" target="_blank" style="flex:none;padding:0 14px;display:flex;align-items:center;font-size:12px;text-decoration:none">↗ öffnen</a>':'')+
       '</div>'+
       '<button class="cta ghost" data-act="anreichern" data-id="'+l.id+'" style="margin-top:8px;padding:10px;font-size:12px">🔎 Anreichern (Website-Impressum → Ansprechpartner/E-Mail)</button>'+
+      lookupLinks(l)+
       ((l.telefon||l.email)?'<div class="note" style="margin-top:6px">Firma: '+(l.telefon?('☎ '+esc(l.telefon)):'')+(l.email?((l.telefon?' · ':'')+esc(l.email)):'')+'</div>':'')+
       '<div class="note" style="margin-top:6px">'+esc(behaelterSummary(l))+' · '+esc(l.entsorger||(l.entsorger_logo?'Entsorger erkennbar':'Entsorger unbekannt'))+(l.adresse?(' · '+esc(l.adresse)):'')+'</div>'+
 
