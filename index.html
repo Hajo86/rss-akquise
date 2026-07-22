@@ -306,6 +306,24 @@ nav button.on{color:var(--ink);border-top-color:var(--ink)}
 /* Lead-Sheet Kopfzeile: Badges nebeneinander */
 .leadtop{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:12px}
 
+/* „Kunde zahlt"-Box in der Kalkulation */
+.paybox{border:2px solid var(--ink);padding:12px 14px;margin-bottom:8px}
+.paybox .pl{font-size:10px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.paybox .pm{font-size:15px;font-weight:600;margin-top:4px}
+.paybox .pm b{font-size:22px;font-weight:800}
+.paybox .pb{font-size:12px;font-weight:600;color:var(--muted);margin-top:4px}
+
+/* ===== Desktop: volle Breite fürs Pipeline-Board, Formulare/Listen lesbar zentriert ===== */
+@media (min-width:900px){
+  main{max-width:1180px}
+  .screen{max-width:760px;margin-left:auto;margin-right:auto}
+  .board-screen{max-width:100%}
+  .board{overflow-x:visible;gap:12px}
+  .board .bcol{flex:1 1 0;min-width:0}          /* alle Statusspalten teilen die Breite -> ganze Pipeline sichtbar */
+  .board .bcards{min-height:120px}
+  #sheet{max-width:760px}
+}
+
 /* Nav-Badge (fällige Wiedervorlagen am Heute-Tab) */
 nav button{position:relative}
 .navbadge{position:absolute;top:4px;left:calc(50% + 4px);min-width:16px;height:16px;padding:0 4px;

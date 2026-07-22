@@ -83,7 +83,7 @@ var FRAKTION = {
 var VOLUMEN = [120,240,660,1100];
 var STATUS = ['neu','kontaktiert','angebot','gewonnen','verloren'];
 var STATUS_LBL = { neu:'Neu', kontaktiert:'Kontakt', angebot:'Angebot', gewonnen:'Gewonnen', verloren:'Verloren' };
-var APP_VERSION = 'v44 · Fix Team-Sync: Kontakt-/CRM-Felder werden synchronisiert (auto, selbstheilend), Löschungen bleiben gelöscht';
+var APP_VERSION = 'v45 · Desktop-Layout (volle Pipeline-Breite) + klare Preis-Übersicht „Kunde zahlt /Monat · /Jahr"';
 var WD = ['Sonntag','Montag','Dienstag','Mittwoch','Donnerstag','Freitag','Samstag'];
 // Places-Typen, die fast nie Gewerbekunden mit Tonne sind -> aus Route ausblenden
 var STOP_EXCLUDE = ['bus_stop','transit_station','locality','political','park','school',
@@ -1374,7 +1374,7 @@ function renderLeads(){
 
   var main = (S.leadView==='board') ? renderBoard() : (bar+sortbar+list);
 
-  $app.innerHTML='<div class="screen">'+
+  $app.innerHTML='<div class="screen'+(S.leadView==='board'?' board-screen':'')+'">'+
     '<h1 class="t">Leads</h1>'+
     '<div class="sub">'+S.leads.length+' gesamt · '+hot+' hot · '+eur(sum)+'/J Marge-Potenzial</div>'+
     viewbar+main+'</div>';
@@ -1993,14 +1993,22 @@ function offerBox(l){
     [5,10,15,20,25].map(function(p){
       return '<button class="chip'+(pct===p?' on':'')+'" data-act="rabatt" data-id="'+l.id+'" data-v="'+p+'">'+p+'%</button>';
     }).join('')+'</div>';
-  return '<div class="offerbox"><div class="oh">Kalkulation (LK Harburg + Veolia)</div><div class="ob">'+
+  var lm=LEER_MT[k.rhythmus]||(26/12);                       // Leerungen/Monat
+  var proLeerung=lm>0?(k.rss_preis_monat/lm):0;
+  var leerJahr=Math.round(lm*12);                            // 52 (wö.) / 26 (14-tg.)
+  var turnusLbl=k.rhythmus==='woe'?'wöchentlich':'14-täglich';
+  return '<div class="offerbox"><div class="oh">Preis & Kalkulation</div><div class="ob">'+
     rhyBtns+ rabBtns+
-    kv('Kommunalkosten heute / Mt', eur(k.kosten_monat))+
-    kv('Kunde spart ('+pct+' %)', eur(k.ersparnis_monat)+'/Mt · '+eur(k.ersparnis_jahr)+'/J')+
-    '<div class="kv" style="border:0"><span class="k" style="font-weight:800;color:#000">RSS-Marge</span>'+
-      '<span class="v" style="font-size:18px">'+eur(k.rss_marge_monat)+'/Mt · '+eur(k.rss_marge_jahr)+'/J</span></div>'+
+    // Klar: was zahlt der Kunde – pro Monat UND pro Jahr
+    '<div class="paybox">'+
+      '<div class="pl">Kunde zahlt (an RSS)</div>'+
+      '<div class="pm"><b>'+eur(k.rss_preis_monat)+'</b> / Monat &nbsp;·&nbsp; <b>'+eur(k.rss_preis_monat*12)+'</b> / Jahr</div>'+
+      (k.rss_preis_monat>0?'<div class="pb">'+eur2(proLeerung)+' je Leerung × '+leerJahr+' Leerungen/Jahr · '+turnusLbl+'</div>':'<div class="pb">Preis erst ab Kommunaltarif (z. B. 1.100 L)</div>')+
+      (k.pflicht_monat>0?'<div class="pb">+ gesetzl. Pflichttonne (40 L): '+eur(k.pflicht_monat)+' / Mt · '+eur(k.pflicht_monat*12)+' / J (an die Stadt)</div>':'')+
+    '</div>'+
     opt+warn+
-    '<button class="cta ghost" style="margin-top:10px" data-act="calctoggle">'+(S.calcOpen?'Rechnung verbergen ▴':'📊 Rechnung im Detail ▾')+'</button>'+
+    '<div class="note" style="margin-top:8px">Intern: Marge <b>'+eur(k.rss_marge_monat)+'</b>/Mt · '+eur(k.rss_marge_jahr)+'/J · Kunde spart '+eur(k.ersparnis_jahr)+'/J ('+pct+' % unter Kommunal)</div>'+
+    '<button class="cta ghost" style="margin-top:10px" data-act="calctoggle">'+(S.calcOpen?'Herleitung verbergen ▴':'📊 Herleitung im Detail ▾')+'</button>'+
     (S.calcOpen?calcBreakdown(l,k):'')+
   '</div></div>';
 }
