@@ -83,7 +83,7 @@ var FRAKTION = {
 var VOLUMEN = [120,240,660,1100];
 var STATUS = ['neu','kontaktiert','angebot','gewonnen','verloren'];
 var STATUS_LBL = { neu:'Neu', kontaktiert:'Kontakt', angebot:'Angebot', gewonnen:'Gewonnen', verloren:'Verloren' };
-var APP_VERSION = 'v47 · RSS-Buchungslink + Google-Meet-Link fest hinterlegt – „Termin senden" sofort einsatzbereit';
+var APP_VERSION = 'v48 · Betreffzeile als erste Nachrichtenzeile (Angebot/Termin) – sichtbar auch wenn App den Betreff ignoriert';
 var WD = ['Sonntag','Montag','Dienstag','Mittwoch','Donnerstag','Freitag','Samstag'];
 // Places-Typen, die fast nie Gewerbekunden mit Tonne sind -> aus Route ausblenden
 var STOP_EXCLUDE = ['bus_stop','transit_station','locality','political','park','school',
@@ -1226,7 +1226,8 @@ function mailOffer(id){
 // Begleittext fürs Teilen/Mail (ohne Ersparnis)
 function shareText(l){
   var firma=l.firmenname||'Ihr Betrieb';
-  return apAnrede(l)+'\n\n'
+  return 'Ihr Angebot – Gewerbliche Abfallentsorgung (RSS)\n\n'+
+    apAnrede(l)+'\n\n'
     +'anbei unser Angebot für die gewerbliche Abfallentsorgung an Ihrem Standort ('+firma+') '
     +'mit transparentem Festpreis.\n\n'
     +'Wir übernehmen die komplette gewerbliche Restabfallentsorgung; die gesetzliche Pflichttonne '
@@ -1309,7 +1310,8 @@ async function shareTermin(id){
   var ics=buildICS(l,start,15);
   var meet=meetURL(), booking=bookingURL();
   var when=start.toLocaleString('de-DE',{weekday:'long',day:'2-digit',month:'long',hour:'2-digit',minute:'2-digit'});
-  var text=apAnrede(l)+'\n\n'
+  var text='Terminvorschlag – kostenloses Müll-Audit (RSS)\n\n'
+    +apAnrede(l)+'\n\n'
     +'wie besprochen der Termin für Ihr kurzes, kostenloses Müll-Audit:\n'+when+' Uhr (ca. 15 Min).\n'
     +'Der Termin liegt als Kalender-Datei bei.'
     +(meet?('\nPer Video: '+meet):'')
