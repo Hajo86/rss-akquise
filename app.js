@@ -83,7 +83,7 @@ var FRAKTION = {
 var VOLUMEN = [120,240,660,1100];
 var STATUS = ['neu','kontaktiert','angebot','gewonnen','verloren'];
 var STATUS_LBL = { neu:'Neu', kontaktiert:'Kontakt', angebot:'Angebot', gewonnen:'Gewonnen', verloren:'Verloren' };
-var APP_VERSION = 'v48 · Betreffzeile als erste Nachrichtenzeile (Angebot/Termin) – sichtbar auch wenn App den Betreff ignoriert';
+var APP_VERSION = 'v49 · Lead schlanker: Foto als Kopf-Thumbnail, Kontaktfelder oben inline (auto-speichern), Bearbeiten aufgeräumt';
 var WD = ['Sonntag','Montag','Dienstag','Mittwoch','Donnerstag','Freitag','Samstag'];
 // Places-Typen, die fast nie Gewerbekunden mit Tonne sind -> aus Route ausblenden
 var STOP_EXCLUDE = ['bus_stop','transit_station','locality','political','park','school',
@@ -1983,26 +1983,31 @@ function renderSheet(){
   if(!l){ if(ex) ex.remove(); return; }
   var u=photoURL(l), f=FRAKTION[l.fraktion]||{label:l.fraktion};
   var html='<div id="mbg" data-act="closebg"><div id="sheet">'+
-    '<div class="sh-head"><b style="text-transform:uppercase;font-size:16px">'+esc(l.firmenname||'Unbekannter Betrieb')+'</b>'+
-      '<button class="x" data-act="close">×</button></div>'+
+    '<div class="sh-head">'+
+      '<b style="text-transform:uppercase;font-size:16px;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(l.firmenname||'Unbekannter Betrieb')+'</b>'+
+      (u?'<img class="headthumb" src="'+u+'" data-act="zoom" alt="Foto"/>':'')+
+      '<button class="x" data-act="close">×</button>'+
+    '</div>'+
     '<div class="sh-body">'+
-      // ---- Kopf: kompakte Übersicht + Kontaktstatus ----
-      photoGallery(l)+
+      // ---- Badges (Kontaktstatus) ----
       '<div class="leadtop">'+
         contactBadge(l)+
         (l.hot_lead?'<span class="tag hot">🔥 Hot</span>':'')+
         '<span class="tag">Score '+l.score+'</span>'+
         (kalkulation(l).ersparnis_jahr>0?'<span class="tag fill">'+eur(kalkulation(l).ersparnis_jahr)+'/J sparen</span>':'')+
       '</div>'+
-      '<div style="margin-top:10px">'+
-        kv('Tonnen', behaelterSummary(l))+
-        kv('Entsorger', l.entsorger||(l.entsorger_logo?'erkennbar (Name?)':'unbekannt'))+
-        kv('Ansprechpartner', apLabel(l)||'— (unter Bearbeiten eintragen)')+
-        kv('Telefon', apTel(l)||'—')+
-        (apMail(l)?kv('E-Mail', apMail(l)):'')+
-      '</div>'+
 
-      // ==== AKQUISE-COCKPIT (oben, immer sichtbar) ====
+      // ---- Kontakt: direkt oben inline editierbar (leeres Feld antippen -> tippen -> speichert auto) ----
+      '<span class="lab">Kontakt</span>'+
+      '<input class="txt" style="margin-bottom:8px" data-edit="ap_name" data-id="'+l.id+'" value="'+esc(l.ap_name||'')+'" placeholder="Ansprechpartner (Name)"/>'+
+      '<div class="tworow">'+
+        '<input class="txt" data-edit="ap_telefon" data-id="'+l.id+'" inputmode="tel" value="'+esc(l.ap_telefon||'')+'" placeholder="Telefon"/>'+
+        '<input class="txt" data-edit="ap_email" data-id="'+l.id+'" inputmode="email" value="'+esc(l.ap_email||'')+'" placeholder="E-Mail"/>'+
+      '</div>'+
+      ((l.telefon||l.email)?'<div class="note" style="margin-top:6px">Firma: '+(l.telefon?('☎ '+esc(l.telefon)):'')+(l.email?((l.telefon?' · ':'')+esc(l.email)):'')+'</div>':'')+
+      '<div class="note" style="margin-top:6px">'+esc(behaelterSummary(l))+' · '+esc(l.entsorger||(l.entsorger_logo?'Entsorger erkennbar':'Entsorger unbekannt'))+(l.adresse?(' · '+esc(l.adresse)):'')+'</div>'+
+
+      // ==== AKQUISE-COCKPIT ====
       '<span class="lab">Status</span>'+
       '<div class="statusgrid">'+ STATUS.map(function(s){
         return '<button class="'+(l.status===s?'on':'')+'" data-act="status" data-id="'+l.id+'" data-v="'+s+'">'+STATUS_LBL[s]+'</button>';
@@ -2026,11 +2031,11 @@ function renderSheet(){
       // ==== BEARBEITEN (einklappbar) ====
       '<button class="cta ghost" data-act="secedit" data-id="'+l.id+'" style="margin-top:18px">'+(S.secEdit?'▴ Bearbeiten schließen':'▾ Bearbeiten (Ansprechpartner · Firma · Tonnen · Notiz)')+'</button>'+
       (S.secEdit ? (
-        '<span class="lab">Ansprechpartner (Entscheider)</span>'+
-        '<input class="txt" style="margin-bottom:8px" data-edit="ap_name" data-id="'+l.id+'" value="'+esc(l.ap_name||'')+'" placeholder="Name (z. B. Herr Müller)"/>'+
+        '<span class="lab">Fotos</span>'+
+        photoGallery(l)+
+
+        '<span class="lab">Ansprechpartner – Rolle</span>'+
         '<input class="txt" style="margin-bottom:8px" data-edit="ap_rolle" data-id="'+l.id+'" value="'+esc(l.ap_rolle||'')+'" placeholder="Rolle/Funktion (Inhaber, GF, Einkauf…)"/>'+
-        '<input class="txt" style="margin-bottom:8px" data-edit="ap_telefon" data-id="'+l.id+'" inputmode="tel" value="'+esc(l.ap_telefon||'')+'" placeholder="Durchwahl / Mobil des Ansprechpartners"/>'+
-        '<input class="txt" style="margin-bottom:8px" data-edit="ap_email" data-id="'+l.id+'" inputmode="email" value="'+esc(l.ap_email||'')+'" placeholder="E-Mail des Ansprechpartners"/>'+
 
         '<span class="lab">Tonnen vor Ort</span>'+
         containersOf(l).map(function(c,i){ return binBlockLead(l,c,i); }).join('')+
@@ -2648,6 +2653,19 @@ document.addEventListener('input',function(e){
 document.addEventListener('change',async function(e){
   var t=e.target;
   if(t.dataset.act==='gemeinde'){ switchGemeinde(t.value); return; }
+  // Inline-Felder: automatisch speichern beim Verlassen (kein „Speichern"-Klick nötig)
+  if(t.dataset.edit){
+    var le=S.leads.find(function(x){return x.id===t.dataset.id;});
+    if(le){
+      le[t.dataset.edit]=t.value;
+      if(t.dataset.edit==='firmenname') le.firmenname=(le.firmenname||'').trim();
+      le.enriched=true; le.updated_at=Date.now();
+      dbPut(stripRuntime(le)).then(function(){ syncLead(le); });
+      var ae=document.activeElement;
+      if(!(ae && ae.dataset && ae.dataset.edit)) renderSheet();   // nur re-rendern, wenn nicht gerade das nächste Feld getippt wird
+    }
+    return;
+  }
   if((t.dataset.act==='photo'||t.dataset.act==='photogallery') && t.files && t.files[0]){
     S.lastSaved=null;
     toast('Foto wird verarbeitet…');
