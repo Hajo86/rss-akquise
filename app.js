@@ -83,7 +83,7 @@ var FRAKTION = {
 var VOLUMEN = [120,240,660,1100];
 var STATUS = ['neu','kontaktiert','angebot','gewonnen','verloren'];
 var STATUS_LBL = { neu:'Neu', kontaktiert:'Kontakt', angebot:'Angebot', gewonnen:'Gewonnen', verloren:'Verloren' };
-var APP_VERSION = 'v49 · Lead schlanker: Foto als Kopf-Thumbnail, Kontaktfelder oben inline (auto-speichern), Bearbeiten aufgeräumt';
+var APP_VERSION = 'v50 · Preis-Box zeigt die Tonne: „Aktuelle Tonne" (mit Entsorger) und „Mit RSS" + Tonne ändern';
 var WD = ['Sonntag','Montag','Dienstag','Mittwoch','Donnerstag','Freitag','Samstag'];
 // Places-Typen, die fast nie Gewerbekunden mit Tonne sind -> aus Route ausblenden
 var STOP_EXCLUDE = ['bus_stop','transit_station','locality','political','park','school',
@@ -2086,8 +2086,15 @@ function offerBox(l){
   var proLeerung=lm>0?(k.rss_preis_monat/lm):0;
   var leerJahr=Math.round(lm*12);                            // 52 (wö.) / 26 (14-tg.)
   var turnusLbl=k.rhythmus==='woe'?'wöchentlich':'14-täglich';
+  // Welche Tonne hat er jetzt – und was bekommt er mit RSS?
+  var istEnts=l.entsorger?(' · '+esc(l.entsorger)):(l.entsorger_logo?' · Entsorger erkennbar':' · Entsorger unbekannt');
+  var binbox='<div class="binbox">'+
+    '<div class="brow"><span class="bl">Aktuelle Tonne</span><span class="bv">'+esc(behaelterSummary(l))+istEnts+'</span></div>'+
+    '<div class="brow"><span class="bl">Mit RSS</span><span class="bv">gleiche Behälter – gewerbliche Entsorgung übernehmen wir · Pflichttonne 40 L bleibt beim Landkreis</span></div>'+
+    '<button class="cta ghost" data-act="secedit" data-id="'+l.id+'" style="margin-top:8px;padding:9px;font-size:12px">🗑 Tonne ändern</button>'+
+  '</div>';
   return '<div class="offerbox"><div class="oh">Preis & Kalkulation</div><div class="ob">'+
-    rhyBtns+ rabBtns+
+    binbox+ rhyBtns+ rabBtns+
     // Klar: was zahlt der Kunde – pro Monat UND pro Jahr
     '<div class="paybox">'+
       '<div class="pl">Kunde zahlt (an RSS)</div>'+
