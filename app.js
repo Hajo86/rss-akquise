@@ -83,7 +83,7 @@ var FRAKTION = {
 var VOLUMEN = [120,240,660,1100];
 var STATUS = ['neu','kontaktiert','angebot','gewonnen','verloren'];
 var STATUS_LBL = { neu:'Neu', kontaktiert:'Kontakt', angebot:'Angebot', gewonnen:'Gewonnen', verloren:'Verloren' };
-var APP_VERSION = 'v51 · Kalkulation als Tabelle je Tonne (Aktuell Landkreis → Mit RSS), Summe + Pflichttonne; „Tonnen ändern" springt zum Editor';
+var APP_VERSION = 'v52 · Ersparnis in der Kalkulationstabelle (Spart-Spalte je Tonne + „Kunde spart /Monat · /Jahr")';
 var WD = ['Sonntag','Montag','Dienstag','Mittwoch','Donnerstag','Freitag','Samstag'];
 // Places-Typen, die fast nie Gewerbekunden mit Tonne sind -> aus Route ausblenden
 var STOP_EXCLUDE = ['bus_stop','transit_station','locality','political','park','school',
@@ -2100,20 +2100,24 @@ function offerBox(l){
   var lm=LEER_MT[k.rhythmus]||(26/12), proLeerung=lm>0?(k.rss_preis_monat/lm):0, leerJahr=Math.round(lm*12);
   var turnusLbl=k.rhythmus==='woe'?'wöchentlich':'14-täglich';
 
-  // Tabelle: je Tonne aktuell (Landkreis) -> mit RSS
+  // Tabelle: je Tonne aktuell (Landkreis) -> mit RSS -> Ersparnis
   var rows=containerCalc(l).map(function(r){
     var label=r.anzahl+'× '+r.volumen+' L '+(FRAKTION[r.fraktion]?FRAKTION[r.fraktion].label:r.fraktion);
-    var ist = r.kommunalMt!=null ? eur(r.kommunalMt)+'/Mt' : '—';
-    var soll = r.rssMt==null ? '—' : (r.rssMt>0?eur(r.rssMt)+'/Mt':'inkl.');
+    var ist = r.kommunalMt!=null ? eur(r.kommunalMt) : '—';
+    var soll = r.rssMt==null ? '—' : (r.rssMt>0?eur(r.rssMt):'inkl.');
+    var spar = (r.kommunalMt!=null && r.rssMt!=null) ? (r.kommunalMt-r.rssMt) : 0;
     return '<tr><td>'+esc(label)+(r.note?'<br><span class="tnote">'+esc(r.note)+'</span>':'')+'</td>'+
-      '<td class="r">'+ist+'</td><td class="r">'+soll+'</td></tr>';
+      '<td class="r">'+ist+'</td><td class="r">'+soll+'</td><td class="r">'+(spar>0?eur(spar):'—')+'</td></tr>';
   }).join('');
+  var grossSpar=k.kosten_monat-k.rss_preis_monat;
   var table='<table class="pt">'+
-    '<tr><th>Behälter</th><th class="r">Aktuell<br>Landkreis</th><th class="r">Mit RSS</th></tr>'+
+    '<tr><th>Behälter</th><th class="r">Aktuell</th><th class="r">Mit RSS</th><th class="r">Spart</th></tr>'+
     rows+
-    '<tr class="sum"><td>Gewerblich gesamt</td><td class="r">'+eur(k.kosten_monat)+'/Mt</td><td class="r">'+eur(k.rss_preis_monat)+'/Mt</td></tr>'+
-    (k.pflicht_monat>0?'<tr><td>+ Pflichttonne 40 L</td><td class="r">—</td><td class="r">'+eur(k.pflicht_monat)+'/Mt</td></tr>':'')+
-  '</table>';
+    '<tr class="sum"><td>Gewerblich gesamt</td><td class="r">'+eur(k.kosten_monat)+'</td><td class="r">'+eur(k.rss_preis_monat)+'</td><td class="r">'+eur(grossSpar)+'</td></tr>'+
+    (k.pflicht_monat>0?'<tr><td>+ Pflichttonne 40 L</td><td class="r">—</td><td class="r">'+eur(k.pflicht_monat)+'</td><td class="r">−'+eur(k.pflicht_monat)+'</td></tr>':'')+
+    '<tr class="save"><td colspan="4">★ KUNDE SPART '+eur(k.ersparnis_monat)+' / Monat  ·  '+eur(k.ersparnis_jahr)+' / Jahr</td></tr>'+
+  '</table>'+
+  '<div class="tnote" style="margin:-4px 0 8px">Beträge netto € / Monat · Turnus '+turnusLbl+' · Ersparnis nach Pflichttonne</div>';
 
   var paybox='<div class="paybox">'+
     '<div class="pl">Kunde zahlt mit RSS</div>'+
@@ -2128,7 +2132,7 @@ function offerBox(l){
     '<button class="cta ghost" data-act="edittonnen" data-id="'+l.id+'" style="margin:2px 0 4px;padding:9px;font-size:12px">🗑 Tonnen ändern</button>'+
     opt+warn+
     paybox+
-    '<div class="note" style="margin-top:8px">Intern: Marge <b>'+eur(k.rss_marge_monat)+'</b>/Mt · '+eur(k.rss_marge_jahr)+'/J · Kunde spart '+eur(k.ersparnis_jahr)+'/J ('+pct+' % unter Kommunal)</div>'+
+    '<div class="note" style="margin-top:8px">Intern: RSS-Marge <b>'+eur(k.rss_marge_monat)+'</b>/Mt · '+eur(k.rss_marge_jahr)+'/Jahr ('+pct+' % Kundenrabatt)</div>'+
     '<button class="cta ghost" style="margin-top:10px" data-act="calctoggle">'+(S.calcOpen?'Herleitung verbergen ▴':'📊 Herleitung im Detail ▾')+'</button>'+
     (S.calcOpen?calcBreakdown(l,k):'')+
   '</div></div>';
