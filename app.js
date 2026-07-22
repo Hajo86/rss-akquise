@@ -83,7 +83,7 @@ var FRAKTION = {
 var VOLUMEN = [120,240,660,1100];
 var STATUS = ['neu','kontaktiert','angebot','gewonnen','verloren'];
 var STATUS_LBL = { neu:'Neu', kontaktiert:'Kontakt', angebot:'Angebot', gewonnen:'Gewonnen', verloren:'Verloren' };
-var APP_VERSION = 'v54 · Gratis-Deeplinks „Nachschlagen": Northdata · Handelsregister · Google (GF/Impressum im Browser)';
+var APP_VERSION = 'v55 · Anreicherung besser: Telefon + GF-Name (auch aus E-Mail), Impressum „impress"-Pfade; Deeplinks mit Ort';
 var WD = ['Sonntag','Montag','Dienstag','Mittwoch','Donnerstag','Freitag','Samstag'];
 // Places-Typen, die fast nie Gewerbekunden mit Tonne sind -> aus Route ausblenden
 var STOP_EXCLUDE = ['bus_stop','transit_station','locality','political','park','school',
@@ -670,8 +670,10 @@ async function enrich(lead){
 function lookupLinks(l){
   if(!l.firmenname) return '';
   var name=l.firmenname, adr=l.adresse||'';
-  var nd='https://www.northdata.de/?query='+encodeURIComponent(name);
-  var hr='https://www.google.com/search?q='+encodeURIComponent(name+' handelsregister geschäftsführer');
+  var ort=(adr.split(',').pop()||'').replace(/\d{5}/,'').replace(/deutschland/i,'').trim();  // Ort einbeziehen -> richtige Firma
+  var q=name+(ort?(' '+ort):'');
+  var nd='https://www.northdata.de/?query='+encodeURIComponent(q);
+  var hr='https://www.google.com/search?q='+encodeURIComponent(q+' handelsregister geschäftsführer');
   var gg='https://www.google.com/search?q='+encodeURIComponent(name+' '+adr+' impressum');
   var a=function(u,t){ return '<a href="'+esc(u)+'" target="_blank" style="text-decoration:underline;white-space:nowrap">'+t+'</a>'; };
   return '<div class="note" style="margin-top:6px">Nachschlagen: '+a(nd,'Northdata')+' · '+a(hr,'Handelsregister')+' · '+a(gg,'Google')+'</div>';
@@ -686,29 +688,55 @@ async function enrichImpressum(id){
   try{
     var base=httpize(l.website).replace(/\/+$/,''), host=hostOf(l.website);
     var proxy=function(u){ return 'https://corsproxy.io/?url='+encodeURIComponent(u); };
-    var getT=function(u){ return Promise.race([ fetch(proxy(u)).then(function(r){return r.ok?r.text():'';}),
-      new Promise(function(res){ setTimeout(function(){res('');},9000); }) ]); };
-    var home=''; try{ home=await getT(base); }catch(e){}
-    var impUrl=''; var m=home.match(/href\s*=\s*["']([^"']*impressum[^"']*)["']/i);
-    if(m){ impUrl=m[1]; if(!/^https?:/i.test(impUrl)) impUrl=base+'/'+impUrl.replace(/^\//,''); } else impUrl=base+'/impressum';
-    var imp=''; try{ imp=await getT(impUrl); }catch(e){}
+    var getT=function(u){ return Promise.race([ fetch(proxy(u)).then(function(r){return r.ok?r.text():'';}).catch(function(){return '';}),
+      new Promise(function(res){ setTimeout(function(){res('');},10000); }) ]); };
+    var home=await getT(base);
+    if(!home) home=await getT(base.replace(/^https:/,'http:'));   // manche Seiten nur http
+    // Impressum-Link (auch „impress", z. B. /sites/impress.html) + bekannte Pfade
+    var impUrl=''; var m=home.match(/href\s*=\s*["']([^"']*impress[^"']*)["']/i);
+    if(m){ impUrl=m[1]; if(!/^https?:/i.test(impUrl)) impUrl=base+'/'+impUrl.replace(/^\//,''); }
+    var tries=[impUrl, base+'/sites/impress.html', base+'/impressum', base+'/impressum/', base+'/impressum.html', base+'/impressum.php', base+'/kontakt'];
+    var imp='';
+    for(var i=0;i<tries.length;i++){ if(imp.length>400) break; if(!tries[i]) continue;
+      var t=await getT(tries[i]); if(/impress|inhaber|gesch[aä]ft|@|telefon/i.test(t)) imp+=' '+t; }
     var raw=imp+' '+home;
     var plain=raw.replace(/<[^>]+>/g,' ').replace(/&nbsp;/gi,' ').replace(/&amp;/gi,'&').replace(/\s+/g,' ');
+    // E-Mail (Domain-/persönliche bevorzugt)
     var emails=[];
     (raw.match(/mailto:([^"'?>\s]+@[^"'?>\s]+)/gi)||[]).forEach(function(x){ emails.push(x.replace(/mailto:/i,'')); });
     (plain.match(/[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/g)||[]).forEach(function(x){ emails.push(x); });
     emails=emails.map(function(e){return e.trim().toLowerCase();}).filter(function(e){ return !/\.(png|jpe?g|gif|webp|svg)$/.test(e) && !/(sentry|wixpress|example\.|@2x|godaddy|cloudflare|schema\.org)/.test(e); });
     var dom=(host||'').split('.')[0];
-    var email=emails.find(function(e){ return dom && e.split('@')[1] && e.split('@')[1].indexOf(dom)>=0; }) || emails.find(function(e){return /^(info|kontakt|office|mail|hallo)@/.test(e);}) || emails[0] || '';
-    var gf=''; var g=plain.match(/(?:Gesch[aä]ftsf[uü]hrer(?:in)?|Inhaber(?:in)?|Vertreten durch|Vertretungsberechtigte[rn]?)\s*:?\s*(?:Herr |Frau )?([A-ZÄÖÜ][a-zäöüß.\-]+(?:\s+[A-ZÄÖÜ][a-zäöüß.\-]+){1,2})/);
-    if(g) gf=g[1].trim();
+    var email=emails.filter(function(e){ return dom && e.split('@')[1] && e.split('@')[1].indexOf(dom)>=0; }).sort(function(a,b){ return (/@/.test(a)&&a.indexOf('.')<a.indexOf('@')?-1:0)-(/@/.test(b)&&b.indexOf('.')<b.indexOf('@')?-1:0); })[0]
+      || emails.find(function(e){return /^(info|kontakt|office|mail|hallo)@/.test(e);}) || emails[0] || '';
+    // Telefon (tel:-Link bevorzugt, sonst „Tel/Telefon/Fon: …")
+    var tel=''; var tl=raw.match(/tel:\s*([+\d][\d\s()\/\.\-]{6,}\d)/i);
+    if(tl) tel=tl[1]; else { var tp=plain.match(/(?:Telefon|Tel|Fon)\.?\s*:?\s*([+(]?\d[\d\s()\/\.\-]{7,}\d)/i); if(tp) tel=tp[1]; }
+    tel=tel.replace(/\s+/g,' ').trim();
+    // Geschäftsführer/Inhaber: aus E-Mail (vorname.nachname) ODER Text (Rolle↔Name in beide Richtungen)
+    var roleWords=/gesch|inhaber|vertret|handelsreg|umsatzst|steuer|verantwort|redakt|datenschutz/i;
+    var gf=nameFromEmail(email);
+    if(!gf){ var g1=plain.match(/(?:Gesch[aä]ftsf[uü]hrer(?:in)?|Inhaber(?:in)?|Vertreten durch|Vertretungsberechtigte[rn]?)\s*:?\s*(?:Herr |Frau )?([A-ZÄÖÜ][a-zäöüß.\-]+(?:\s+[A-ZÄÖÜ][a-zäöüß.\-]+){1,2})/);
+      if(g1 && !roleWords.test(g1[1])) gf=g1[1].trim(); }
+    if(!gf){ var g2=plain.match(/([A-ZÄÖÜ][a-zäöüß.\-]+(?:\s+[A-ZÄÖÜ][a-zäöüß.\-]+){1,2})\s*,?\s*\(?\s*(?:Inhaber|Gesch[aä]ftsf[uü]hrer)/);
+      if(g2 && !roleWords.test(g2[1])) gf=g2[1].trim(); }
+    // Übernehmen (nur leere Felder füllen)
     var got=[];
     if(email && !l.ap_email){ l.ap_email=email; got.push('E-Mail'); }
     if(gf && !l.ap_name){ l.ap_name=gf; got.push('Ansprechpartner'); }
-    if(got.length){ l.updated_at=Date.now(); dbPut(stripRuntime(l)).then(function(){ syncLead(l); }); pushHist(l,'notiz','Angereichert (Impressum): '+got.join(' + ')+(email?(' · '+email):'')); renderSheet(); toast('✓ '+got.join(' + ')+' übernommen'); }
-    else if(email||gf){ renderSheet(); toast('Gefunden ('+(gf||email)+'), aber Felder schon belegt'); }
+    if(tel && !l.ap_telefon){ l.ap_telefon=tel; got.push('Telefon'); }
+    if(!l.telefon && tel){ l.telefon=tel; }
+    if(got.length){ l.updated_at=Date.now(); dbPut(stripRuntime(l)).then(function(){ syncLead(l); });
+      pushHist(l,'notiz','Angereichert (Impressum): '+got.join(' + ')+(email?(' · '+email):'')); renderSheet(); toast('✓ '+got.join(' + ')+' übernommen'); }
+    else if(email||gf||tel){ renderSheet(); toast('Gefunden ('+(gf||email||tel)+'), Felder schon belegt'); }
     else toast('Nichts gefunden (Seite blockt / Impressum als PDF?) – manuell eintragen');
   }catch(e){ toast('Anreichern fehlgeschlagen'); }
+}
+// „vorname.nachname@…" -> „Vorname Nachname" (nur wenn es wirklich so aussieht)
+function nameFromEmail(e){
+  var lp=(e||'').split('@')[0];
+  if(!/^[a-zäöüß]{2,}[._-][a-zäöüß]{2,}$/i.test(lp)) return '';
+  return lp.split(/[._-]/).map(function(w){ return w.charAt(0).toUpperCase()+w.slice(1); }).join(' ');
 }
 function applyCompany(lead,c){
   lead.firmenname=c.firmenname; lead.telefon=c.telefon; lead.website=c.website;
