@@ -83,7 +83,7 @@ var FRAKTION = {
 var VOLUMEN = [120,240,660,1100];
 var STATUS = ['neu','kontaktiert','angebot','gewonnen','verloren'];
 var STATUS_LBL = { neu:'Neu', kontaktiert:'Kontakt', angebot:'Angebot', gewonnen:'Gewonnen', verloren:'Verloren' };
-var APP_VERSION = 'v45 · Desktop-Layout (volle Pipeline-Breite) + klare Preis-Übersicht „Kunde zahlt /Monat · /Jahr"';
+var APP_VERSION = 'v46 · Termin senden (.ics + Google Meet + Selbstbuchung) + Sheet springt nicht mehr hoch (Scroll bleibt)';
 var WD = ['Sonntag','Montag','Dienstag','Mittwoch','Donnerstag','Freitag','Samstag'];
 // Places-Typen, die fast nie Gewerbekunden mit Tonne sind -> aus Route ausblenden
 var STOP_EXCLUDE = ['bus_stop','transit_station','locality','political','park','school',
@@ -1263,6 +1263,72 @@ async function shareAngebot(id){
   logAndSave('Angebot geöffnet + Mailentwurf · PDF anhängen', 'Angebot erstellt (Desktop: PDF + Mailentwurf)');
 }
 
+/* ---------- Termin senden (.ics + Google Meet + optional Selbstbuchung) ---------- */
+function icsEsc(s){ return String(s==null?'':s).replace(/\\/g,'\\\\').replace(/;/g,'\\;').replace(/,/g,'\\,').replace(/\r?\n/g,'\\n'); }
+function icsStamp(d){ var p=function(n){return (n<10?'0':'')+n;};
+  return d.getUTCFullYear()+p(d.getUTCMonth()+1)+p(d.getUTCDate())+'T'+p(d.getUTCHours())+p(d.getUTCMinutes())+p(d.getUTCSeconds())+'Z'; }
+function buildICS(l,start,mins){
+  var end=new Date(start.getTime()+(mins||15)*60000);
+  var meet=(S.keys.meetLink||'').trim(), booking=(S.keys.bookingLink||'').trim();
+  var loc=meet||l.adresse||'';
+  var desc='Kostenloses, unverbindliches Müll-Audit für '+(l.firmenname||'Ihren Betrieb')+' (ca. '+(mins||15)+' Min).'+
+    (meet?('\nPer Video: '+meet):'')+(booking?('\nAnderer Wunschtermin: '+booking):'');
+  return ['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//RSS//Akquise//DE','METHOD:PUBLISH','BEGIN:VEVENT',
+    'UID:'+l.id+'-'+start.getTime()+'@rss-entsorgung.de','DTSTAMP:'+icsStamp(new Date()),
+    'DTSTART:'+icsStamp(start),'DTEND:'+icsStamp(end),
+    'SUMMARY:'+icsEsc('Müll-Audit – RSS'),'LOCATION:'+icsEsc(loc),'DESCRIPTION:'+icsEsc(desc),
+    'ORGANIZER;CN=RSS Recycling Solution Service:mailto:'+RSS_ABSENDER.mail,
+    'END:VEVENT','END:VCALENDAR'].join('\r\n');
+}
+function terminBlock(l){
+  var d=new Date(); d.setDate(d.getDate()+1);                 // Default: morgen 10:00
+  var booking=(S.keys.bookingLink||'').trim(), meet=(S.keys.meetLink||'').trim();
+  return '<span class="lab">Termin (Video-Audit)</span>'+
+    '<div class="terminrow">'+
+      '<input type="date" id="termin-date-'+l.id+'" class="txt" value="'+isoOf(d)+'"/>'+
+      '<input type="time" id="termin-time-'+l.id+'" class="txt" value="10:00"/>'+
+    '</div>'+
+    '<button class="cta ghost" data-act="termin" data-id="'+l.id+'" style="margin-top:8px">📅 Termin senden (Kalender'+(meet?' + Video':'')+')</button>'+
+    (booking?'<div class="note" style="margin-top:6px">Selbstbuchung aktiv – Buchungslink liegt der Nachricht bei.</div>'
+            :'<div class="note" style="margin-top:6px">Tipp: In <b>Setup → Termin & Video</b> Buchungs- + Meet-Link hinterlegen (Google/Calendly, gratis) für Selbstbuchung.</div>');
+}
+async function shareTermin(id){
+  var l=S.leads.find(function(x){return x.id===id;}); if(!l) return;
+  var di=document.getElementById('termin-date-'+id), ti=document.getElementById('termin-time-'+id);
+  var dv=di&&di.value, tv=(ti&&ti.value)||'10:00';
+  if(!dv){ toast('Bitte Datum wählen'); return; }
+  var dp=dv.split('-'), tp=tv.split(':');
+  var start=new Date(+dp[0],+dp[1]-1,+dp[2],+tp[0],+tp[1],0);
+  var ics=buildICS(l,start,15);
+  var meet=(S.keys.meetLink||'').trim(), booking=(S.keys.bookingLink||'').trim();
+  var when=start.toLocaleString('de-DE',{weekday:'long',day:'2-digit',month:'long',hour:'2-digit',minute:'2-digit'});
+  var text=apAnrede(l)+'\n\n'
+    +'wie besprochen der Termin für Ihr kurzes, kostenloses Müll-Audit:\n'+when+' Uhr (ca. 15 Min).\n'
+    +'Der Termin liegt als Kalender-Datei bei.'
+    +(meet?('\nPer Video: '+meet):'')
+    +(booking?('\n\nPasst der Termin nicht? Wunschtermin hier wählen: '+booking):'')
+    +'\n\nBeste Grüße\n'+RSS_ABSENDER.gf+'\n'+RSS_ABSENDER.firma+' '+RSS_ABSENDER.zusatz;
+  var done=function(msg){
+    if(l.status==='neu') l.status='kontaktiert';
+    pushHist(l,'notiz','Termin vorgeschlagen: '+when+(meet?' (Video)':''));
+    l.wiedervorlage=isoOf(start);                              // erscheint am Termintag in „Meine Termine heute"
+    l.updated_at=Date.now(); dbPut(stripRuntime(l)).then(function(){ syncLead(l); });
+    if(msg) toast(msg); renderSheet();
+  };
+  try{
+    var file=new File([ics],'RSS-Termin.ics',{type:'text/calendar'});
+    if(navigator.canShare && navigator.canShare({files:[file]})){
+      await navigator.share({ files:[file], title:'Termin – RSS', text:text });
+      done('Termin geteilt · WV am Termintag'); return;
+    }
+  }catch(e){ if(e && e.name==='AbortError'){ renderSheet(); return; } }
+  // Fallback: .ics herunterladen + Mailentwurf
+  var url=URL.createObjectURL(new Blob([ics],{type:'text/calendar'}));
+  var a=document.createElement('a'); a.href=url; a.download='RSS-Termin.ics'; a.click(); setTimeout(function(){URL.revokeObjectURL(url);},2000);
+  window.location.href='mailto:'+encodeURIComponent(apMail(l))+'?subject='+encodeURIComponent('Terminvorschlag – Müll-Audit RSS')+'&body='+encodeURIComponent(text);
+  done('Termin: .ics gespeichert + Mailentwurf');
+}
+
 // Kontakt-Historie/Timeline im Lead-Sheet
 function historieBlock(l){
   var h=histOf(l).slice().sort(function(a,b){return b.ts-a.ts;});
@@ -1858,6 +1924,14 @@ function renderSettings(){
         '<input class="txt" type="password" data-key="gemini" value="'+esc(k.gemini||'')+'" placeholder="AIza…"/></div>'+
     '</div>'+
 
+    '<div class="section"><h3>Termin & Video (Selbstbuchung)</h3>'+
+      '<div class="note">Für den „📅 Termin senden"-Button. <b>Buchungslink</b> (Google Kalender-Terminseiten oder Calendly, gratis) → Kunde bucht selbst. <b>Google-Meet-Link</b> (gratis, wiederverwendbar) fürs Video-Audit. Beides optional.</div>'+
+      '<div class="fld" style="margin-top:10px"><label>Terminbuchungs-Link</label>'+
+        '<input class="txt" type="url" data-key="bookingLink" value="'+esc(k.bookingLink||'')+'" placeholder="https://calendar.app.google/… oder calendly.com/…"/></div>'+
+      '<div class="fld"><label>Google-Meet-Link</label>'+
+        '<input class="txt" type="url" data-key="meetLink" value="'+esc(k.meetLink||'')+'" placeholder="https://meet.google.com/xxx-xxxx-xxx"/></div>'+
+    '</div>'+
+
     '<div class="section"><h3>Team-Sync (Supabase)</h3>'+
       '<div class="note">Zentrale Datenbank: ALLE Nutzer sehen denselben Lead-Pool (laden + schreiben). '+
       'Auf jedem Gerät dieselbe URL + denselben Anon-Key eintragen. Leer = nur lokal auf diesem Gerät.</div>'+
@@ -1931,6 +2005,7 @@ function renderSheet(){
       '</div>'+
       callCrmBlock(l)+
       historieBlock(l)+
+      terminBlock(l)+
 
       // ==== ANGEBOT ====
       '<span class="lab">Angebot</span>'+
@@ -2367,8 +2442,11 @@ function renderPicker(){
   mount(html);
 }
 function mount(html){
+  var oldBody=document.querySelector('#mbg .sh-body');    // Scroll-Position merken …
+  var top=oldBody?oldBody.scrollTop:0;
   var ex=document.getElementById('mbg'); if(ex) ex.remove();
   document.body.insertAdjacentHTML('beforeend',html);
+  if(top){ var nb=document.querySelector('#mbg .sh-body'); if(nb) nb.scrollTop=top; }  // … und wiederherstellen (kein Hochspringen)
 }
 
 /* =====================================================================
@@ -2478,6 +2556,7 @@ document.addEventListener('click',function(e){
   else if(act==='addhist'){ addHistNote(id); }
   else if(act==='mailoffer'){ mailOffer(id); }
   else if(act==='shareangebot'){ shareAngebot(id); }
+  else if(act==='termin'){ shareTermin(id); }
   else if(act==='openoffer'){ var lo=S.leads.find(function(x){return x.id===id;}); if(lo) openAngebotDoc(angebotSnapshot(lo)); }
   else if(act==='advance'){ advanceStatus(id,v); }
   else if(act==='delhist'){ delHist(id,v); }
