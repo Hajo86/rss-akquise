@@ -83,7 +83,7 @@ var FRAKTION = {
 var VOLUMEN = [120,240,660,1100];
 var STATUS = ['neu','kontaktiert','angebot','gewonnen','verloren'];
 var STATUS_LBL = { neu:'Neu', kontaktiert:'Kontakt', angebot:'Angebot', gewonnen:'Gewonnen', verloren:'Verloren' };
-var APP_VERSION = 'v46 · Termin senden (.ics + Google Meet + Selbstbuchung) + Sheet springt nicht mehr hoch (Scroll bleibt)';
+var APP_VERSION = 'v47 · RSS-Buchungslink + Google-Meet-Link fest hinterlegt – „Termin senden" sofort einsatzbereit';
 var WD = ['Sonntag','Montag','Dienstag','Mittwoch','Donnerstag','Freitag','Samstag'];
 // Places-Typen, die fast nie Gewerbekunden mit Tonne sind -> aus Route ausblenden
 var STOP_EXCLUDE = ['bus_stop','transit_station','locality','political','park','school',
@@ -174,6 +174,13 @@ var RSS_ABSENDER = {
   mail:'rohde@rss-entsorgung.de',
   web:'rss-entsorgung.de'
 };
+// Termin/Video-Standard (RSS-Google-Konto). In Setup pro Gerät überschreibbar.
+var RSS_TERMIN = {
+  booking:'https://calendar.app.google/8aMLyBSo6RnzC26P8',
+  meet:'https://meet.google.com/csq-fmki-nrz'
+};
+function bookingURL(){ return ((S.keys&&S.keys.bookingLink||'').trim()) || RSS_TERMIN.booking; }
+function meetURL(){ return ((S.keys&&S.keys.meetLink||'').trim()) || RSS_TERMIN.meet; }
 var _toastT;
 function toast(msg){
   var t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show');
@@ -1269,7 +1276,7 @@ function icsStamp(d){ var p=function(n){return (n<10?'0':'')+n;};
   return d.getUTCFullYear()+p(d.getUTCMonth()+1)+p(d.getUTCDate())+'T'+p(d.getUTCHours())+p(d.getUTCMinutes())+p(d.getUTCSeconds())+'Z'; }
 function buildICS(l,start,mins){
   var end=new Date(start.getTime()+(mins||15)*60000);
-  var meet=(S.keys.meetLink||'').trim(), booking=(S.keys.bookingLink||'').trim();
+  var meet=meetURL(), booking=bookingURL();
   var loc=meet||l.adresse||'';
   var desc='Kostenloses, unverbindliches Müll-Audit für '+(l.firmenname||'Ihren Betrieb')+' (ca. '+(mins||15)+' Min).'+
     (meet?('\nPer Video: '+meet):'')+(booking?('\nAnderer Wunschtermin: '+booking):'');
@@ -1282,7 +1289,7 @@ function buildICS(l,start,mins){
 }
 function terminBlock(l){
   var d=new Date(); d.setDate(d.getDate()+1);                 // Default: morgen 10:00
-  var booking=(S.keys.bookingLink||'').trim(), meet=(S.keys.meetLink||'').trim();
+  var booking=bookingURL(), meet=meetURL();
   return '<span class="lab">Termin (Video-Audit)</span>'+
     '<div class="terminrow">'+
       '<input type="date" id="termin-date-'+l.id+'" class="txt" value="'+isoOf(d)+'"/>'+
@@ -1300,7 +1307,7 @@ async function shareTermin(id){
   var dp=dv.split('-'), tp=tv.split(':');
   var start=new Date(+dp[0],+dp[1]-1,+dp[2],+tp[0],+tp[1],0);
   var ics=buildICS(l,start,15);
-  var meet=(S.keys.meetLink||'').trim(), booking=(S.keys.bookingLink||'').trim();
+  var meet=meetURL(), booking=bookingURL();
   var when=start.toLocaleString('de-DE',{weekday:'long',day:'2-digit',month:'long',hour:'2-digit',minute:'2-digit'});
   var text=apAnrede(l)+'\n\n'
     +'wie besprochen der Termin für Ihr kurzes, kostenloses Müll-Audit:\n'+when+' Uhr (ca. 15 Min).\n'
@@ -1925,11 +1932,11 @@ function renderSettings(){
     '</div>'+
 
     '<div class="section"><h3>Termin & Video (Selbstbuchung)</h3>'+
-      '<div class="note">Für den „📅 Termin senden"-Button. <b>Buchungslink</b> (Google Kalender-Terminseiten oder Calendly, gratis) → Kunde bucht selbst. <b>Google-Meet-Link</b> (gratis, wiederverwendbar) fürs Video-Audit. Beides optional.</div>'+
+      '<div class="note" style="color:#1a7d34;font-weight:800">✓ RSS-Standard hinterlegt – „📅 Termin senden" ist einsatzbereit. Nur ändern, wenn du eigene Links nutzen willst.</div>'+
       '<div class="fld" style="margin-top:10px"><label>Terminbuchungs-Link</label>'+
-        '<input class="txt" type="url" data-key="bookingLink" value="'+esc(k.bookingLink||'')+'" placeholder="https://calendar.app.google/… oder calendly.com/…"/></div>'+
+        '<input class="txt" type="url" data-key="bookingLink" value="'+esc(k.bookingLink||RSS_TERMIN.booking)+'" placeholder="https://calendar.app.google/…"/></div>'+
       '<div class="fld"><label>Google-Meet-Link</label>'+
-        '<input class="txt" type="url" data-key="meetLink" value="'+esc(k.meetLink||'')+'" placeholder="https://meet.google.com/xxx-xxxx-xxx"/></div>'+
+        '<input class="txt" type="url" data-key="meetLink" value="'+esc(k.meetLink||RSS_TERMIN.meet)+'" placeholder="https://meet.google.com/xxx-xxxx-xxx"/></div>'+
     '</div>'+
 
     '<div class="section"><h3>Team-Sync (Supabase)</h3>'+
