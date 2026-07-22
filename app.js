@@ -83,7 +83,7 @@ var FRAKTION = {
 var VOLUMEN = [120,240,660,1100];
 var STATUS = ['neu','kontaktiert','angebot','gewonnen','verloren'];
 var STATUS_LBL = { neu:'Neu', kontaktiert:'Kontakt', angebot:'Angebot', gewonnen:'Gewonnen', verloren:'Verloren' };
-var APP_VERSION = 'v52 · Ersparnis in der Kalkulationstabelle (Spart-Spalte je Tonne + „Kunde spart /Monat · /Jahr")';
+var APP_VERSION = 'v53 · Website oben im Lead + „Anreichern": Website-Impressum → Ansprechpartner + E-Mail (CORS-Proxy)';
 var WD = ['Sonntag','Montag','Dienstag','Mittwoch','Donnerstag','Freitag','Samstag'];
 // Places-Typen, die fast nie Gewerbekunden mit Tonne sind -> aus Route ausblenden
 var STOP_EXCLUDE = ['bus_stop','transit_station','locality','political','park','school',
@@ -163,6 +163,8 @@ var $app = document.getElementById('app');
 function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
 function eur(n){ return Math.round(n).toLocaleString('de-DE') + ' €'; }
 function eur2(n){ return (Number(n)||0).toLocaleString('de-DE',{minimumFractionDigits:2,maximumFractionDigits:2}) + ' €'; }
+function httpize(u){ u=(u||'').trim(); if(!u) return ''; return /^https?:\/\//i.test(u)?u:('https://'+u); }
+function hostOf(u){ try{ return new URL(httpize(u)).host.replace(/^www\./,''); }catch(e){ return (u||'').replace(/^https?:\/\//,'').replace(/^www\./,'').split('/')[0]; } }
 // Absender für Kunden-Angebote (RSS Recycling Solution Service UG i. Gr.)
 var RSS_ABSENDER = {
   firma:'RSS Recycling Solution Service UG',
@@ -663,6 +665,40 @@ async function enrich(lead){
     await dbPut(stripRuntime(lead));
     syncLead(lead);
   }catch(err){ /* bleibt pending, nächster online-Versuch */ }
+}
+// Anreicherung: Website-Impressum -> Ansprechpartner (GF/Inhaber) + E-Mail (§5 DDG/TMG, in DE Pflichtangabe)
+async function enrichImpressum(id){
+  var l=S.leads.find(function(x){return x.id===id;}); if(!l) return;
+  if(!S.online){ toast('Anreichern braucht Internet'); return; }
+  if(!l.website && l.lat!=null && S.keys.google){ toast('Firma/Website wird gesucht…'); try{ await enrich(l); renderSheet(); }catch(e){} }
+  if(!l.website){ toast('Keine Website – oben eintragen'); return; }
+  toast('Impressum wird gelesen…');
+  try{
+    var base=httpize(l.website).replace(/\/+$/,''), host=hostOf(l.website);
+    var proxy=function(u){ return 'https://corsproxy.io/?url='+encodeURIComponent(u); };
+    var getT=function(u){ return Promise.race([ fetch(proxy(u)).then(function(r){return r.ok?r.text():'';}),
+      new Promise(function(res){ setTimeout(function(){res('');},9000); }) ]); };
+    var home=''; try{ home=await getT(base); }catch(e){}
+    var impUrl=''; var m=home.match(/href\s*=\s*["']([^"']*impressum[^"']*)["']/i);
+    if(m){ impUrl=m[1]; if(!/^https?:/i.test(impUrl)) impUrl=base+'/'+impUrl.replace(/^\//,''); } else impUrl=base+'/impressum';
+    var imp=''; try{ imp=await getT(impUrl); }catch(e){}
+    var raw=imp+' '+home;
+    var plain=raw.replace(/<[^>]+>/g,' ').replace(/&nbsp;/gi,' ').replace(/&amp;/gi,'&').replace(/\s+/g,' ');
+    var emails=[];
+    (raw.match(/mailto:([^"'?>\s]+@[^"'?>\s]+)/gi)||[]).forEach(function(x){ emails.push(x.replace(/mailto:/i,'')); });
+    (plain.match(/[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/g)||[]).forEach(function(x){ emails.push(x); });
+    emails=emails.map(function(e){return e.trim().toLowerCase();}).filter(function(e){ return !/\.(png|jpe?g|gif|webp|svg)$/.test(e) && !/(sentry|wixpress|example\.|@2x|godaddy|cloudflare|schema\.org)/.test(e); });
+    var dom=(host||'').split('.')[0];
+    var email=emails.find(function(e){ return dom && e.split('@')[1] && e.split('@')[1].indexOf(dom)>=0; }) || emails.find(function(e){return /^(info|kontakt|office|mail|hallo)@/.test(e);}) || emails[0] || '';
+    var gf=''; var g=plain.match(/(?:Gesch[aä]ftsf[uü]hrer(?:in)?|Inhaber(?:in)?|Vertreten durch|Vertretungsberechtigte[rn]?)\s*:?\s*(?:Herr |Frau )?([A-ZÄÖÜ][a-zäöüß.\-]+(?:\s+[A-ZÄÖÜ][a-zäöüß.\-]+){1,2})/);
+    if(g) gf=g[1].trim();
+    var got=[];
+    if(email && !l.ap_email){ l.ap_email=email; got.push('E-Mail'); }
+    if(gf && !l.ap_name){ l.ap_name=gf; got.push('Ansprechpartner'); }
+    if(got.length){ l.updated_at=Date.now(); dbPut(stripRuntime(l)).then(function(){ syncLead(l); }); pushHist(l,'notiz','Angereichert (Impressum): '+got.join(' + ')+(email?(' · '+email):'')); renderSheet(); toast('✓ '+got.join(' + ')+' übernommen'); }
+    else if(email||gf){ renderSheet(); toast('Gefunden ('+(gf||email)+'), aber Felder schon belegt'); }
+    else toast('Nichts gefunden (Seite blockt / Impressum als PDF?) – manuell eintragen');
+  }catch(e){ toast('Anreichern fehlgeschlagen'); }
 }
 function applyCompany(lead,c){
   lead.firmenname=c.firmenname; lead.telefon=c.telefon; lead.website=c.website;
@@ -2004,6 +2040,11 @@ function renderSheet(){
         '<input class="txt" data-edit="ap_telefon" data-id="'+l.id+'" inputmode="tel" value="'+esc(l.ap_telefon||'')+'" placeholder="Telefon"/>'+
         '<input class="txt" data-edit="ap_email" data-id="'+l.id+'" inputmode="email" value="'+esc(l.ap_email||'')+'" placeholder="E-Mail"/>'+
       '</div>'+
+      '<div class="tworow" style="margin-top:8px">'+
+        '<input class="txt" data-edit="website" data-id="'+l.id+'" inputmode="url" value="'+esc(l.website||'')+'" placeholder="Website"/>'+
+        (l.website?'<a class="cta ghost" href="'+esc(httpize(l.website))+'" target="_blank" style="flex:none;padding:0 14px;display:flex;align-items:center;font-size:12px;text-decoration:none">↗ öffnen</a>':'')+
+      '</div>'+
+      '<button class="cta ghost" data-act="anreichern" data-id="'+l.id+'" style="margin-top:8px;padding:10px;font-size:12px">🔎 Anreichern (Website-Impressum → Ansprechpartner/E-Mail)</button>'+
       ((l.telefon||l.email)?'<div class="note" style="margin-top:6px">Firma: '+(l.telefon?('☎ '+esc(l.telefon)):'')+(l.email?((l.telefon?' · ':'')+esc(l.email)):'')+'</div>':'')+
       '<div class="note" style="margin-top:6px">'+esc(behaelterSummary(l))+' · '+esc(l.entsorger||(l.entsorger_logo?'Entsorger erkennbar':'Entsorger unbekannt'))+(l.adresse?(' · '+esc(l.adresse)):'')+'</div>'+
 
@@ -2046,7 +2087,6 @@ function renderSheet(){
         '<input class="txt" style="margin-bottom:8px" data-edit="telefon" data-id="'+l.id+'" inputmode="tel" value="'+esc(l.telefon||'')+'" placeholder="Firmen-Telefon (Zentrale)"/>'+
         '<input class="txt" style="margin-bottom:8px" data-edit="email" data-id="'+l.id+'" inputmode="email" value="'+esc(l.email||'')+'" placeholder="Firmen-E-Mail (allgemein)"/>'+
         '<input class="txt" style="margin-bottom:8px" data-edit="adresse" data-id="'+l.id+'" value="'+esc(l.adresse||'')+'" placeholder="Adresse (Straße, Ort)"/>'+
-        '<input class="txt" style="margin-bottom:8px" data-edit="website" data-id="'+l.id+'" inputmode="url" value="'+esc(l.website||'')+'" placeholder="Website (optional)"/>'+
         '<span class="lab">Notiz (Stammdaten)</span>'+
         '<textarea data-edit="notiz" data-id="'+l.id+'" placeholder="Freitext…">'+esc(l.notiz||'')+'</textarea>'+
         '<button class="cta" data-act="saveedit" data-id="'+l.id+'" style="margin-top:8px">Speichern</button>'+
@@ -2605,6 +2645,7 @@ document.addEventListener('click',function(e){
   else if(act==='setwv'){ setWV(id, v==='clear'?null:parseInt(v,10)); }
   else if(act==='addhist'){ addHistNote(id); }
   else if(act==='mailoffer'){ mailOffer(id); }
+  else if(act==='anreichern'){ enrichImpressum(id); }
   else if(act==='shareangebot'){ shareAngebot(id); }
   else if(act==='termin'){ shareTermin(id); }
   else if(act==='openoffer'){ var lo=S.leads.find(function(x){return x.id===id;}); if(lo) openAngebotDoc(angebotSnapshot(lo)); }
