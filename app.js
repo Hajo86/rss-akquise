@@ -83,7 +83,7 @@ var FRAKTION = {
 var VOLUMEN = [120,240,660,1100];
 var STATUS = ['neu','kontaktiert','angebot','gewonnen','verloren'];
 var STATUS_LBL = { neu:'Neu', kontaktiert:'Kontakt', angebot:'Angebot', gewonnen:'Gewonnen', verloren:'Verloren' };
-var APP_VERSION = 'v50 · Preis-Box zeigt die Tonne: „Aktuelle Tonne" (mit Entsorger) und „Mit RSS" + Tonne ändern';
+var APP_VERSION = 'v51 · Kalkulation als Tabelle je Tonne (Aktuell Landkreis → Mit RSS), Summe + Pflichttonne; „Tonnen ändern" springt zum Editor';
 var WD = ['Sonntag','Montag','Dienstag','Mittwoch','Donnerstag','Freitag','Samstag'];
 // Places-Typen, die fast nie Gewerbekunden mit Tonne sind -> aus Route ausblenden
 var STOP_EXCLUDE = ['bus_stop','transit_station','locality','political','park','school',
@@ -2037,7 +2037,7 @@ function renderSheet(){
         '<span class="lab">Ansprechpartner – Rolle</span>'+
         '<input class="txt" style="margin-bottom:8px" data-edit="ap_rolle" data-id="'+l.id+'" value="'+esc(l.ap_rolle||'')+'" placeholder="Rolle/Funktion (Inhaber, GF, Einkauf…)"/>'+
 
-        '<span class="lab">Tonnen vor Ort</span>'+
+        '<span class="lab" id="tonnen-editor">Tonnen vor Ort</span>'+
         containersOf(l).map(function(c,i){ return binBlockLead(l,c,i); }).join('')+
         '<button class="cta ghost" data-act="laddbin" data-id="'+l.id+'" style="margin-top:0;margin-bottom:6px">+ Weitere Tonne</button>'+
 
@@ -2066,43 +2066,68 @@ function renderSheet(){
   mount(html);
 }
 function kv(k,v){ return '<div class="kv"><span class="k">'+esc(k)+'</span><span class="v">'+esc(v)+'</span></div>'; }
+// Kosten je einzelnem Behälter (aktuell Landkreis -> mit RSS), passend zu kalkulation()
+function containerCalc(l){
+  var rh=(l&&l.rhythmus)||'14t';
+  var rabatt=(l&&l.rabatt!=null)?l.rabatt:RABATT;
+  return containersOf(l).map(function(c){
+    var n=c.anzahl||1, o={ fraktion:c.fraktion, volumen:c.volumen, anzahl:n, kommunalMt:null, rssMt:null, note:'' };
+    if(c.fraktion==='restmuell'){
+      var t=TARIF.restmuell[c.volumen], jahr=t?(t[rh]!=null?t[rh]:t['14t']):null;
+      if(jahr!=null){ o.kommunalMt=(jahr/12)*n; o.rssMt=o.kommunalMt*(1-rabatt); }
+      else o.note='keine Kommunalgröße (660 L = privat)';
+    } else if(c.fraktion==='papier'){ o.kommunalMt=0; o.rssMt=0; o.note='kommunal gratis · RSS inklusive'; }
+    else { o.kommunalMt=0; o.rssMt=0; o.note='kommunal inklusive'; }
+    return o;
+  });
+}
 function offerBox(l){
   var k=kalkulation(l);
-  var rhyBtns='<div class="row two" style="margin-bottom:10px">'+
+  var pct=Math.round((k.rabatt||0.10)*100);
+  var rhyBtns='<div class="row two" style="margin-bottom:8px">'+
     '<button class="chip'+(k.rhythmus==='14t'?' on':'')+'" data-act="rhythmus" data-id="'+l.id+'" data-v="14t">14-täglich</button>'+
     '<button class="chip'+(k.rhythmus==='woe'?' on':'')+'" data-act="rhythmus" data-id="'+l.id+'" data-v="woe">wöchentlich</button>'+
   '</div>';
-  var opt = (k.ersparnis_monat<=0 && k.kosten_monat>0) ?
-    '<div class="note" style="border:1px solid var(--hot);color:var(--hot);padding:8px 10px;margin-top:8px">Bei dieser Größe spart der Kunde nichts — die Pflichttonne frisst den Rabatt. Lohnt sich erst bei großen Tonnen (1.100 L).</div>' : '';
-  var warn = (k.ek_unvollstaendig?'<div class="note">⚠ Veolia-EK nur für 1.100 L hinterlegt — kleinere Volumen unvollständig.</div>':'')+
-             (k.privat?'<div class="note">⚠ 660 L hat keinen Kommunaltarif (private Größe).</div>':'');
-  var pct=Math.round((k.rabatt||0.10)*100);
-  var rabBtns='<div style="font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;margin:4px 0 6px">Kundenrabatt: '+pct+' %</div>'+
+  var rabBtns='<div style="font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;margin:2px 0 6px">Kundenrabatt: '+pct+' %</div>'+
     '<div class="row" style="grid-template-columns:repeat(5,1fr);margin-bottom:10px">'+
     [5,10,15,20,25].map(function(p){
       return '<button class="chip'+(pct===p?' on':'')+'" data-act="rabatt" data-id="'+l.id+'" data-v="'+p+'">'+p+'%</button>';
     }).join('')+'</div>';
-  var lm=LEER_MT[k.rhythmus]||(26/12);                       // Leerungen/Monat
-  var proLeerung=lm>0?(k.rss_preis_monat/lm):0;
-  var leerJahr=Math.round(lm*12);                            // 52 (wö.) / 26 (14-tg.)
+  var opt = (k.ersparnis_monat<=0 && k.kosten_monat>0) ?
+    '<div class="note" style="border:1px solid var(--hot);color:var(--hot);padding:8px 10px;margin-top:8px">Bei dieser Größe spart der Kunde nichts — die Pflichttonne frisst den Rabatt. Lohnt sich erst bei großen Tonnen (1.100 L).</div>' : '';
+  var warn = (k.ek_unvollstaendig?'<div class="note">⚠ Veolia-EK nur für 1.100 L hinterlegt — kleinere Volumen unvollständig.</div>':'')+
+             (k.privat?'<div class="note">⚠ 660 L hat keinen Kommunaltarif (private Größe).</div>':'');
+  var lm=LEER_MT[k.rhythmus]||(26/12), proLeerung=lm>0?(k.rss_preis_monat/lm):0, leerJahr=Math.round(lm*12);
   var turnusLbl=k.rhythmus==='woe'?'wöchentlich':'14-täglich';
-  // Welche Tonne hat er jetzt – und was bekommt er mit RSS?
-  var istEnts=l.entsorger?(' · '+esc(l.entsorger)):(l.entsorger_logo?' · Entsorger erkennbar':' · Entsorger unbekannt');
-  var binbox='<div class="binbox">'+
-    '<div class="brow"><span class="bl">Aktuelle Tonne</span><span class="bv">'+esc(behaelterSummary(l))+istEnts+'</span></div>'+
-    '<div class="brow"><span class="bl">Mit RSS</span><span class="bv">gleiche Behälter – gewerbliche Entsorgung übernehmen wir · Pflichttonne 40 L bleibt beim Landkreis</span></div>'+
-    '<button class="cta ghost" data-act="secedit" data-id="'+l.id+'" style="margin-top:8px;padding:9px;font-size:12px">🗑 Tonne ändern</button>'+
+
+  // Tabelle: je Tonne aktuell (Landkreis) -> mit RSS
+  var rows=containerCalc(l).map(function(r){
+    var label=r.anzahl+'× '+r.volumen+' L '+(FRAKTION[r.fraktion]?FRAKTION[r.fraktion].label:r.fraktion);
+    var ist = r.kommunalMt!=null ? eur(r.kommunalMt)+'/Mt' : '—';
+    var soll = r.rssMt==null ? '—' : (r.rssMt>0?eur(r.rssMt)+'/Mt':'inkl.');
+    return '<tr><td>'+esc(label)+(r.note?'<br><span class="tnote">'+esc(r.note)+'</span>':'')+'</td>'+
+      '<td class="r">'+ist+'</td><td class="r">'+soll+'</td></tr>';
+  }).join('');
+  var table='<table class="pt">'+
+    '<tr><th>Behälter</th><th class="r">Aktuell<br>Landkreis</th><th class="r">Mit RSS</th></tr>'+
+    rows+
+    '<tr class="sum"><td>Gewerblich gesamt</td><td class="r">'+eur(k.kosten_monat)+'/Mt</td><td class="r">'+eur(k.rss_preis_monat)+'/Mt</td></tr>'+
+    (k.pflicht_monat>0?'<tr><td>+ Pflichttonne 40 L</td><td class="r">—</td><td class="r">'+eur(k.pflicht_monat)+'/Mt</td></tr>':'')+
+  '</table>';
+
+  var paybox='<div class="paybox">'+
+    '<div class="pl">Kunde zahlt mit RSS</div>'+
+    '<div class="pm"><b>'+eur(k.rss_preis_monat)+'</b> / Monat &nbsp;·&nbsp; <b>'+eur(k.rss_preis_monat*12)+'</b> / Jahr</div>'+
+    (k.rss_preis_monat>0?'<div class="pb">'+eur2(proLeerung)+' je Leerung × '+leerJahr+' Leerungen/Jahr · '+turnusLbl+'</div>':'<div class="pb">Preis erst ab Kommunaltarif (z. B. 1.100 L)</div>')+
+    (k.pflicht_monat>0?'<div class="pb">Pflichttonne 40 L: '+eur(k.pflicht_monat)+'/Mt zahlt der Kunde weiter an den Landkreis</div>':'')+
   '</div>';
+
   return '<div class="offerbox"><div class="oh">Preis & Kalkulation</div><div class="ob">'+
-    binbox+ rhyBtns+ rabBtns+
-    // Klar: was zahlt der Kunde – pro Monat UND pro Jahr
-    '<div class="paybox">'+
-      '<div class="pl">Kunde zahlt (an RSS)</div>'+
-      '<div class="pm"><b>'+eur(k.rss_preis_monat)+'</b> / Monat &nbsp;·&nbsp; <b>'+eur(k.rss_preis_monat*12)+'</b> / Jahr</div>'+
-      (k.rss_preis_monat>0?'<div class="pb">'+eur2(proLeerung)+' je Leerung × '+leerJahr+' Leerungen/Jahr · '+turnusLbl+'</div>':'<div class="pb">Preis erst ab Kommunaltarif (z. B. 1.100 L)</div>')+
-      (k.pflicht_monat>0?'<div class="pb">+ gesetzl. Pflichttonne (40 L): '+eur(k.pflicht_monat)+' / Mt · '+eur(k.pflicht_monat*12)+' / J (an die Stadt)</div>':'')+
-    '</div>'+
+    rhyBtns+ rabBtns+
+    table+
+    '<button class="cta ghost" data-act="edittonnen" data-id="'+l.id+'" style="margin:2px 0 4px;padding:9px;font-size:12px">🗑 Tonnen ändern</button>'+
     opt+warn+
+    paybox+
     '<div class="note" style="margin-top:8px">Intern: Marge <b>'+eur(k.rss_marge_monat)+'</b>/Mt · '+eur(k.rss_marge_jahr)+'/J · Kunde spart '+eur(k.ersparnis_jahr)+'/J ('+pct+' % unter Kommunal)</div>'+
     '<button class="cta ghost" style="margin-top:10px" data-act="calctoggle">'+(S.calcOpen?'Herleitung verbergen ▴':'📊 Herleitung im Detail ▾')+'</button>'+
     (S.calcOpen?calcBreakdown(l,k):'')+
@@ -2583,6 +2608,8 @@ document.addEventListener('click',function(e){
   else if(act==='delhist'){ delHist(id,v); }
   else if(act==='resetcrm'){ resetCrm(id); }
   else if(act==='secedit'){ S.secEdit=!S.secEdit; renderSheet(); }
+  else if(act==='edittonnen'){ S.secEdit=true; renderSheet();
+    setTimeout(function(){ var el=document.getElementById('tonnen-editor'); if(el&&el.scrollIntoView) el.scrollIntoView({block:'start',behavior:'smooth'}); },50); }
 },false);
 
 // Tab-Nav

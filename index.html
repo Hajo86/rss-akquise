@@ -316,12 +316,14 @@ nav button.on{color:var(--ink);border-top-color:var(--ink)}
 .terminrow{display:flex;gap:8px}
 .terminrow input{flex:1;min-width:0}
 
-/* Behälter-Box in der Kalkulation (Aktuell / Mit RSS) */
-.binbox{border:1.5px solid var(--ink);padding:10px 12px;margin-bottom:10px}
-.binbox .brow{display:flex;gap:10px;padding:5px 0}
-.binbox .brow+.brow{border-top:1px solid var(--faint)}
-.binbox .bl{font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);flex:none;width:96px;padding-top:2px}
-.binbox .bv{font-weight:600;font-size:13px;line-height:1.35;flex:1}
+/* Preis-Tabelle je Tonne (Aktuell Landkreis / Mit RSS) */
+.pt{width:100%;border-collapse:collapse;margin:2px 0 8px}
+.pt th{font-size:9px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);
+  text-align:left;padding:5px 4px;border-bottom:1.5px solid var(--ink);vertical-align:bottom;line-height:1.15}
+.pt th.r,.pt td.r{text-align:right;white-space:nowrap}
+.pt td{padding:8px 4px;border-bottom:1px solid var(--faint);font-size:13px;font-weight:600;vertical-align:top}
+.pt tr.sum td{border-top:1.5px solid var(--ink);border-bottom:0;font-weight:800}
+.pt .tnote{font-size:10px;font-weight:600;color:var(--muted)}
 
 /* „Kunde zahlt"-Box in der Kalkulation */
 .paybox{border:2px solid var(--ink);padding:12px 14px;margin-bottom:8px}
