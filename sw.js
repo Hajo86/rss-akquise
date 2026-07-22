@@ -1,5 +1,5 @@
 /* RSS Akquise — Service Worker: App-Shell-Cache für Offline-Start */
-var CACHE = 'rss-akquise-v55';
+var CACHE = 'rss-akquise-v56';
 var SHELL = [
   './',
   './index.html',

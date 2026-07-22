@@ -306,6 +306,13 @@ nav button.on{color:var(--ink);border-top-color:var(--ink)}
 /* Lead-Sheet Kopfzeile: Badges nebeneinander */
 .leadtop{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:12px}
 
+/* Lead-Tabs (Kontakt · Akquise · Angebot · Details) – sticky im Sheet */
+.leadtabs{display:flex;margin:14px -16px 14px;border-bottom:2px solid var(--ink);
+  position:sticky;top:0;z-index:3;background:var(--paper)}
+.leadtabs button{flex:1;padding:11px 4px;font-size:11px;font-weight:800;letter-spacing:.03em;
+  text-transform:uppercase;background:var(--paper);color:var(--muted);border-bottom:3px solid transparent;margin-bottom:-2px}
+.leadtabs button.on{color:var(--ink);border-bottom-color:var(--ink)}
+
 /* Kopf-Thumbnail (Foto klein im Lead-Kopf) */
 .headthumb{width:44px;height:44px;object-fit:cover;border:1.5px solid var(--paper);flex:none;cursor:pointer;margin-right:8px}
 

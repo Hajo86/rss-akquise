@@ -83,7 +83,7 @@ var FRAKTION = {
 var VOLUMEN = [120,240,660,1100];
 var STATUS = ['neu','kontaktiert','angebot','gewonnen','verloren'];
 var STATUS_LBL = { neu:'Neu', kontaktiert:'Kontakt', angebot:'Angebot', gewonnen:'Gewonnen', verloren:'Verloren' };
-var APP_VERSION = 'v55 · Anreicherung besser: Telefon + GF-Name (auch aus E-Mail), Impressum „impress"-Pfade; Deeplinks mit Ort';
+var APP_VERSION = 'v56 · Lead entschlackt: 4 Tabs (Kontakt · Akquise · Angebot · Details), Anrufen fest oben';
 var WD = ['Sonntag','Montag','Dienstag','Mittwoch','Donnerstag','Freitag','Samstag'];
 // Places-Typen, die fast nie Gewerbekunden mit Tonne sind -> aus Route ausblenden
 var STOP_EXCLUDE = ['bus_stop','transit_station','locality','political','park','school',
@@ -119,7 +119,8 @@ var S = {
   filter: 'alle',
   sort: 'score',
   leadView: 'list',    // 'list' | 'board' (Pipeline-Kanban) im Leads-Tab
-  secEdit: false,      // Lead-Sheet: Bearbeiten-Bereich (Tonnen/Firma/Notiz) auf/zu
+  secEdit: false,      // (alt) Bearbeiten-Bereich – ersetzt durch Details-Tab
+  leadTab: 'kontakt',  // Lead-Sheet: aktiver Tab (kontakt|akquise|angebot|details)
   crmSync: true,       // Kontakt-/CRM-Felder mit Supabase syncen? auto-false, falls Spalten fehlen
 
   modal: null,         // lead id im Detail-Sheet
@@ -2056,6 +2057,7 @@ function renderSheet(){
   var l=S.leads.find(function(x){return x.id===S.modal;});
   if(!l){ if(ex) ex.remove(); return; }
   var u=photoURL(l), f=FRAKTION[l.fraktion]||{label:l.fraktion};
+  var tab=S.leadTab||'kontakt';
   var html='<div id="mbg" data-act="closebg"><div id="sheet">'+
     '<div class="sh-head">'+
       '<b style="text-transform:uppercase;font-size:16px;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(l.firmenname||'Unbekannter Betrieb')+'</b>'+
@@ -2063,64 +2065,60 @@ function renderSheet(){
       '<button class="x" data-act="close">×</button>'+
     '</div>'+
     '<div class="sh-body">'+
-      // ---- Badges (Kontaktstatus) ----
+      // ---- Badges + Anrufen: immer sichtbar ----
       '<div class="leadtop">'+
         contactBadge(l)+
         (l.hot_lead?'<span class="tag hot">🔥 Hot</span>':'')+
         '<span class="tag">Score '+l.score+'</span>'+
         (kalkulation(l).ersparnis_jahr>0?'<span class="tag fill">'+eur(kalkulation(l).ersparnis_jahr)+'/J sparen</span>':'')+
       '</div>'+
-
-      // ---- Kontakt: direkt oben inline editierbar (leeres Feld antippen -> tippen -> speichert auto) ----
-      '<span class="lab">Kontakt</span>'+
-      '<input class="txt" style="margin-bottom:8px" data-edit="ap_name" data-id="'+l.id+'" value="'+esc(l.ap_name||'')+'" placeholder="Ansprechpartner (Name)"/>'+
-      '<div class="tworow">'+
-        '<input class="txt" data-edit="ap_telefon" data-id="'+l.id+'" inputmode="tel" value="'+esc(l.ap_telefon||'')+'" placeholder="Telefon"/>'+
-        '<input class="txt" data-edit="ap_email" data-id="'+l.id+'" inputmode="email" value="'+esc(l.ap_email||'')+'" placeholder="E-Mail"/>'+
-      '</div>'+
-      '<div class="tworow" style="margin-top:8px">'+
-        '<input class="txt" data-edit="website" data-id="'+l.id+'" inputmode="url" value="'+esc(l.website||'')+'" placeholder="Website"/>'+
-        (l.website?'<a class="cta ghost" href="'+esc(httpize(l.website))+'" target="_blank" style="flex:none;padding:0 14px;display:flex;align-items:center;font-size:12px;text-decoration:none">↗ öffnen</a>':'')+
-      '</div>'+
-      '<button class="cta ghost" data-act="anreichern" data-id="'+l.id+'" style="margin-top:8px;padding:10px;font-size:12px">🔎 Anreichern (Website-Impressum → Ansprechpartner/E-Mail)</button>'+
-      lookupLinks(l)+
-      ((l.telefon||l.email)?'<div class="note" style="margin-top:6px">Firma: '+(l.telefon?('☎ '+esc(l.telefon)):'')+(l.email?((l.telefon?' · ':'')+esc(l.email)):'')+'</div>':'')+
-      '<div class="note" style="margin-top:6px">'+esc(behaelterSummary(l))+' · '+esc(l.entsorger||(l.entsorger_logo?'Entsorger erkennbar':'Entsorger unbekannt'))+(l.adresse?(' · '+esc(l.adresse)):'')+'</div>'+
-
-      // ==== AKQUISE-COCKPIT ====
-      '<span class="lab">Status</span>'+
-      '<div class="statusgrid">'+ STATUS.map(function(s){
-        return '<button class="'+(l.status===s?'on':'')+'" data-act="status" data-id="'+l.id+'" data-v="'+s+'">'+STATUS_LBL[s]+'</button>';
-      }).join('')+'</div>'+
-
-      '<div class="actions" style="margin-top:12px">'+
-        (apTel(l)?'<a class="pri" href="tel:'+esc(apTel(l))+'">▸ Anrufen'+(l.ap_name?(' · '+esc(l.ap_name.split(' ')[0])):'')+'</a>':'<button class="pri" data-act="secedit" data-id="'+l.id+'">Telefon eintragen</button>')+
+      '<div class="actions" style="margin:12px 0 0">'+
+        (apTel(l)?'<a class="pri" href="tel:'+esc(apTel(l))+'">▸ Anrufen'+(l.ap_name?(' · '+esc(l.ap_name.split(' ')[0])):'')+'</a>':'<button class="pri" data-act="leadtab" data-id="'+l.id+'" data-v="kontakt">Telefon eintragen</button>')+
         (l.lat?'<a href="https://www.google.com/maps?q='+l.lat+','+l.lng+'" target="_blank">Route</a>':'')+
       '</div>'+
-      callCrmBlock(l)+
-      historieBlock(l)+
-      terminBlock(l)+
 
-      // ==== ANGEBOT ====
-      '<span class="lab">Angebot</span>'+
-      offerBox(l)+
-      ((kalkulation(l).rss_preis_monat>0)?'<button class="cta" data-act="shareangebot" data-id="'+l.id+'">📎 Angebot teilen (Mail / WhatsApp)</button>':'')+
-      ((kalkulation(l).rss_preis_monat>0)?'<button class="cta ghost" data-act="openoffer" data-id="'+l.id+'" style="margin-top:8px">📄 Angebot öffnen / drucken</button>':'')+
-      angebotListe(l)+
+      // ---- Tab-Leiste (sticky) ----
+      '<div class="leadtabs">'+ [['kontakt','Kontakt'],['akquise','Akquise'],['angebot','Angebot'],['details','Details']].map(function(t){
+        return '<button class="'+(tab===t[0]?'on':'')+'" data-act="leadtab" data-id="'+l.id+'" data-v="'+t[0]+'">'+t[1]+'</button>';
+      }).join('')+'</div>'+
 
-      // ==== BEARBEITEN (einklappbar) ====
-      '<button class="cta ghost" data-act="secedit" data-id="'+l.id+'" style="margin-top:18px">'+(S.secEdit?'▴ Bearbeiten schließen':'▾ Bearbeiten (Ansprechpartner · Firma · Tonnen · Notiz)')+'</button>'+
-      (S.secEdit ? (
+      // ==== TAB: KONTAKT ====
+      (tab==='kontakt' ? (
+        '<input class="txt" style="margin-bottom:8px" data-edit="ap_name" data-id="'+l.id+'" value="'+esc(l.ap_name||'')+'" placeholder="Ansprechpartner (Name)"/>'+
+        '<div class="tworow">'+
+          '<input class="txt" data-edit="ap_telefon" data-id="'+l.id+'" inputmode="tel" value="'+esc(l.ap_telefon||'')+'" placeholder="Telefon"/>'+
+          '<input class="txt" data-edit="ap_email" data-id="'+l.id+'" inputmode="email" value="'+esc(l.ap_email||'')+'" placeholder="E-Mail"/>'+
+        '</div>'+
+        '<div class="tworow" style="margin-top:8px">'+
+          '<input class="txt" data-edit="website" data-id="'+l.id+'" inputmode="url" value="'+esc(l.website||'')+'" placeholder="Website"/>'+
+          (l.website?'<a class="cta ghost" href="'+esc(httpize(l.website))+'" target="_blank" style="flex:none;padding:0 14px;display:flex;align-items:center;font-size:12px;text-decoration:none">↗ öffnen</a>':'')+
+        '</div>'+
+        '<button class="cta ghost" data-act="anreichern" data-id="'+l.id+'" style="margin-top:8px;padding:10px;font-size:12px">🔎 Anreichern (Impressum → Ansprechpartner/E-Mail)</button>'+
+        lookupLinks(l)+
+        ((l.telefon||l.email)?'<div class="note" style="margin-top:6px">Firma: '+(l.telefon?('☎ '+esc(l.telefon)):'')+(l.email?((l.telefon?' · ':'')+esc(l.email)):'')+'</div>':'')+
+        '<div class="note" style="margin-top:6px">'+esc(behaelterSummary(l))+' · '+esc(l.entsorger||(l.entsorger_logo?'Entsorger erkennbar':'Entsorger unbekannt'))+(l.adresse?(' · '+esc(l.adresse)):'')+'</div>'
+      ) : tab==='akquise' ? (
+        // ==== TAB: AKQUISE ====
+        '<span class="lab">Status</span>'+
+        '<div class="statusgrid">'+ STATUS.map(function(s){
+          return '<button class="'+(l.status===s?'on':'')+'" data-act="status" data-id="'+l.id+'" data-v="'+s+'">'+STATUS_LBL[s]+'</button>';
+        }).join('')+'</div>'+
+        callCrmBlock(l)+ historieBlock(l)+ terminBlock(l)
+      ) : tab==='angebot' ? (
+        // ==== TAB: ANGEBOT ====
+        offerBox(l)+
+        ((kalkulation(l).rss_preis_monat>0)?'<button class="cta" data-act="shareangebot" data-id="'+l.id+'">📎 Angebot teilen (Mail / WhatsApp)</button>':'')+
+        ((kalkulation(l).rss_preis_monat>0)?'<button class="cta ghost" data-act="openoffer" data-id="'+l.id+'" style="margin-top:8px">📄 Angebot öffnen / drucken</button>':'')+
+        angebotListe(l)
+      ) : (
+        // ==== TAB: DETAILS (Bearbeiten + Verwaltung) ====
         '<span class="lab">Fotos</span>'+
         photoGallery(l)+
-
         '<span class="lab">Ansprechpartner – Rolle</span>'+
         '<input class="txt" style="margin-bottom:8px" data-edit="ap_rolle" data-id="'+l.id+'" value="'+esc(l.ap_rolle||'')+'" placeholder="Rolle/Funktion (Inhaber, GF, Einkauf…)"/>'+
-
         '<span class="lab" id="tonnen-editor">Tonnen vor Ort</span>'+
         containersOf(l).map(function(c,i){ return binBlockLead(l,c,i); }).join('')+
         '<button class="cta ghost" data-act="laddbin" data-id="'+l.id+'" style="margin-top:0;margin-bottom:6px">+ Weitere Tonne</button>'+
-
         '<span class="lab">Firma (allgemein)</span>'+
         '<input class="txt" style="margin-bottom:8px" data-edit="firmenname" data-id="'+l.id+'" value="'+esc(l.firmenname||'')+'" placeholder="Firmenname"/>'+
         '<input class="txt" style="margin-bottom:8px" data-edit="telefon" data-id="'+l.id+'" inputmode="tel" value="'+esc(l.telefon||'')+'" placeholder="Firmen-Telefon (Zentrale)"/>'+
@@ -2131,16 +2129,13 @@ function renderSheet(){
         '<button class="cta" data-act="saveedit" data-id="'+l.id+'" style="margin-top:8px">Speichern</button>'+
         ((l._candidates&&l._candidates.length>1)?
           '<button class="cta ghost" data-act="pick" data-id="'+l.id+'">Anderen Betrieb wählen ('+l._candidates.length+')</button>':'')+
-        (l.website?'<div class="actions" style="grid-template-columns:1fr;margin-top:8px"><a href="'+esc(l.website)+'" target="_blank">Website öffnen</a></div>':'')
-      ) : '')+
-
-      // ==== VERWALTUNG ====
-      '<span class="lab">Verwaltung</span>'+
-      '<div class="note" style="margin:0 0 8px">Erfasst: '+new Date(l.created_at).toLocaleString('de-DE')+'</div>'+
-      '<div class="actions" style="grid-template-columns:1fr 1fr">'+
-        '<button data-act="resetcrm" data-id="'+l.id+'">↺ CRM zurücksetzen</button>'+
-        '<button data-act="del" data-id="'+l.id+'" style="border-color:#ff2d2d;color:#ff2d2d">Lead löschen</button>'+
-      '</div>'+
+        '<span class="lab">Verwaltung</span>'+
+        '<div class="note" style="margin:0 0 8px">Erfasst: '+new Date(l.created_at).toLocaleString('de-DE')+'</div>'+
+        '<div class="actions" style="grid-template-columns:1fr 1fr">'+
+          '<button data-act="resetcrm" data-id="'+l.id+'">↺ CRM zurücksetzen</button>'+
+          '<button data-act="del" data-id="'+l.id+'" style="border-color:#ff2d2d;color:#ff2d2d">Lead löschen</button>'+
+        '</div>'
+      ))+
     '</div></div></div>';
   mount(html);
 }
@@ -2626,12 +2621,12 @@ document.addEventListener('click',function(e){
   }
   else if(act==='dismissreminder'||(act==='rmdbg'&&e.target.id==='rmd')){ dismissReminder(); }
   else if(act==='dismissfu'||(act==='fuovbg'&&e.target.id==='fuov')){ dismissFollowups(); }
-  else if(act==='openfulead'){ S.showFollowups=false; S.tab='leads'; S.modal=id; render(); renderSheet(); }
+  else if(act==='openfulead'){ S.showFollowups=false; S.tab='leads'; S.modal=id; S.leadTab='kontakt'; render(); renderSheet(); }
   else if(act==='openreminder'){ S.showReminder=true; render(); }   // Übersicht erneut öffnen
   else if(act==='remindgo'){ gotoRoute(t.dataset.id, v); }
   else if(act==='filter'){ S.filter=v; render(); }
   else if(act==='sort'){ S.sort=v; render(); }
-  else if(act==='open'){ S.modal=id; renderSheet(); }
+  else if(act==='open'){ S.modal=id; S.leadTab='kontakt'; renderSheet(); }
   else if(act==='close'||act==='closebg'&&e.target.id==='mbg'){ S.modal=null; renderSheet(); }
   else if(act==='status'){ setStatus(id,v); }
   else if(act==='calctoggle'){ S.calcOpen=!S.calcOpen; renderSheet(); }
@@ -2691,8 +2686,9 @@ document.addEventListener('click',function(e){
   else if(act==='advance'){ advanceStatus(id,v); }
   else if(act==='delhist'){ delHist(id,v); }
   else if(act==='resetcrm'){ resetCrm(id); }
-  else if(act==='secedit'){ S.secEdit=!S.secEdit; renderSheet(); }
-  else if(act==='edittonnen'){ S.secEdit=true; renderSheet();
+  else if(act==='secedit'){ S.leadTab='details'; renderSheet(); }
+  else if(act==='leadtab'){ S.leadTab=v; renderSheet(); var b=document.querySelector('#mbg .sh-body'); if(b) b.scrollTop=0; }
+  else if(act==='edittonnen'){ S.leadTab='details'; renderSheet();
     setTimeout(function(){ var el=document.getElementById('tonnen-editor'); if(el&&el.scrollIntoView) el.scrollIntoView({block:'start',behavior:'smooth'}); },50); }
 },false);
 
