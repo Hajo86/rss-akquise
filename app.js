@@ -83,7 +83,7 @@ var FRAKTION = {
 var VOLUMEN = [120,240,660,1100];
 var STATUS = ['neu','kontaktiert','angebot','gewonnen','verloren'];
 var STATUS_LBL = { neu:'Neu', kontaktiert:'Kontakt', angebot:'Angebot', gewonnen:'Gewonnen', verloren:'Verloren' };
-var APP_VERSION = 'v67 · Kurzvorstellung hängt One-Pager als PDF an (statt HTML), HTML als Fallback';
+var APP_VERSION = 'v68 · Termin-Mail geschärft (B2B, Nutzen-Hook), Betreff-Dopplung raus, klare Einzel-Signatur';
 var WD = ['Sonntag','Montag','Dienstag','Mittwoch','Donnerstag','Freitag','Samstag'];
 // Places-Typen, die fast nie Gewerbekunden mit Tonne sind -> aus Route ausblenden
 var STOP_EXCLUDE = ['bus_stop','transit_station','locality','political','park','school',
@@ -1521,12 +1521,16 @@ async function shareTermin(id){
   var ics=buildICS(l,start,15);
   var meet=meetURL(), booking=bookingURL();
   var when=start.toLocaleString('de-DE',{weekday:'long',day:'2-digit',month:'long',hour:'2-digit',minute:'2-digit'});
-  var text='Terminvorschlag – kostenloses Müll-Audit (RSS)\n\n'
-    +apAnrede(l)+'\n\n'
-    +'wie besprochen der Termin für Ihr kurzes, kostenloses Müll-Audit:\n'+when+' Uhr (ca. 15 Min).\n'
-    +'Der Termin liegt als Kalender-Datei bei.'
-    +(meet?('\nPer Video: '+meet):'')
-    +(booking?('\n\nPasst der Termin nicht? Wunschtermin hier wählen: '+booking):'')
+  var subj='Ihr Müll-Audit – Terminvorschlag (RSS)';
+  var text=apAnrede(l)+'\n\n'
+    +'danke für Ihr Interesse – hier Ihr Termin für das kostenlose Müll-Audit:\n\n'
+    +'Termin: '+when+' Uhr · ca. 15 Min'+(meet?' · per Video':'')+'\n\n'
+    +'In diesen 15 Minuten sehen wir uns Ihre aktuelle Entsorgung an und rechnen Ihnen schwarz '
+    +'auf weiß vor, was RSS Sie pro Jahr spart – meist rund 10 % unter Ihrem heutigen Tarif, bei '
+    +'gleichem Abfuhrrhythmus und gleichen Behältern. Unverbindlich; die Pflichttonne bleibt beim Landkreis.\n\n'
+    +'Der Termin liegt als Kalendereintrag bei.'
+    +(meet?('\nEinwahl (Video): '+meet):'')
+    +(booking?('\nAnderer Wunschtermin? Einfach hier wählen: '+booking):'')
     +'\n\n'+signatur();
   var done=function(msg){
     if(l.status==='neu') l.status='kontaktiert';
@@ -1538,14 +1542,14 @@ async function shareTermin(id){
   try{
     var file=new File([ics],'RSS-Termin.ics',{type:'text/calendar'});
     if(navigator.canShare && navigator.canShare({files:[file]})){
-      await navigator.share({ files:[file], title:'Termin – RSS', text:text });
+      await navigator.share({ files:[file], title:subj, text:text });
       done('Termin geteilt · WV am Termintag'); return;
     }
   }catch(e){ if(e && e.name==='AbortError'){ renderSheet(); return; } }
   // Fallback: .ics herunterladen + Mailentwurf
   var url=URL.createObjectURL(new Blob([ics],{type:'text/calendar'}));
   var a=document.createElement('a'); a.href=url; a.download='RSS-Termin.ics'; a.click(); setTimeout(function(){URL.revokeObjectURL(url);},2000);
-  window.location.href='mailto:'+encodeURIComponent(apMail(l))+'?subject='+encodeURIComponent('Terminvorschlag – Müll-Audit RSS')+'&body='+encodeURIComponent(text);
+  window.location.href='mailto:'+encodeURIComponent(apMail(l))+'?subject='+encodeURIComponent(subj)+'&body='+encodeURIComponent(text);
   done('Termin: .ics gespeichert + Mailentwurf');
 }
 
