@@ -83,7 +83,7 @@ var FRAKTION = {
 var VOLUMEN = [120,240,660,1100];
 var STATUS = ['neu','kontaktiert','angebot','gewonnen','verloren'];
 var STATUS_LBL = { neu:'Neu', kontaktiert:'Kontakt', angebot:'Angebot', gewonnen:'Gewonnen', verloren:'Verloren' };
-var APP_VERSION = 'v68 · Termin-Mail geschärft (B2B, Nutzen-Hook), Betreff-Dopplung raus, klare Einzel-Signatur';
+var APP_VERSION = 'v69 · Gebiets-Filter: Hamburg-Leads (noch nicht erschlossen) markiert + separat filterbar (Alle · LK Harburg · ⏸ Hamburg)';
 var WD = ['Sonntag','Montag','Dienstag','Mittwoch','Donnerstag','Freitag','Samstag'];
 // Places-Typen, die fast nie Gewerbekunden mit Tonne sind -> aus Route ausblenden
 var STOP_EXCLUDE = ['bus_stop','transit_station','locality','political','park','school',
@@ -120,6 +120,7 @@ var S = {
   sort: 'score',
   leadView: 'list',    // 'list' | 'board' (Pipeline-Kanban) | 'termin' (Agenda) im Leads-Tab
   search: '',          // Freitext-Suche im Leads-Tab
+  region: 'alle',      // Gebiets-Filter: 'alle' | 'harburg' | 'hamburg'
   enriching: false,    // Stapel-Anreicherung läuft
   secEdit: false,      // (alt) Bearbeiten-Bereich – ersetzt durch Details-Tab
   leadTab: 'kontakt',  // Lead-Sheet: aktiver Tab (kontakt|akquise|angebot|details)
@@ -866,6 +867,18 @@ function dedupeFlag(lead){
   lead.duplikat = !!dup;
 }
 function norm(s){ return String(s).toLowerCase().replace(/[^a-z0-9]/g,''); }
+// Gebiets-Einstufung: 'hamburg' (noch nicht erschlossen, keine EK-Preise) vs 'harburg' (LK Harburg, erschlossen)
+// Regel: Stadtname direkt nach der PLZ (kein Fehltreffer bei „Hamburger Straße"); zusätzlich PLZ-Bereiche.
+function regionOf(l){
+  var a=(l.adresse||'');
+  if(/\b2\d{4}\s+Hamburg\b/i.test(a)) return 'hamburg';                 // „… 21079 Hamburg …"
+  var plz=(a.match(/\b(2[0-2]\d{3})\b/)||[])[1];
+  if(plz){ var p=+plz;
+    if((p>=20000&&p<21000) || (p>=22000&&p<23000) || (p>=21000&&p<21150)) return 'hamburg';  // HH-Stadt inkl. Harburg/Wilhelmsburg
+    if(p>=21150&&p<21800) return 'harburg';                             // Landkreis Harburg
+  }
+  return 'harburg';   // im Zweifel als erschlossen behandeln (nicht fälschlich ausblenden)
+}
 
 async function processOutbox(){
   var pend = S.leads.filter(function(l){ return !l.enriched; });
@@ -1765,7 +1778,7 @@ function boardCard(l){
   var co=l.firmenname||(l.enriched?'Unbekannt':'…');
   return '<div class="bcard" data-act="open" data-id="'+l.id+'">'+
     '<div class="bgrip" data-grip title="Ziehen zum Verschieben">⠿</div>'+
-    '<div class="bco">'+esc(co)+(l.hot_lead?' <span class="tag hot">🔥</span>':'')+'</div>'+
+    '<div class="bco">'+esc(co)+(l.hot_lead?' <span class="tag hot">🔥</span>':'')+(regionOf(l)==='hamburg'?' <span class="tag paused">⏸ HH</span>':'')+'</div>'+
     '<div class="bmeta"><span class="bscore">'+l.score+'</span>'+
       '<span class="bsav">'+eur(kalkulation(l).ersparnis_jahr)+'/J</span></div>'+
     '<div class="bcontact">'+contactBadge(l)+'</div>'+
@@ -1842,7 +1855,11 @@ function matchLead(l,q){
   return q.toLowerCase().split(/\s+/).filter(Boolean).every(function(w){ return hay.indexOf(w)>=0; });
 }
 // Suchgefilterte Basis für alle Leads-Ansichten (Liste/Pipeline/Termine)
-function searchedLeads(){ var q=(S.search||'').trim(); return q ? S.leads.filter(function(l){return matchLead(l,q);}) : S.leads.slice(); }
+function searchedLeads(){
+  var q=(S.search||'').trim();
+  var pool = (S.region && S.region!=='alle') ? S.leads.filter(function(l){ return regionOf(l)===S.region; }) : S.leads;
+  return q ? pool.filter(function(l){return matchLead(l,q);}) : pool.slice();
+}
 function leadsForCount(q){ return S.leads.filter(function(l){return matchLead(l,q);}).length; }
 function searchBox(){
   var q=S.search||'';
@@ -1884,6 +1901,19 @@ function renderLeads(){
     list=leads.map(leadCard).join('');
   }
 
+  var nHam=S.leads.filter(function(l){return regionOf(l)==='hamburg';}).length;
+  var nHH=S.leads.length-nHam;
+  var regionbar = nHam ? ('<div class="bar">'+
+      '<button class="'+(S.region==='alle'?'on':'')+'" data-act="region" data-v="alle">Alle '+S.leads.length+'</button>'+
+      '<button class="'+(S.region==='harburg'?'on':'')+'" data-act="region" data-v="harburg">LK Harburg '+nHH+'</button>'+
+      '<button class="'+(S.region==='hamburg'?'on':'')+'" data-act="region" data-v="hamburg">⏸ Hamburg '+nHam+'</button>'+
+    '</div>') : '';
+  var regionhint = (nHam && S.region==='hamburg')
+    ? '<div class="section" style="border-style:dashed;border-color:var(--muted);margin-bottom:12px">'+
+        '<h3 style="color:var(--muted)">⏸ Hamburg – noch nicht erschlossen</h3>'+
+        '<span style="color:var(--muted);font-size:12px">Für Hamburg liegen noch keine EK-Preise vom Entsorger vor. Diese Leads erstmal parken – wieder aktiv, sobald das Gebiet erschlossen ist.</span></div>'
+    : '';
+
   var viewbar='<div class="bar">'+
     '<button class="'+(S.leadView==='list'?'on':'')+'" data-act="leadview" data-v="list">≣ Liste</button>'+
     '<button class="'+(S.leadView==='board'?'on':'')+'" data-act="leadview" data-v="board">▦ Pipeline</button>'+
@@ -1901,7 +1931,7 @@ function renderLeads(){
     '<h1 class="t">Leads</h1>'+
     '<div class="sub">'+S.leads.length+' gesamt · '+hot+' hot · '+eur(sum)+'/J Marge-Potenzial'+
       (q?' · <b>'+leadsForCount(q)+'</b> Treffer':'')+'</div>'+
-    searchBox()+viewbar+main+'</div>';
+    searchBox()+regionbar+viewbar+regionhint+main+'</div>';
 }
 function leadCard(l){
   var u=photoURL(l);
@@ -1920,6 +1950,7 @@ function leadCard(l){
         '<span class="tag">'+(containersOf(l).length>1 ? (containersOf(l).length+' Größen · '+l.anzahl+' Tonnen') : (l.volumen+'L ×'+l.anzahl))+'</span>'+
         (l.hot_lead?'<span class="tag hot">Hot</span>':'')+
         (l.duplikat?'<span class="tag">Dublette</span>':'')+
+        (regionOf(l)==='hamburg'?'<span class="tag paused">⏸ Hamburg</span>':'')+
         '<span class="tag fill">'+STATUS_LBL[l.status]+'</span>'+
         '<button class="tag" data-act="delquick" data-id="'+l.id+'" style="border-color:var(--hot);color:var(--hot)">✕</button>'+
         '<div class="scorebox"><div class="n">'+l.score+'</div><div class="l">Score</div></div>'+
@@ -3068,6 +3099,7 @@ document.addEventListener('click',function(e){
   // ---- CRM ----
   else if(act==='leadview'){ S.leadView=v; render(); }
   else if(act==='searchclear'){ S.search=''; renderLeads(); }
+  else if(act==='region'){ S.region=v; render(); }
   else if(act==='callresult'){ logCall(id,v); }
   else if(act==='setwv'){ setWV(id, v==='clear'?null:parseInt(v,10)); }
   else if(act==='setwvdate'){ setWVDate(id); }
