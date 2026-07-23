@@ -83,7 +83,7 @@ var FRAKTION = {
 var VOLUMEN = [120,240,660,1100];
 var STATUS = ['neu','kontaktiert','angebot','gewonnen','verloren'];
 var STATUS_LBL = { neu:'Neu', kontaktiert:'Kontakt', angebot:'Angebot', gewonnen:'Gewonnen', verloren:'Verloren' };
-var APP_VERSION = 'v62 · Markierungen: ✉ Vorstellung / 📅 Termin / 📄 Angebot verschickt · 🔁 Nachfass-Serie (eskalierende WV)';
+var APP_VERSION = 'v63 · Pipeline: eigene 📅 Termin-Spalte (vereinbarte Termine + offene Terminanfragen) · Markierungen · Nachfass-Serie';
 var WD = ['Sonntag','Montag','Dienstag','Mittwoch','Donnerstag','Freitag','Samstag'];
 // Places-Typen, die fast nie Gewerbekunden mit Tonne sind -> aus Route ausblenden
 var STOP_EXCLUDE = ['bus_stop','transit_station','locality','political','park','school',
@@ -1554,13 +1554,34 @@ function callCrmBlock(l){
     '</div>';
 }
 
-// Pipeline-Board (Pipedrive-Optik): Spalte je Status
+// Termin-Spalte: Lead hat einen vereinbarten Termin ODER eine offene Terminanfrage (Vorstellung/Einladung)
+function hasTermin(l){
+  if(l.status==='gewonnen'||l.status==='verloren') return false;
+  var o=outreach(l);
+  if(o.termin>0 || o.pitch>0) return true;                       // Termin gesendet / Vorstellung mit Buchungslink
+  return histOf(l).some(function(e){ return e.typ==='anruf' && /Termin vereinbart/i.test(e.text||''); });
+}
+// Board-Spalten: reguläre Status + eingeschobene virtuelle „Termin"-Spalte
+function boardColumns(){
+  return [
+    {key:'neu',         lbl:STATUS_LBL.neu},
+    {key:'kontaktiert', lbl:STATUS_LBL.kontaktiert},
+    {key:'termin',      lbl:'📅 Termin', virt:true},
+    {key:'angebot',     lbl:STATUS_LBL.angebot},
+    {key:'gewonnen',    lbl:STATUS_LBL.gewonnen},
+    {key:'verloren',    lbl:STATUS_LBL.verloren}
+  ];
+}
+// Pipeline-Board (Pipedrive-Optik): Spalte je Status + Termin-Sammelspalte
 function renderBoard(){
   var pool=searchedLeads();
-  return '<div class="board">'+ STATUS.map(function(s){
-    var ls=pool.filter(function(l){return l.status===s;}).sort(function(a,b){return b.score-a.score;});
+  return '<div class="board">'+ boardColumns().map(function(c){
+    var ls = c.virt
+      ? pool.filter(hasTermin)                                   // alle offenen Termine/Terminanfragen
+      : pool.filter(function(l){ return l.status===c.key && !hasTermin(l); });  // Termin-Leads nur in der Termin-Spalte
+    ls.sort(function(a,b){return b.score-a.score;});
     var sum=ls.reduce(function(a,l){return a+(kalkulation(l).ersparnis_jahr||0);},0);
-    return '<div class="bcol" data-status="'+s+'"><div class="bch"><span>'+STATUS_LBL[s]+' · '+ls.length+'</span>'+
+    return '<div class="bcol'+(c.virt?' termin':'')+'" data-status="'+c.key+'"><div class="bch"><span>'+c.lbl+' · '+ls.length+'</span>'+
       '<span class="bsum">'+eur(sum)+'/J</span></div>'+
       '<div class="bcards">'+ (ls.length?ls.map(boardCard).join(''):'<div class="bempty">—</div>') +'</div>'+
     '</div>';
@@ -1689,16 +1710,12 @@ function renderLeads(){
     list=leads.map(leadCard).join('');
   }
 
-  var due=agendaLeads().filter(function(l){return l.wiedervorlage<=todayISO();}).length;
   var viewbar='<div class="bar">'+
     '<button class="'+(S.leadView==='list'?'on':'')+'" data-act="leadview" data-v="list">≣ Liste</button>'+
     '<button class="'+(S.leadView==='board'?'on':'')+'" data-act="leadview" data-v="board">▦ Pipeline</button>'+
-    '<button class="'+(S.leadView==='termin'?'on':'')+'" data-act="leadview" data-v="termin">📅 Termine'+(due?' <b>'+due+'</b>':'')+'</button>'+
     '</div>';
 
-  var main = (S.leadView==='board') ? renderBoard()
-           : (S.leadView==='termin') ? renderAgenda()
-           : (bar+sortbar+list);
+  var main = (S.leadView==='board') ? renderBoard() : (bar+sortbar+list);
 
   $app.innerHTML='<div class="screen'+(S.leadView==='board'?' board-screen':'')+'">'+
     '<h1 class="t">Leads</h1>'+
@@ -2943,7 +2960,8 @@ function boardUp(){
   if(d.card) d.card.classList.remove('bghost');
   if(d.moved && d.to){
     var l=S.leads.find(function(x){return x.id===d.id;});
-    if(l && l.status!==d.to){ advanceStatus(d.id,d.to); }   // setzt Status + Historie + speichert + render
+    // „Termin" ist eine virtuelle Sammelspalte, kein Status -> nicht als Statuswechsel behandeln
+    if(l && STATUS.indexOf(d.to)>=0 && l.status!==d.to){ advanceStatus(d.id,d.to); }
     else render();
     boardDrag=null;                                         // sofort freigeben (kein Sheet-Öffnen)
   } else {
