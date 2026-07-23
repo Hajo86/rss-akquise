@@ -83,7 +83,7 @@ var FRAKTION = {
 var VOLUMEN = [120,240,660,1100];
 var STATUS = ['neu','kontaktiert','angebot','gewonnen','verloren'];
 var STATUS_LBL = { neu:'Neu', kontaktiert:'Kontakt', angebot:'Angebot', gewonnen:'Gewonnen', verloren:'Verloren' };
-var APP_VERSION = 'v66 · Einheitliche E-Mail-Signatur (Sören Rohde, Firma, Tel.) in allen Mails · Ghost-Follow-up mit Name + Telefon';
+var APP_VERSION = 'v67 · Kurzvorstellung hängt One-Pager als PDF an (statt HTML), HTML als Fallback';
 var WD = ['Sonntag','Montag','Dienstag','Mittwoch','Donnerstag','Freitag','Samstag'];
 // Places-Typen, die fast nie Gewerbekunden mit Tonne sind -> aus Route ausblenden
 var STOP_EXCLUDE = ['bus_stop','transit_station','locality','political','park','school',
@@ -1565,6 +1565,16 @@ function pitchText(l){
     +'Ihren Wunschtermin buchen Sie direkt hier:\n'+bookingURL()+'\n(die Meet-Einladung kommt automatisch mit der Buchung.)\n\n'
     +signatur();
 }
+// One-Pager-PDF (base64-Data-URI aus onepager-pdf.js) in eine anhängbare Datei wandeln
+function onepagerPDFFile(){
+  try{
+    if(typeof RSS_ONEPAGER_PDF==='undefined' || !RSS_ONEPAGER_PDF) return null;
+    var b64=RSS_ONEPAGER_PDF.split(',')[1]; if(!b64) return null;
+    var bin=atob(b64), len=bin.length, arr=new Uint8Array(len);
+    for(var i=0;i<len;i++) arr[i]=bin.charCodeAt(i);
+    return new File([arr],'RSS-Kurzvorstellung.pdf',{type:'application/pdf'});
+  }catch(e){ return null; }
+}
 async function sharePitch(id){
   var l=S.leads.find(function(x){return x.id===id;}); if(!l) return;
   var text=pitchText(l);
@@ -1575,11 +1585,14 @@ async function sharePitch(id){
     if(msg) toast(msg); renderSheet();
   };
   try{
-    if(typeof RSS_ONEPAGER!=='undefined' && RSS_ONEPAGER && navigator.canShare){
-      var file=new File([RSS_ONEPAGER],'RSS-Vorstellung.html',{type:'text/html'});
-      if(navigator.canShare({files:[file]})){
+    if(navigator.canShare){
+      // One-Pager als PDF bevorzugt (öffnet beim Kunden überall sauber), HTML als Fallback
+      var file=onepagerPDFFile() ||
+        (typeof RSS_ONEPAGER!=='undefined' && RSS_ONEPAGER ? new File([RSS_ONEPAGER],'RSS-Vorstellung.html',{type:'text/html'}) : null);
+      if(file && navigator.canShare({files:[file]})){
         await navigator.share({ files:[file], title:'RSS – Kurzvorstellung', text:text });
-        done('Vorstellung geteilt · WV +4', 'Vorstellung + Terminlink gesendet (One-Pager angehängt)'); return;
+        var fmt=/\.pdf$/i.test(file.name)?'PDF':'HTML';
+        done('Vorstellung geteilt · WV +4', 'Vorstellung + Terminlink gesendet (One-Pager als '+fmt+' angehängt)'); return;
       }
     }
   }catch(e){ if(e && e.name==='AbortError'){ renderSheet(); return; } }
