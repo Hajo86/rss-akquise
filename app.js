@@ -83,7 +83,7 @@ var FRAKTION = {
 var VOLUMEN = [120,240,660,1100];
 var STATUS = ['neu','kontaktiert','angebot','gewonnen','verloren'];
 var STATUS_LBL = { neu:'Neu', kontaktiert:'Kontakt', angebot:'Angebot', gewonnen:'Gewonnen', verloren:'Verloren' };
-var APP_VERSION = 'v58 · Sync ohne Datenverlust: Historie wird vereinigt (nicht überschrieben); Gesprächsnotiz speichert auch beim Verlassen';
+var APP_VERSION = 'v59 · „Vorstellung + Termin senden": Pitch-Mail (Wer wir sind) + One-Pager-Anhang + Buchungslink';
 var WD = ['Sonntag','Montag','Dienstag','Mittwoch','Donnerstag','Freitag','Samstag'];
 // Places-Typen, die fast nie Gewerbekunden mit Tonne sind -> aus Route ausblenden
 var STOP_EXCLUDE = ['bus_stop','transit_station','locality','political','park','school',
@@ -1426,6 +1426,47 @@ async function shareTermin(id){
   done('Termin: .ics gespeichert + Mailentwurf');
 }
 
+// Vorstellungs-/Pitch-Mail („Wer wir sind") + Buchungslink für einen Video-Termin, One-Pager als Anhang
+function pitchText(l){
+  return 'Kurzvorstellung RSS + Terminbuchung\n\n'
+    +apAnrede(l)+'\n\n'
+    +'vielen Dank für das nette Telefonat. Kurz, wer wir sind und wie wir Ihnen helfen:\n\n'
+    +'RSS – Recycling Solution Service aus dem Landkreis Harburg stellt Ihre gewerbliche '
+    +'Abfallentsorgung auf einen günstigeren Anbieter um – meist rund 10 % unter Ihrem heutigen Tarif. '
+    +'Im Betriebsalltag ändert sich nichts: gleicher Abfuhrrhythmus, gleiche Behälter, die Pflichttonne '
+    +'bleibt beim Landkreis. Ihr Aufwand: eine Unterschrift – Anmeldung und Umstellung übernehmen wir.\n\n'
+    +'Eine Kurzvorstellung finden Sie im Anhang.\n\n'
+    +'So kommen wir zur konkreten Zahl für Ihren Betrieb – eines von beidem genügt:\n'
+    +'• Sie antworten mit Ihren aktuellen Gebührenbescheiden / Entsorgungsrechnungen, oder\n'
+    +'• wir machen einen kurzen Video-Termin (ca. 20 Min, Google Meet).\n\n'
+    +'Ihren Wunschtermin buchen Sie direkt hier:\n'+bookingURL()+'\n(die Meet-Einladung kommt automatisch mit der Buchung.)\n\n'
+    +'Beste Grüße\n'+RSS_ABSENDER.gf+'\n'+RSS_ABSENDER.firma+' '+RSS_ABSENDER.zusatz+'\n'
+    +RSS_ABSENDER.strasse+' · '+RSS_ABSENDER.ort+'\n'
+    +'Tel. '+RSS_ABSENDER.tel+' · '+RSS_ABSENDER.mail;
+}
+async function sharePitch(id){
+  var l=S.leads.find(function(x){return x.id===id;}); if(!l) return;
+  var text=pitchText(l);
+  var done=function(msg,note){
+    if(l.status==='neu') l.status='kontaktiert';
+    pushHist(l,'mail',note); ensureFollowup(l,4);
+    l.updated_at=Date.now(); dbPut(stripRuntime(l)).then(function(){ syncLead(l); });
+    if(msg) toast(msg); renderSheet();
+  };
+  try{
+    if(typeof RSS_ONEPAGER!=='undefined' && RSS_ONEPAGER && navigator.canShare){
+      var file=new File([RSS_ONEPAGER],'RSS-Vorstellung.html',{type:'text/html'});
+      if(navigator.canShare({files:[file]})){
+        await navigator.share({ files:[file], title:'RSS – Kurzvorstellung', text:text });
+        done('Vorstellung geteilt · WV +4', 'Vorstellung + Terminlink gesendet (One-Pager angehängt)'); return;
+      }
+    }
+  }catch(e){ if(e && e.name==='AbortError'){ renderSheet(); return; } }
+  // Fallback (Desktop / kein Datei-Teilen): Mailentwurf mit Text + Buchungslink
+  window.location.href='mailto:'+encodeURIComponent(apMail(l))+'?subject='+encodeURIComponent('Kurzvorstellung RSS + Terminbuchung')+'&body='+encodeURIComponent(text);
+  done('Mailentwurf geöffnet · Terminlink im Text', 'Vorstellung + Terminlink gesendet (Desktop-Mailentwurf)');
+}
+
 // Kontakt-Historie/Timeline im Lead-Sheet
 function historieBlock(l){
   var h=histOf(l).slice().sort(function(a,b){return b.ts-a.ts;});
@@ -2118,7 +2159,11 @@ function renderSheet(){
         '<div class="statusgrid">'+ STATUS.map(function(s){
           return '<button class="'+(l.status===s?'on':'')+'" data-act="status" data-id="'+l.id+'" data-v="'+s+'">'+STATUS_LBL[s]+'</button>';
         }).join('')+'</div>'+
-        callCrmBlock(l)+ historieBlock(l)+ terminBlock(l)
+        callCrmBlock(l)+ historieBlock(l)+
+        '<span class="lab">Vorstellung / Erstkontakt</span>'+
+        '<button class="cta" data-act="pitch" data-id="'+l.id+'">✉ Vorstellung + Termin senden</button>'+
+        '<div class="note" style="margin-top:4px">Kurzvorstellung „Wer wir sind" (One-Pager als Anhang) + Buchungslink für einen Video-Termin.</div>'+
+        terminBlock(l)
       ) : tab==='angebot' ? (
         // ==== TAB: ANGEBOT ====
         offerBox(l)+
@@ -2707,6 +2752,7 @@ document.addEventListener('click',function(e){
   else if(act==='anreichern'){ enrichImpressum(id); }
   else if(act==='shareangebot'){ shareAngebot(id); }
   else if(act==='termin'){ shareTermin(id); }
+  else if(act==='pitch'){ sharePitch(id); }
   else if(act==='openoffer'){ var lo=S.leads.find(function(x){return x.id===id;}); if(lo) openAngebotDoc(angebotSnapshot(lo)); }
   else if(act==='advance'){ advanceStatus(id,v); }
   else if(act==='delhist'){ delHist(id,v); }

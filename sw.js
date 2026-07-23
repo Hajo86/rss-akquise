@@ -1,10 +1,11 @@
 /* RSS Akquise — Service Worker: App-Shell-Cache für Offline-Start */
-var CACHE = 'rss-akquise-v58';
+var CACHE = 'rss-akquise-v59';
 var SHELL = [
   './',
   './index.html',
   './app.js',
   './rss-logo.js',
+  './onepager.js',
   './vendor/jspdf.umd.min.js',
   './manifest.json',
   './data/gemeinden.json',
