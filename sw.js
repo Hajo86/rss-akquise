@@ -13,6 +13,9 @@ var SHELL = [
   './data/abfuhr-seevetal.json'
 ];
 
+// Seite kann den wartenden Worker sofort aktivieren lassen
+self.addEventListener('message', function(e){ if(e.data==='skipWaiting') self.skipWaiting(); });
+
 self.addEventListener('install', function(e){
   e.waitUntil(caches.open(CACHE).then(function(c){
     return Promise.all(SHELL.map(function(u){

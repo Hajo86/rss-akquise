@@ -424,10 +424,22 @@ if('serviceWorker' in navigator){
     if(_refreshing) return; _refreshing=true; location.reload();   // neuer Stand -> einmal neu laden
   });
   window.addEventListener('load',function(){
-    navigator.serviceWorker.register('sw.js').then(function(reg){
-      reg.update();
-      setInterval(function(){ reg.update(); }, 60*60*1000);  // stündlich auf Updates prüfen
+    // updateViaCache:'none' -> sw.js wird nie aus dem HTTP-Cache geladen, Update wird zuverlässig erkannt
+    navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).then(function(reg){
+      var check=function(){ reg.update().catch(function(){}); };
+      check();
+      setInterval(check, 30*60*1000);                              // regelmäßig prüfen
+      // Wartenden neuen Worker sofort aktivieren (löst controllerchange -> reload aus)
+      var poke=function(w){ if(w) w.postMessage&&w.postMessage('skipWaiting'); };
+      poke(reg.waiting);
+      reg.addEventListener('updatefound',function(){ var nw=reg.installing; if(nw) nw.addEventListener('statechange',function(){ if(nw.state==='installed') poke(reg.waiting); }); });
     }).catch(function(){});
+    // Beim Zurückholen der App in den Vordergrund (iOS-PWA lädt sonst nicht neu) auf Update prüfen
+    document.addEventListener('visibilitychange',function(){
+      if(document.visibilityState==='visible'){
+        navigator.serviceWorker.getRegistration().then(function(reg){ if(reg) reg.update().catch(function(){}); });
+      }
+    });
   });
 }
 </script>
