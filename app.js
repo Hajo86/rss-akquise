@@ -83,7 +83,7 @@ var FRAKTION = {
 var VOLUMEN = [120,240,660,1100];
 var STATUS = ['neu','kontaktiert','angebot','gewonnen','verloren'];
 var STATUS_LBL = { neu:'Neu', kontaktiert:'Kontakt', angebot:'Angebot', gewonnen:'Gewonnen', verloren:'Verloren' };
-var APP_VERSION = 'v69 · Gebiets-Filter: Hamburg-Leads (noch nicht erschlossen) markiert + separat filterbar (Alle · LK Harburg · ⏸ Hamburg)';
+var APP_VERSION = 'v70 · Gebiets-Filter Hamburg/LK Harburg · Kurzvorstellung: klarerer Einstieg („wie besprochen … Kurzvorstellung"), Betreff-Dopplung raus';
 var WD = ['Sonntag','Montag','Dienstag','Mittwoch','Donnerstag','Freitag','Samstag'];
 // Places-Typen, die fast nie Gewerbekunden mit Tonne sind -> aus Route ausblenden
 var STOP_EXCLUDE = ['bus_stop','transit_station','locality','political','park','school',
@@ -1568,14 +1568,13 @@ async function shareTermin(id){
 
 // Vorstellungs-/Pitch-Mail („Wer wir sind") + Buchungslink für einen Video-Termin, One-Pager als Anhang
 function pitchText(l){
-  return 'Kurzvorstellung RSS + Terminbuchung\n\n'
-    +apAnrede(l)+'\n\n'
-    +'vielen Dank für das nette Telefonat. Kurz, wer wir sind und wie wir Ihnen helfen:\n\n'
+  return apAnrede(l)+'\n\n'
+    +'vielen Dank für das nette Telefonat. Wie besprochen schicke ich Ihnen hiermit eine Kurzvorstellung unseres Unternehmens RSS:\n\n'
     +'RSS – Recycling Solution Service aus dem Landkreis Harburg stellt Ihre gewerbliche '
     +'Abfallentsorgung auf einen günstigeren Anbieter um – meist rund 10 % unter Ihrem heutigen Tarif. '
     +'Im Betriebsalltag ändert sich nichts: gleicher Abfuhrrhythmus, gleiche Behälter, die Pflichttonne '
     +'bleibt beim Landkreis. Ihr Aufwand: eine Unterschrift – Anmeldung und Umstellung übernehmen wir.\n\n'
-    +'Eine Kurzvorstellung finden Sie im Anhang.\n\n'
+    +'Die wichtigsten Punkte finden Sie kompakt im angehängten One-Pager.\n\n'
     +'So kommen wir zur konkreten Zahl für Ihren Betrieb – eines von beidem genügt:\n'
     +'• Sie antworten mit Ihren aktuellen Gebührenbescheiden / Entsorgungsrechnungen, oder\n'
     +'• wir machen einen kurzen Video-Termin (ca. 20 Min, Google Meet).\n\n'
