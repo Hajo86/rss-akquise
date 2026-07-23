@@ -83,7 +83,7 @@ var FRAKTION = {
 var VOLUMEN = [120,240,660,1100];
 var STATUS = ['neu','kontaktiert','angebot','gewonnen','verloren'];
 var STATUS_LBL = { neu:'Neu', kontaktiert:'Kontakt', angebot:'Angebot', gewonnen:'Gewonnen', verloren:'Verloren' };
-var APP_VERSION = 'v64 · Anreicherung 2.0: besserer Impressum-Leser (r.jina.ai + schema.org, mehr Seiten), Places-Telefon, Stapel-Anreicherung';
+var APP_VERSION = 'v65 · E-Mail-Vorlagen (Sales-Baukasten): Ghost-Follow-up „Unser Meeting" mit Situations-Variante, Anrede/Absender automatisch';
 var WD = ['Sonntag','Montag','Dienstag','Mittwoch','Donnerstag','Freitag','Samstag'];
 // Places-Typen, die fast nie Gewerbekunden mit Tonne sind -> aus Route ausblenden
 var STOP_EXCLUDE = ['bus_stop','transit_station','locality','political','park','school',
@@ -1585,6 +1585,55 @@ async function sharePitch(id){
   done('Mailentwurf geöffnet · Terminlink im Text', 'Vorstellung + Terminlink gesendet (Desktop-Mailentwurf)');
 }
 
+/* ---------- E-Mail-Vorlagen (Sales-Baukasten) ----------
+   Datengetrieben: neue Vorlage = ein Eintrag. Öffnet Mailentwurf mit Betreff+Text,
+   protokolliert, setzt Status + Wiedervorlage. Platzhalter (Anrede/Absender) automatisch. */
+function anredeHallo(l){ return l.ap_name ? ('Hallo '+l.ap_name+',') : 'Hallo,'; }
+var TEMPLATES=[
+  { id:'ghost', name:'Ghost-Follow-up', desc:'Reaktivierung nach Funkstille · Betreff „Unser Meeting"',
+    betreff:'Unser Meeting', wv:4, badge:'Ghost-Follow-up',
+    variants:[{k:'termin',lbl:'nach Termin'},{k:'angebot',lbl:'nach Angebot'},{k:'telefon',lbl:'nach Telefonat'}],
+    autoVariant:function(l){ var o=outreach(l); return o.termin>0?'termin':(o.angebot>0?'angebot':'telefon'); },
+    body:function(l,v){
+      var line = v==='termin'  ? 'nach unserem Termin letzte Woche ein paar Mal versucht, Sie zu erreichen, und Ihnen zwei kurze Nachrichten hinterlassen'
+               : v==='angebot' ? 'Ihnen letzte Woche ein Angebot geschickt und danach mehrmals versucht, Sie zu erreichen'
+               :                  'seit unserem Telefonat letzte Woche ein paar Mal versucht, Sie zu erreichen';
+      return anredeHallo(l)+'\n\n'
+        +'ich habe '+line+' – aber bisher nichts von Ihnen gehört.\n\n'
+        +'Wie machen wir hier weiter?\n\n'
+        +'Grüße\n'+RSS_ABSENDER.gf;
+    } }
+];
+function tplById(id){ return TEMPLATES.filter(function(t){return t.id===id;})[0]; }
+function sendTemplate(id, tplId, variant){
+  var l=S.leads.find(function(x){return x.id===id;}); if(!l) return;
+  var t=tplById(tplId); if(!t) return;
+  var v = (t.variants && t.variants.length) ? (variant || (t.autoVariant?t.autoVariant(l):t.variants[0].k)) : null;
+  var vlbl = v && t.variants ? (t.variants.filter(function(x){return x.k===v;})[0]||{}).lbl : '';
+  var betreff=t.betreff, body=t.body(l,v);
+  window.location.href='mailto:'+encodeURIComponent(apMail(l))+'?subject='+encodeURIComponent(betreff)+'&body='+encodeURIComponent(body);
+  if(l.status==='neu') l.status='kontaktiert';
+  if(t.wv!=null) l.wiedervorlage=isoPlusDays(t.wv);
+  pushHist(l,'mail','Vorlage „'+t.name+'"'+(vlbl?(' ('+vlbl+')'):'')+' gesendet'+(apMail(l)?(' → '+apMail(l)):'')+(t.wv!=null?(' · WV '+wvLabel(l.wiedervorlage)):''));
+  l.updated_at=Date.now(); dbPut(stripRuntime(l)).then(function(){ syncLead(l); });
+  renderSheet(); if(S.tab!=='leads') render();
+  toast('✉ '+t.name+' – Mailentwurf geöffnet'+(apMail(l)?'':' (Empfänger eintragen)'));
+}
+function templatesBlock(l){
+  return '<span class="lab">E-Mail-Vorlagen</span>'+
+    TEMPLATES.map(function(t){
+      var auto = t.autoVariant?t.autoVariant(l):null;
+      var opts = (t.variants&&t.variants.length)
+        ? '<div class="tplvars">'+ t.variants.map(function(vv){
+            return '<button class="'+(vv.k===auto?'on':'')+'" data-act="tpl" data-id="'+l.id+'" data-tpl="'+t.id+'" data-var="'+vv.k+'">'+esc(vv.lbl)+'</button>';
+          }).join('')+'</div>'
+        : '<button class="cta ghost" data-act="tpl" data-id="'+l.id+'" data-tpl="'+t.id+'">✉ '+esc(t.name)+' senden</button>';
+      return '<div class="tplcard"><div class="tplname">✉ '+esc(t.name)+'</div>'+
+        '<div class="note">'+esc(t.desc)+(auto?(' · Vorschlag: <b>'+esc((t.variants.filter(function(x){return x.k===auto;})[0]||{}).lbl||'')+'</b>'):'')+'</div>'+
+        opts+'</div>';
+    }).join('');
+}
+
 // Kontakt-Historie/Timeline im Lead-Sheet
 function historieBlock(l){
   var h=histOf(l).slice().sort(function(a,b){return b.ts-a.ts;});
@@ -2415,6 +2464,7 @@ function renderSheet(){
         '<span class="lab">Vorstellung / Erstkontakt</span>'+
         '<button class="cta" data-act="pitch" data-id="'+l.id+'">✉ Vorstellung + Termin senden</button>'+
         '<div class="note" style="margin-top:4px">Kurzvorstellung „Wer wir sind" (One-Pager als Anhang) + Buchungslink für einen Video-Termin.</div>'+
+        templatesBlock(l)+
         terminBlock(l)
       ) : tab==='angebot' ? (
         // ==== TAB: ANGEBOT ====
@@ -3009,6 +3059,7 @@ document.addEventListener('click',function(e){
   else if(act==='shareangebot'){ shareAngebot(id); }
   else if(act==='termin'){ shareTermin(id); }
   else if(act==='pitch'){ sharePitch(id); }
+  else if(act==='tpl'){ sendTemplate(id, t.dataset.tpl, t.dataset.var); }
   else if(act==='openoffer'){ var lo=S.leads.find(function(x){return x.id===id;}); if(lo) openAngebotDoc(angebotSnapshot(lo)); }
   else if(act==='advance'){ advanceStatus(id,v); }
   else if(act==='delhist'){ delHist(id,v); }
