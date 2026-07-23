@@ -133,6 +133,15 @@ input.txt{width:100%;border:1.5px solid var(--ink);padding:12px}
   padding:2px 6px;text-transform:uppercase}
 
 /* Leads list */
+/* ===== Outreach-Markierungen (Vorstellung/Termin/Angebot/Nachfass) ===== */
+.obadges{display:flex;flex-wrap:wrap;gap:5px;margin:6px 0 2px}
+.obadge{font-size:10px;font-weight:800;letter-spacing:.03em;padding:3px 7px;border:1.5px solid var(--ink);
+  border-radius:2px;white-space:nowrap}
+.obadge.pitch{background:var(--ink);color:var(--paper)}
+.obadge.termin{border-color:var(--ink)}
+.obadge.angebot{background:var(--ink);color:var(--paper)}
+.obadge.nachfass{border-color:var(--hot);color:var(--hot)}
+.bcard .obadges{margin:4px 0 0}
 .searchbar{display:flex;gap:6px;align-items:center;margin-bottom:12px}
 .searchbar input.txt{flex:1;padding:10px 12px;font-size:14px}
 .searchbar button{flex:none;border:1.5px solid var(--ink);width:40px;height:40px;font-size:20px;font-weight:800;background:var(--paper);line-height:1}

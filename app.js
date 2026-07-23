@@ -83,7 +83,7 @@ var FRAKTION = {
 var VOLUMEN = [120,240,660,1100];
 var STATUS = ['neu','kontaktiert','angebot','gewonnen','verloren'];
 var STATUS_LBL = { neu:'Neu', kontaktiert:'Kontakt', angebot:'Angebot', gewonnen:'Gewonnen', verloren:'Verloren' };
-var APP_VERSION = 'v61 · Lead-Suche (Firma/Ort/Ansprechpartner/Tel) in Liste, Pipeline & Terminen';
+var APP_VERSION = 'v62 · Markierungen: ✉ Vorstellung / 📅 Termin / 📄 Angebot verschickt · 🔁 Nachfass-Serie (eskalierende WV)';
 var WD = ['Sonntag','Montag','Dienstag','Mittwoch','Donnerstag','Freitag','Samstag'];
 // Places-Typen, die fast nie Gewerbekunden mit Tonne sind -> aus Route ausblenden
 var STOP_EXCLUDE = ['bus_stop','transit_station','locality','political','park','school',
@@ -1495,15 +1495,54 @@ function historieBlock(l){
     '<button class="chip" data-act="addhist" data-id="'+l.id+'">+ Notiz</button></div>';
 }
 // Anruf-Ergebnis-Schnellauswahl + Wiedervorlage-Buttons
+/* ---------- Outreach-Meilensteine (Markierungen) + Nachfass-Serie (Wiederholung) ---------- */
+// Aus der Historie ableiten, was schon rausgegangen ist (synchronisiert sich mit, da Historie geteilt wird)
+function outreach(l){
+  var o={pitch:0,termin:0,angebot:0,nachfass:0,last:0};
+  histOf(l).forEach(function(e){
+    var t=e.text||'', ts=e.ts||0;
+    if(/Vorstellung/i.test(t)){ o.pitch++; if(ts>o.last)o.last=ts; }
+    if(/Termin vorgeschlagen/i.test(t)){ o.termin++; if(ts>o.last)o.last=ts; }
+    if(e.typ==='mail' && /Angebot/i.test(t)){ o.angebot++; if(ts>o.last)o.last=ts; }
+    if(/Nachgefasst/i.test(t)) o.nachfass++;
+  });
+  return o;
+}
+function outreachBadges(l){
+  var o=outreach(l), b=[];
+  if(o.pitch)   b.push('<span class="obadge pitch">✉ Vorstellung'+(o.pitch>1?' '+o.pitch+'×':'')+'</span>');
+  if(o.termin)  b.push('<span class="obadge termin">📅 Termin'+(o.termin>1?' '+o.termin+'×':'')+'</span>');
+  if(o.angebot) b.push('<span class="obadge angebot">📄 Angebot'+(o.angebot>1?' '+o.angebot+'×':'')+'</span>');
+  if(o.nachfass)b.push('<span class="obadge nachfass">🔁 '+o.nachfass+'× nachgefasst</span>');
+  return b.length ? '<div class="obadges">'+b.join('')+'</div>' : '';
+}
+// Nachfass-Serie: Wiedervorlage in eskalierenden Abständen neu setzen, bis gebucht/abgesagt
+var NACHFASS_KADENZ=[3,7,14,30];
+function logNachfass(id){
+  var l=S.leads.find(function(x){return x.id===id;}); if(!l) return;
+  var n=outreach(l).nachfass;
+  var days=NACHFASS_KADENZ[Math.min(n,NACHFASS_KADENZ.length-1)];
+  l.wiedervorlage=isoPlusDays(days);
+  if(l.status==='neu') l.status='kontaktiert';
+  pushHist(l,'notiz',(n+1)+'. Nachgefasst · nächste WV '+wvLabel(l.wiedervorlage));
+  crmSave(l,'Nachgefasst ('+(n+1)+'×) · WV '+wvLabel(l.wiedervorlage)); renderSheet(); if(S.tab!=='leads') render();
+}
 function callCrmBlock(l){
   var wv = l.wiedervorlage
     ? '<div class="wvrow'+(wvDue(l)?' due':'')+'">Wiedervorlage: <b>'+wvLabel(l.wiedervorlage)+'</b>'+(wvDue(l)?' · FÄLLIG':'')+
         ' <button data-act="setwv" data-id="'+l.id+'" data-v="clear">×</button></div>'
     : '';
-  return '<span class="lab">Anruf-Ergebnis loggen</span>'+
+  var o=outreach(l);
+  var serie = (o.pitch||o.angebot||o.termin)
+    ? '<button class="cta ghost" data-act="nachfass" data-id="'+l.id+'" style="margin-bottom:8px">🔁 Nachfassen'+
+        (o.nachfass?(' · bereits '+o.nachfass+'×'):'')+' (WV neu +'+NACHFASS_KADENZ[Math.min(o.nachfass,NACHFASS_KADENZ.length-1)]+' T)</button>'
+    : '';
+  return (outreachBadges(l)||'')+
+    '<span class="lab">Anruf-Ergebnis loggen</span>'+
     '<div class="callgrid">'+ CALL_OUTCOMES.map(function(o){
       return '<button data-act="callresult" data-id="'+l.id+'" data-v="'+o.k+'">'+o.lbl+'</button>';
     }).join('')+'</div>'+
+    serie+
     wv+
     '<div class="wvset"><span>Wiedervorlage:</span>'+
       [['+1 T',1],['+4 T',4],['+7 T',7],['+14 T',14],['+30 T',30]].map(function(p){
@@ -1535,6 +1574,7 @@ function boardCard(l){
     '<div class="bmeta"><span class="bscore">'+l.score+'</span>'+
       '<span class="bsav">'+eur(kalkulation(l).ersparnis_jahr)+'/J</span></div>'+
     '<div class="bcontact">'+contactBadge(l)+'</div>'+
+    outreachBadges(l)+
     (l.wiedervorlage?'<div class="bwv'+(wvDue(l)?' due':'')+'">WV '+wvLabel(l.wiedervorlage)+'</div>':'')+
   '</div>';
 }
@@ -1551,6 +1591,7 @@ function agendaCard(l){
       contactBadge(l)+
       (l.telefon?'<span class="tag">☎ '+esc(l.telefon)+'</span>':'')+
       '<div class="scorebox"><div class="n">'+l.score+'</div><div class="l">Score</div></div></div>'+
+      outreachBadges(l)+
     '</div></div>';
 }
 function renderAgenda(){
@@ -1686,6 +1727,7 @@ function leadCard(l){
         '<button class="tag" data-act="delquick" data-id="'+l.id+'" style="border-color:var(--hot);color:var(--hot)">✕</button>'+
         '<div class="scorebox"><div class="n">'+l.score+'</div><div class="l">Score</div></div>'+
       '</div>'+
+      outreachBadges(l)+
       '<div class="sync">'+syncTxt+' · Marge '+eur(_kk.rss_marge_jahr)+'/J · Kunde spart '+eur(_kk.ersparnis_jahr)+'/J</div>'+
     '</div>'+
   '</div>';
@@ -2831,6 +2873,7 @@ document.addEventListener('click',function(e){
   else if(act==='callresult'){ logCall(id,v); }
   else if(act==='setwv'){ setWV(id, v==='clear'?null:parseInt(v,10)); }
   else if(act==='setwvdate'){ setWVDate(id); }
+  else if(act==='nachfass'){ logNachfass(id); }
   else if(act==='addhist'){ addHistNote(id); }
   else if(act==='mailoffer'){ mailOffer(id); }
   else if(act==='anreichern'){ enrichImpressum(id); }
