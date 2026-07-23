@@ -83,7 +83,7 @@ var FRAKTION = {
 var VOLUMEN = [120,240,660,1100];
 var STATUS = ['neu','kontaktiert','angebot','gewonnen','verloren'];
 var STATUS_LBL = { neu:'Neu', kontaktiert:'Kontakt', angebot:'Angebot', gewonnen:'Gewonnen', verloren:'Verloren' };
-var APP_VERSION = 'v65 · E-Mail-Vorlagen (Sales-Baukasten): Ghost-Follow-up „Unser Meeting" mit Situations-Variante, Anrede/Absender automatisch';
+var APP_VERSION = 'v66 · Einheitliche E-Mail-Signatur (Sören Rohde, Firma, Tel.) in allen Mails · Ghost-Follow-up mit Name + Telefon';
 var WD = ['Sonntag','Montag','Dienstag','Mittwoch','Donnerstag','Freitag','Samstag'];
 // Places-Typen, die fast nie Gewerbekunden mit Tonne sind -> aus Route ausblenden
 var STOP_EXCLUDE = ['bus_stop','transit_station','locality','political','park','school',
@@ -179,6 +179,16 @@ var RSS_ABSENDER = {
   mail:'rohde@rss-entsorgung.de',
   web:'rss-entsorgung.de'
 };
+// Einheitliche E-Mail-Signatur (in allen E-Mails außer dem bewusst minimalen Ghost-Follow-up)
+function signatur(gruss){
+  var A=RSS_ABSENDER;
+  return (gruss||'Mit freundlichen Grüßen')+'\n\n'
+    +A.gf+'\n'
+    +'Geschäftsführer · '+A.firma+' '+A.zusatz+'\n'
+    +A.strasse+' · '+A.ort+'\n'
+    +'Tel. '+A.tel+'\n'
+    +A.mail+' · '+A.web;
+}
 // Termin/Video-Standard (RSS-Google-Konto). In Setup pro Gerät überschreibbar.
 var RSS_TERMIN = {
   booking:'https://calendar.app.google/8aMLyBSo6RnzC26P8',
@@ -1415,11 +1425,7 @@ function mailOffer(id){
     +'Wir übernehmen die komplette gewerbliche Restabfallentsorgung; die gesetzliche '
     +'Pflichttonne verbleibt beim Landkreis. Ein Ansprechpartner, kein Umstellungsaufwand.\n\n'
     +'Antworten Sie einfach auf diese Mail oder rufen Sie uns an – wir richten alles ein.\n\n'
-    +'Mit freundlichen Grüßen\n'
-    +RSS_ABSENDER.gf+'\n'
-    +RSS_ABSENDER.firma+' '+RSS_ABSENDER.zusatz+'\n'
-    +RSS_ABSENDER.strasse+' · '+RSS_ABSENDER.ort+'\n'
-    +'Tel. '+RSS_ABSENDER.tel+' · '+RSS_ABSENDER.mail;
+    +signatur();
   var href='mailto:'+encodeURIComponent(apMail(l))
     +'?subject='+encodeURIComponent(subj)+'&body='+encodeURIComponent(body);
   window.location.href=href;
@@ -1439,8 +1445,7 @@ function shareText(l){
     +'Wir übernehmen die komplette gewerbliche Restabfallentsorgung; die gesetzliche Pflichttonne '
     +'verbleibt beim Landkreis. Ein Ansprechpartner, kein Umstellungsaufwand.\n\n'
     +'Bei Fragen einfach antworten oder anrufen.\n\n'
-    +'Mit freundlichen Grüßen\n'+RSS_ABSENDER.gf+'\n'+RSS_ABSENDER.firma+' '+RSS_ABSENDER.zusatz+'\n'
-    +'Tel. '+RSS_ABSENDER.tel+' · '+RSS_ABSENDER.mail;
+    +signatur();
 }
 function angebotDateiname(l,ext){
   var f=(l.firmenname||'Angebot').replace(/[^0-9A-Za-zäöüÄÖÜß ._-]/g,'').replace(/\s+/g,'-').slice(0,40)||'Angebot';
@@ -1522,7 +1527,7 @@ async function shareTermin(id){
     +'Der Termin liegt als Kalender-Datei bei.'
     +(meet?('\nPer Video: '+meet):'')
     +(booking?('\n\nPasst der Termin nicht? Wunschtermin hier wählen: '+booking):'')
-    +'\n\nBeste Grüße\n'+RSS_ABSENDER.gf+'\n'+RSS_ABSENDER.firma+' '+RSS_ABSENDER.zusatz;
+    +'\n\n'+signatur();
   var done=function(msg){
     if(l.status==='neu') l.status='kontaktiert';
     pushHist(l,'notiz','Termin vorgeschlagen: '+when+(meet?' (Video)':''));
@@ -1558,9 +1563,7 @@ function pitchText(l){
     +'• Sie antworten mit Ihren aktuellen Gebührenbescheiden / Entsorgungsrechnungen, oder\n'
     +'• wir machen einen kurzen Video-Termin (ca. 20 Min, Google Meet).\n\n'
     +'Ihren Wunschtermin buchen Sie direkt hier:\n'+bookingURL()+'\n(die Meet-Einladung kommt automatisch mit der Buchung.)\n\n'
-    +'Beste Grüße\n'+RSS_ABSENDER.gf+'\n'+RSS_ABSENDER.firma+' '+RSS_ABSENDER.zusatz+'\n'
-    +RSS_ABSENDER.strasse+' · '+RSS_ABSENDER.ort+'\n'
-    +'Tel. '+RSS_ABSENDER.tel+' · '+RSS_ABSENDER.mail;
+    +signatur();
 }
 async function sharePitch(id){
   var l=S.leads.find(function(x){return x.id===id;}); if(!l) return;
@@ -1601,7 +1604,7 @@ var TEMPLATES=[
       return anredeHallo(l)+'\n\n'
         +'ich habe '+line+' – aber bisher nichts von Ihnen gehört.\n\n'
         +'Wie machen wir hier weiter?\n\n'
-        +'Grüße\n'+RSS_ABSENDER.gf;
+        +'Grüße\n'+RSS_ABSENDER.gf+'\n'+RSS_ABSENDER.tel;
     } }
 ];
 function tplById(id){ return TEMPLATES.filter(function(t){return t.id===id;})[0]; }
