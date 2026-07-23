@@ -83,7 +83,7 @@ var FRAKTION = {
 var VOLUMEN = [120,240,660,1100];
 var STATUS = ['neu','kontaktiert','angebot','gewonnen','verloren'];
 var STATUS_LBL = { neu:'Neu', kontaktiert:'Kontakt', angebot:'Angebot', gewonnen:'Gewonnen', verloren:'Verloren' };
-var APP_VERSION = 'v56 · Lead entschlackt: 4 Tabs (Kontakt · Akquise · Angebot · Details), Anrufen fest oben';
+var APP_VERSION = 'v57 · Team-Sync: „Alle Leads neu hochladen" (nach ALTER TABLE) – Notizen/Historie/Ansprechpartner in die Cloud';
 var WD = ['Sonntag','Montag','Dienstag','Mittwoch','Donnerstag','Freitag','Samstag'];
 // Places-Typen, die fast nie Gewerbekunden mit Tonne sind -> aus Route ausblenden
 var STOP_EXCLUDE = ['bus_stop','transit_station','locality','political','park','school',
@@ -2029,6 +2029,8 @@ function renderSettings(){
 
     '<button class="cta" data-act="savekeys">Speichern</button>'+
     '<button class="cta ghost" data-act="sync">Jetzt synchronisieren ('+S.leads.filter(function(l){return l.sync_state!=='synced';}).length+' offen)</button>'+
+    '<button class="cta ghost" data-act="reupload" style="margin-top:0">⟳ Alle Leads von diesem Gerät neu hochladen</button>'+
+    '<div class="note" style="margin-top:2px">Einmalig nötig, wenn CRM-Spalten neu angelegt wurden: pusht Notizen/Historie/Ansprechpartner dieses Geräts in die Cloud (dieses Gerät wird führend).</div>'+
 
     '<span class="lab">Export</span>'+
     '<div class="row two">'+
@@ -2672,6 +2674,16 @@ document.addEventListener('click',function(e){
   }
   else if(act==='savekeys'){ collectKeys(); saveKeys(S.keys); toast('Gespeichert'); render(); processOutbox(); syncAll(); }
   else if(act==='sync'){ toast('Synchronisiere…'); processOutbox().then(function(){ syncAll({toast:true}); }); }
+  else if(act==='reupload'){
+    if(!supaOn()){ toast('Kein Team-Sync aktiv (URL+Key in Setup)'); }
+    else if(confirm('Alle '+S.leads.length+' Leads dieses Geräts neu in die Cloud hochladen?\n\nDamit werden Notizen/Historie/Ansprechpartner dieses Geräts führend – neuere Änderungen anderer Geräte an denselben Leads könnten überschrieben werden.\n\nAuf dem Gerät ausführen, das die Daten hat (z. B. Sörens).')){
+      var t=Date.now();
+      S.leads.forEach(function(l){ l.updated_at=t; l.sync_state='pending'; });
+      Promise.all(S.leads.map(function(l){ return dbPut(stripRuntime(l)); })).then(function(){
+        toast('Lade '+S.leads.length+' Leads hoch…'); syncAll({toast:true});
+      });
+    }
+  }
   else if(act==='export'){ doExport(v); }
   // ---- CRM ----
   else if(act==='leadview'){ S.leadView=v; render(); }
