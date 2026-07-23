@@ -83,7 +83,7 @@ var FRAKTION = {
 var VOLUMEN = [120,240,660,1100];
 var STATUS = ['neu','kontaktiert','angebot','gewonnen','verloren'];
 var STATUS_LBL = { neu:'Neu', kontaktiert:'Kontakt', angebot:'Angebot', gewonnen:'Gewonnen', verloren:'Verloren' };
-var APP_VERSION = 'v63 · Pipeline: eigene 📅 Termin-Spalte (vereinbarte Termine + offene Terminanfragen) · Markierungen · Nachfass-Serie';
+var APP_VERSION = 'v64 · Anreicherung 2.0: besserer Impressum-Leser (r.jina.ai + schema.org, mehr Seiten), Places-Telefon, Stapel-Anreicherung';
 var WD = ['Sonntag','Montag','Dienstag','Mittwoch','Donnerstag','Freitag','Samstag'];
 // Places-Typen, die fast nie Gewerbekunden mit Tonne sind -> aus Route ausblenden
 var STOP_EXCLUDE = ['bus_stop','transit_station','locality','political','park','school',
@@ -120,6 +120,7 @@ var S = {
   sort: 'score',
   leadView: 'list',    // 'list' | 'board' (Pipeline-Kanban) | 'termin' (Agenda) im Leads-Tab
   search: '',          // Freitext-Suche im Leads-Tab
+  enriching: false,    // Stapel-Anreicherung läuft
   secEdit: false,      // (alt) Bearbeiten-Bereich – ersetzt durch Details-Tab
   leadTab: 'kontakt',  // Lead-Sheet: aktiver Tab (kontakt|akquise|angebot|details)
   crmSync: true,       // Kontakt-/CRM-Felder mit Supabase syncen? auto-false, falls Spalten fehlen
@@ -660,7 +661,13 @@ async function enrich(lead){
     lead._candidates = cands;
     if(cands.length){
       lead.adresse = cands[0].adresse || lead.adresse;
-      if(!lead.firmenname) applyCompany(lead,cands[0]);  // nächster Treffer auto, im Detail änderbar
+      if(!lead.firmenname){ applyCompany(lead,cands[0]); }  // nächster Treffer auto, im Detail änderbar
+      else {
+        // Firma steht schon fest -> Telefon/Website vom passenden Treffer (Namensabgleich) in leere Felder
+        var mt=cands.filter(function(c){ return c.firmenname && norm(c.firmenname)===norm(lead.firmenname); })[0]
+             || cands.filter(function(c){ var a=norm(c.firmenname||''),b=norm(lead.firmenname); return a&&b&&(a.indexOf(b)>=0||b.indexOf(a)>=0); })[0];
+        if(mt){ if(!lead.telefon&&mt.telefon) lead.telefon=mt.telefon; if(!lead.website&&mt.website) lead.website=mt.website; if(!lead.place_id&&mt.place_id) lead.place_id=mt.place_id; }
+      }
     }
     lead.enriched = true;
     dedupeFlag(lead);
@@ -680,7 +687,119 @@ function lookupLinks(l){
   var a=function(u,t){ return '<a href="'+esc(u)+'" target="_blank" style="text-decoration:underline;white-space:nowrap">'+t+'</a>'; };
   return '<div class="note" style="margin-top:6px">Nachschlagen: '+a(nd,'Northdata')+' · '+a(hr,'Handelsregister')+' · '+a(gg,'Google')+'</div>';
 }
-// Anreicherung: Website-Impressum -> Ansprechpartner (GF/Inhaber) + E-Mail (§5 DDG/TMG, in DE Pflichtangabe)
+/* ---------- Anreicherung 2.0: Website-Impressum -> Ansprechpartner + E-Mail + Telefon ----------
+   Mehrere Reader-Dienste (Fallback-Kette), mehr Unterseiten, schema.org-JSON-LD. */
+// Reader-Kette: corsproxy (roh-HTML) -> r.jina.ai (rendert JS/umgeht Blocks, Klartext) -> allorigins
+function readerURLs(u){
+  return [
+    'https://corsproxy.io/?url='+encodeURIComponent(u),
+    'https://r.jina.ai/'+u,
+    'https://api.allorigins.win/raw?url='+encodeURIComponent(u)
+  ];
+}
+function fetchVia(u,timeoutMs){
+  return (async function(){
+    var urls=readerURLs(u);
+    for(var i=0;i<urls.length;i++){
+      var txt=await Promise.race([
+        fetch(urls[i]).then(function(r){return r.ok?r.text():'';}).catch(function(){return '';}),
+        new Promise(function(res){ setTimeout(function(){res('');}, timeoutMs||9000); })
+      ]);
+      if(txt && txt.length>200) return txt;
+    }
+    return '';
+  })();
+}
+// schema.org / JSON-LD auslesen (telephone, email, founder/employee) – zuverlässiger als Textsuche
+function walkLd(o,out){
+  if(!o||typeof o!=='object') return;
+  if(o.telephone && !out.tel) out.tel=String(o.telephone);
+  if(o.email && !out.email) out.email=String(o.email).replace(/^mailto:/i,'');
+  var f=o.founder||o.employee||o.director;
+  if(f && !out.name){ var ff=Array.isArray(f)?f[0]:f; if(ff){ out.name=(typeof ff==='string')?ff:(ff.name||''); } }
+  if(o['@graph']) (Array.isArray(o['@graph'])?o['@graph']:[o['@graph']]).forEach(function(g){ walkLd(g,out); });
+}
+function jsonLdContacts(raw){
+  var out={tel:'',email:'',name:''}, re=/<script[^>]+application\/ld\+json[^>]*>([\s\S]*?)<\/script>/gi, m;
+  while((m=re.exec(raw))){ try{ var data=JSON.parse(m[1].trim()); (Array.isArray(data)?data:[data]).forEach(function(o){ walkLd(o,out); }); }catch(e){} }
+  return out;
+}
+// Kontaktdaten aus einem Roh-Text (HTML oder Klartext) ziehen
+function extractContacts(raw,host){
+  var ld=jsonLdContacts(raw);
+  var plain=raw.replace(/<[^>]+>/g,' ').replace(/&nbsp;/gi,' ').replace(/&amp;/gi,'&').replace(/&#0?64;|&commat;/gi,'@').replace(/\s+/g,' ');
+  var dom=(host||'').split('.')[0];
+  var emails=[];
+  if(ld.email) emails.push(ld.email);
+  (raw.match(/mailto:([^"'?>\s]+@[^"'?>\s]+)/gi)||[]).forEach(function(x){ emails.push(x.replace(/mailto:/i,'')); });
+  (plain.match(/[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/g)||[]).forEach(function(x){ emails.push(x); });
+  emails=emails.map(function(e){return e.trim().toLowerCase().replace(/[.,;:]+$/,'');})
+    .filter(function(e){ return !/\.(png|jpe?g|jpg|gif|webp|svg)$/.test(e) && !/(sentry|wixpress|example\.|@2x|godaddy|cloudflare|schema\.org|\.wix|jsdelivr|sentry\.io)/.test(e); });
+  var email=emails.filter(function(e){ var d=e.split('@')[1]; return dom && d && d.indexOf(dom)>=0; })[0]
+    || emails.filter(function(e){ return /^(info|kontakt|office|mail|hallo|kontor|buero|zentrale)@/.test(e); })[0]
+    || emails[0] || '';
+  var tel=ld.tel||'';
+  if(!tel){ var tl=raw.match(/tel:\s*([+\d][\d\s()\/\.\-]{6,}\d)/i); if(tl) tel=tl[1]; }
+  if(!tel){ var tp=plain.match(/(?:Telefon|Tel|Fon|Mobil|Phone|Ruf)\.?\s*:?\s*([+(]?\d[\d\s()\/\.\-]{7,}\d)/i); if(tp) tel=tp[1]; }
+  tel=String(tel).replace(/\s+/g,' ').trim();
+  var roleWords=/gesch|inhaber|vertret|handelsreg|umsatzst|steuer|verantwort|redakt|datenschutz/i;
+  // Namens-Kandidaten sammeln, dann säubern (Rauschwörter raus) und den ersten sauberen mit ≥2 Teilen nehmen
+  var cands=[], mm;
+  if(ld.name) cands.push(String(ld.name));
+  var re1=/(?:Gesch[aä]ftsf[uü]hrer(?:in)?|Inhaber(?:in)?|Vertreten durch|Vertretungsberechtigte[rn]?)\s*:?\s*(?:Herr\s+|Frau\s+)?([A-ZÄÖÜ][a-zäöüß\-]+(?:\s+[A-ZÄÖÜ][a-zäöüß\-]+){1,2})/g;
+  while((mm=re1.exec(plain))) cands.push(mm[1]);
+  var re2=/([A-ZÄÖÜ][a-zäöüß\-]+\s+[A-ZÄÖÜ][a-zäöüß\-]+)\s*,?\s*\(?\s*(?:Inhaber|Gesch[aä]ftsf[uü]hrer)/g;
+  while((mm=re2.exec(plain))) cands.push(mm[1]);
+  var ne=nameFromEmail(email); if(ne) cands.push(ne);
+  var name='';
+  for(var ci=0;ci<cands.length;ci++){ var cn=cleanName(cands[ci]); if(cn.split(' ').length>=2 && !roleWords.test(cn)){ name=cn; break; } }
+  return { email:email, tel:tel, name:name };
+}
+// Namen von Rausch-/Rollenwörtern befreien und auf 2–3 echte Namensteile begrenzen
+function cleanName(s){
+  var noise=/^(Mail|E-?Mail|Anruf|Telefon|Tel|Fon|Fax|Mobil|Phone|Ruf|Kontakt|Contact|Impressum|Home|Startseite|Menu|Men[üu]|Handelsregister|Registergericht|Umsatzsteuer|Steuer|Steuernummer|Datenschutz|Gesch[aä]ftsf[uü]hrer(?:in)?|Inhaber(?:in)?|Vertreten|Herr|Frau|Und|Der|Die|Das|GmbH|UG|KG|OHG|AG|Co)$/i;
+  var rw=/gesch|inhaber|vertret|handelsreg|umsatzst|steuer|verantwort|redakt|datenschutz/i;
+  var words=String(s||'').split(/\s+/).map(function(w){return w.replace(/[-.,;:]+$/,'');})
+    .filter(function(w){ return w && !noise.test(w) && !rw.test(w); });
+  return words.slice(0,3).join(' ').trim();
+}
+// Website + Unterseiten scannen und die besten Kontaktdaten zurückgeben
+async function scrapeContacts(website,opts){
+  opts=opts||{};
+  var base=httpize(website).replace(/\/+$/,''), host=hostOf(website);
+  var home=await fetchVia(base,opts.timeout);
+  if(!home) home=await fetchVia(base.replace(/^https:/,'http:'),opts.timeout);
+  var abs=function(u){ if(!u) return ''; return /^https?:/i.test(u)?u:(base+'/'+u.replace(/^\//,'')); };
+  var impUrl='', konUrl='';
+  var mi=home.match(/href\s*=\s*["']([^"']*impress[^"']*)["']/i); if(mi) impUrl=abs(mi[1]);
+  var mk=home.match(/href\s*=\s*["']([^"']*(?:kontakt|contact)[^"']*)["']/i); if(mk) konUrl=abs(mk[1]);
+  var tries=[impUrl, base+'/impressum', base+'/impressum/', base+'/impressum.html', base+'/impressum.php',
+             base+'/sites/impress.html', konUrl, base+'/kontakt', base+'/kontakt/'];
+  if(opts.deep) tries=tries.concat([base+'/team', base+'/ueber-uns', base+'/unternehmen']);
+  var got=extractContacts(home,host), seen={}, fetched=0, cap=opts.max||(opts.deep?6:2);
+  for(var i=0;i<tries.length;i++){
+    if(got.email && got.tel && got.name) break;
+    var u=tries[i]; if(!u||seen[u]) continue; seen[u]=1;
+    var t=await fetchVia(u,opts.timeout); fetched++;
+    if(t && /impress|inhaber|gesch[aä]ft|@|telefon|kontakt/i.test(t)){
+      var c=extractContacts(t,host);
+      got={ email:got.email||c.email, tel:got.tel||c.tel, name:got.name||c.name };
+    }
+    if(fetched>=cap) break;
+  }
+  return got;
+}
+// Gefundene Kontaktdaten übernehmen (nur leere Felder) + protokollieren. Gibt Liste der gefüllten Felder zurück.
+function applyContacts(l,c,src){
+  var got=[];
+  if(c.email && !l.ap_email){ l.ap_email=c.email; got.push('E-Mail'); }
+  if(c.name && !l.ap_name){ l.ap_name=c.name; got.push('Ansprechpartner'); }
+  if(c.tel && !l.ap_telefon){ l.ap_telefon=c.tel; got.push('Telefon'); }
+  if(c.tel && !l.telefon){ l.telefon=c.tel; }
+  if(got.length){ l.updated_at=Date.now(); pushHist(l,'notiz','Angereichert ('+src+'): '+got.join(' + ')+(c.email?(' · '+c.email):''));
+    dbPut(stripRuntime(l)).then(function(){ syncLead(l); }); }
+  return got;
+}
 async function enrichImpressum(id){
   var l=S.leads.find(function(x){return x.id===id;}); if(!l) return;
   if(!S.online){ toast('Anreichern braucht Internet'); return; }
@@ -688,51 +807,37 @@ async function enrichImpressum(id){
   if(!l.website){ toast('Keine Website – oben eintragen'); return; }
   toast('Impressum wird gelesen…');
   try{
-    var base=httpize(l.website).replace(/\/+$/,''), host=hostOf(l.website);
-    var proxy=function(u){ return 'https://corsproxy.io/?url='+encodeURIComponent(u); };
-    var getT=function(u){ return Promise.race([ fetch(proxy(u)).then(function(r){return r.ok?r.text():'';}).catch(function(){return '';}),
-      new Promise(function(res){ setTimeout(function(){res('');},10000); }) ]); };
-    var home=await getT(base);
-    if(!home) home=await getT(base.replace(/^https:/,'http:'));   // manche Seiten nur http
-    // Impressum-Link (auch „impress", z. B. /sites/impress.html) + bekannte Pfade
-    var impUrl=''; var m=home.match(/href\s*=\s*["']([^"']*impress[^"']*)["']/i);
-    if(m){ impUrl=m[1]; if(!/^https?:/i.test(impUrl)) impUrl=base+'/'+impUrl.replace(/^\//,''); }
-    var tries=[impUrl, base+'/sites/impress.html', base+'/impressum', base+'/impressum/', base+'/impressum.html', base+'/impressum.php', base+'/kontakt'];
-    var imp='';
-    for(var i=0;i<tries.length;i++){ if(imp.length>400) break; if(!tries[i]) continue;
-      var t=await getT(tries[i]); if(/impress|inhaber|gesch[aä]ft|@|telefon/i.test(t)) imp+=' '+t; }
-    var raw=imp+' '+home;
-    var plain=raw.replace(/<[^>]+>/g,' ').replace(/&nbsp;/gi,' ').replace(/&amp;/gi,'&').replace(/\s+/g,' ');
-    // E-Mail (Domain-/persönliche bevorzugt)
-    var emails=[];
-    (raw.match(/mailto:([^"'?>\s]+@[^"'?>\s]+)/gi)||[]).forEach(function(x){ emails.push(x.replace(/mailto:/i,'')); });
-    (plain.match(/[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/g)||[]).forEach(function(x){ emails.push(x); });
-    emails=emails.map(function(e){return e.trim().toLowerCase();}).filter(function(e){ return !/\.(png|jpe?g|gif|webp|svg)$/.test(e) && !/(sentry|wixpress|example\.|@2x|godaddy|cloudflare|schema\.org)/.test(e); });
-    var dom=(host||'').split('.')[0];
-    var email=emails.filter(function(e){ return dom && e.split('@')[1] && e.split('@')[1].indexOf(dom)>=0; }).sort(function(a,b){ return (/@/.test(a)&&a.indexOf('.')<a.indexOf('@')?-1:0)-(/@/.test(b)&&b.indexOf('.')<b.indexOf('@')?-1:0); })[0]
-      || emails.find(function(e){return /^(info|kontakt|office|mail|hallo)@/.test(e);}) || emails[0] || '';
-    // Telefon (tel:-Link bevorzugt, sonst „Tel/Telefon/Fon: …")
-    var tel=''; var tl=raw.match(/tel:\s*([+\d][\d\s()\/\.\-]{6,}\d)/i);
-    if(tl) tel=tl[1]; else { var tp=plain.match(/(?:Telefon|Tel|Fon)\.?\s*:?\s*([+(]?\d[\d\s()\/\.\-]{7,}\d)/i); if(tp) tel=tp[1]; }
-    tel=tel.replace(/\s+/g,' ').trim();
-    // Geschäftsführer/Inhaber: aus E-Mail (vorname.nachname) ODER Text (Rolle↔Name in beide Richtungen)
-    var roleWords=/gesch|inhaber|vertret|handelsreg|umsatzst|steuer|verantwort|redakt|datenschutz/i;
-    var gf=nameFromEmail(email);
-    if(!gf){ var g1=plain.match(/(?:Gesch[aä]ftsf[uü]hrer(?:in)?|Inhaber(?:in)?|Vertreten durch|Vertretungsberechtigte[rn]?)\s*:?\s*(?:Herr |Frau )?([A-ZÄÖÜ][a-zäöüß.\-]+(?:\s+[A-ZÄÖÜ][a-zäöüß.\-]+){1,2})/);
-      if(g1 && !roleWords.test(g1[1])) gf=g1[1].trim(); }
-    if(!gf){ var g2=plain.match(/([A-ZÄÖÜ][a-zäöüß.\-]+(?:\s+[A-ZÄÖÜ][a-zäöüß.\-]+){1,2})\s*,?\s*\(?\s*(?:Inhaber|Gesch[aä]ftsf[uü]hrer)/);
-      if(g2 && !roleWords.test(g2[1])) gf=g2[1].trim(); }
-    // Übernehmen (nur leere Felder füllen)
-    var got=[];
-    if(email && !l.ap_email){ l.ap_email=email; got.push('E-Mail'); }
-    if(gf && !l.ap_name){ l.ap_name=gf; got.push('Ansprechpartner'); }
-    if(tel && !l.ap_telefon){ l.ap_telefon=tel; got.push('Telefon'); }
-    if(!l.telefon && tel){ l.telefon=tel; }
-    if(got.length){ l.updated_at=Date.now(); dbPut(stripRuntime(l)).then(function(){ syncLead(l); });
-      pushHist(l,'notiz','Angereichert (Impressum): '+got.join(' + ')+(email?(' · '+email):'')); renderSheet(); toast('✓ '+got.join(' + ')+' übernommen'); }
-    else if(email||gf||tel){ renderSheet(); toast('Gefunden ('+(gf||email||tel)+'), Felder schon belegt'); }
+    var c=await scrapeContacts(l.website,{deep:true,timeout:9000});
+    var got=applyContacts(l,c,'Impressum');
+    if(got.length){ renderSheet(); toast('✓ '+got.join(' + ')+' übernommen'); }
+    else if(c.email||c.name||c.tel){ renderSheet(); toast('Gefunden ('+(c.name||c.email||c.tel)+'), Felder schon belegt'); }
     else toast('Nichts gefunden (Seite blockt / Impressum als PDF?) – manuell eintragen');
   }catch(e){ toast('Anreichern fehlgeschlagen'); }
+}
+// Stapel-Anreicherung: alle Leads mit Website/Koordinaten, bei denen noch Kontaktfelder fehlen
+function enrichablePool(){
+  return S.leads.filter(function(l){
+    return (l.website || (l.lat!=null && S.keys.google)) && !(l.ap_email && l.ap_telefon && l.ap_name);
+  });
+}
+async function enrichAll(){
+  if(S.enriching) return;
+  if(!S.online){ toast('Anreichern braucht Internet'); return; }
+  var pool=enrichablePool();
+  if(!pool.length){ toast('Nichts anzureichern – Felder sind belegt'); return; }
+  S.enriching=true; render();
+  var done=0, filled=0;
+  for(var i=0;i<pool.length;i++){
+    var l=pool[i];
+    try{
+      if(!l.website && l.lat!=null && S.keys.google) await enrich(l);
+      if(l.website){ var c=await scrapeContacts(l.website,{max:2,timeout:8000}); if(applyContacts(l,c,'Impressum').length) filled++; }
+    }catch(e){}
+    done++;
+    if(done%3===0 || done===pool.length){ toast('Anreichern… '+done+'/'+pool.length+' · '+filled+' ergänzt'); }
+  }
+  S.enriching=false; render();
+  toast('✓ Fertig: '+filled+' von '+pool.length+' Leads ergänzt');
 }
 // „vorname.nachname@…" -> „Vorname Nachname" (nur wenn es wirklich so aussieht)
 function nameFromEmail(e){
@@ -1715,7 +1820,13 @@ function renderLeads(){
     '<button class="'+(S.leadView==='board'?'on':'')+'" data-act="leadview" data-v="board">▦ Pipeline</button>'+
     '</div>';
 
-  var main = (S.leadView==='board') ? renderBoard() : (bar+sortbar+list);
+  var enr=enrichablePool().length;
+  var enrichbar = (S.leadView==='list' && (enr||S.enriching))
+    ? '<div class="bar"><button data-act="enrichall"'+(S.enriching?' disabled':'')+'>✨ '+(S.enriching?'Anreichern läuft…':(enr+' Leads anreichern'))+'</button>'+
+      '<span class="note" style="align-self:center">Telefon · E-Mail · Ansprechpartner aus Website/Places</span></div>'
+    : '';
+
+  var main = (S.leadView==='board') ? renderBoard() : (bar+sortbar+enrichbar+list);
 
   $app.innerHTML='<div class="screen'+(S.leadView==='board'?' board-screen':'')+'">'+
     '<h1 class="t">Leads</h1>'+
@@ -2894,6 +3005,7 @@ document.addEventListener('click',function(e){
   else if(act==='addhist'){ addHistNote(id); }
   else if(act==='mailoffer'){ mailOffer(id); }
   else if(act==='anreichern'){ enrichImpressum(id); }
+  else if(act==='enrichall'){ enrichAll(); }
   else if(act==='shareangebot'){ shareAngebot(id); }
   else if(act==='termin'){ shareTermin(id); }
   else if(act==='pitch'){ sharePitch(id); }
