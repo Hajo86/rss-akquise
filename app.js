@@ -83,7 +83,7 @@ var FRAKTION = {
 var VOLUMEN = [120,240,660,1100];
 var STATUS = ['neu','kontaktiert','angebot','gewonnen','verloren'];
 var STATUS_LBL = { neu:'Neu', kontaktiert:'Kontakt', angebot:'Angebot', gewonnen:'Gewonnen', verloren:'Verloren' };
-var APP_VERSION = 'v57 · Team-Sync: „Alle Leads neu hochladen" (nach ALTER TABLE) – Notizen/Historie/Ansprechpartner in die Cloud';
+var APP_VERSION = 'v58 · Sync ohne Datenverlust: Historie wird vereinigt (nicht überschrieben); Gesprächsnotiz speichert auch beim Verlassen';
 var WD = ['Sonntag','Montag','Dienstag','Mittwoch','Donnerstag','Freitag','Samstag'];
 // Places-Typen, die fast nie Gewerbekunden mit Tonne sind -> aus Route ausblenden
 var STOP_EXCLUDE = ['bus_stop','transit_station','locality','political','park','school',
@@ -826,6 +826,11 @@ function toRow(l){
   return row;
 }
 function rnd(n){ return (n==null||isNaN(n))?null:Math.round(n); }
+// Historie zweier Geräte vereinigen (nach Zeitstempel, dedupliziert) – damit beim Sync NICHTS verloren geht
+function unionHist(a,b){
+  var m={}; [].concat(a||[],b||[]).forEach(function(e){ if(e&&e.ts!=null) m[e.ts]=e; });
+  return Object.keys(m).map(function(k){return m[k];}).sort(function(x,y){return (x.ts||0)-(y.ts||0);});
+}
 function fromRow(rl, local){
   return {
     id:rl.id,
@@ -849,7 +854,7 @@ function fromRow(rl, local){
     ap_rolle:('ap_rolle' in rl)?(rl.ap_rolle||''):((local&&local.ap_rolle)||''),
     ap_telefon:('ap_telefon' in rl)?(rl.ap_telefon||''):((local&&local.ap_telefon)||''),
     ap_email:('ap_email' in rl)?(rl.ap_email||''):((local&&local.ap_email)||''),
-    historie:('historie' in rl)?(rl.historie||[]):((local&&local.historie)||[]),
+    historie: unionHist(local&&local.historie, ('historie' in rl)?rl.historie:null),  // vereinen statt überschreiben
     enriched:true, sync_state:'synced', duplikat:false
   };
 }
@@ -864,8 +869,16 @@ async function pullLeads(){
     var local=S.leads.find(function(x){return x.id===rl.id;});
     var rU=rl.updated_at?Date.parse(rl.updated_at):0;
     var lU=local?(local.updated_at||local.created_at||0):0;
-    if(local && lU>=rU) continue;           // lokale Version ist neuer/gleich -> behalten
+    if(local && lU>=rU){                    // lokale Version gewinnt bei Skalaren …
+      if('historie' in rl){                 // … Historie aber trotzdem vereinen (nichts verlieren)
+        var mh=unionHist(local.historie, rl.historie);
+        if(mh.length!==((local.historie&&local.historie.length)||0)){ local.historie=mh; local.sync_state='pending'; await dbPut(stripRuntime(local)); }
+      }
+      continue;
+    }
     var merged=fromRow(rl, local);
+    // enthält die Vereinigung lokale Notizen, die remote (noch) fehlen? -> wieder hochladen (Konvergenz)
+    if(local && merged.historie.length > ((rl.historie&&rl.historie.length)||0)) merged.sync_state='pending';
     await dbPut(stripRuntime(merged));
     if(local){ for(var k in merged){ if(k!=='photoBlob'&&k!=='photos') local[k]=merged[k]; } }
     else { S.leads.push(merged); added++; }
@@ -1424,7 +1437,7 @@ function historieBlock(l){
   }).join('') : '<div class="note" style="margin:0">Noch keine Kontakte protokolliert.</div>';
   return '<span class="lab">Kontakt-Historie ('+h.length+')</span>'+
     '<div class="hlist">'+items+'</div>'+
-    '<div class="hadd"><input class="txt" id="histnote-'+l.id+'" placeholder="Gesprächsnotiz / Ergebnis…"/>'+
+    '<div class="hadd"><input class="txt" id="histnote-'+l.id+'" data-histnote="'+l.id+'" placeholder="Gesprächsnotiz / Ergebnis…"/>'+
     '<button class="chip" data-act="addhist" data-id="'+l.id+'">+ Notiz</button></div>';
 }
 // Anruf-Ergebnis-Schnellauswahl + Wiedervorlage-Buttons
@@ -2779,6 +2792,8 @@ document.addEventListener('input',function(e){
 document.addEventListener('change',async function(e){
   var t=e.target;
   if(t.dataset.act==='gemeinde'){ switchGemeinde(t.value); return; }
+  // Gesprächsnotiz auch beim Verlassen speichern (nicht nur per „+ Notiz")
+  if(t.dataset.histnote){ if(t.value.trim()) addHistNote(t.dataset.histnote); return; }
   // Inline-Felder: automatisch speichern beim Verlassen (kein „Speichern"-Klick nötig)
   if(t.dataset.edit){
     var le=S.leads.find(function(x){return x.id===t.dataset.id;});
