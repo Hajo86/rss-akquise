@@ -83,7 +83,7 @@ var FRAKTION = {
 var VOLUMEN = [120,240,660,1100];
 var STATUS = ['neu','kontaktiert','angebot','gewonnen','verloren'];
 var STATUS_LBL = { neu:'Neu', kontaktiert:'Kontakt', angebot:'Angebot', gewonnen:'Gewonnen', verloren:'Verloren' };
-var APP_VERSION = 'v60 · Termin-Reiter (Agenda) · „Nicht erreicht" zählt Versuche · Wiedervorlage mit eigenem Kalenderdatum';
+var APP_VERSION = 'v61 · Lead-Suche (Firma/Ort/Ansprechpartner/Tel) in Liste, Pipeline & Terminen';
 var WD = ['Sonntag','Montag','Dienstag','Mittwoch','Donnerstag','Freitag','Samstag'];
 // Places-Typen, die fast nie Gewerbekunden mit Tonne sind -> aus Route ausblenden
 var STOP_EXCLUDE = ['bus_stop','transit_station','locality','political','park','school',
@@ -118,7 +118,8 @@ var S = {
   draft: null,
   filter: 'alle',
   sort: 'score',
-  leadView: 'list',    // 'list' | 'board' (Pipeline-Kanban) im Leads-Tab
+  leadView: 'list',    // 'list' | 'board' (Pipeline-Kanban) | 'termin' (Agenda) im Leads-Tab
+  search: '',          // Freitext-Suche im Leads-Tab
   secEdit: false,      // (alt) Bearbeiten-Bereich – ersetzt durch Details-Tab
   leadTab: 'kontakt',  // Lead-Sheet: aktiver Tab (kontakt|akquise|angebot|details)
   crmSync: true,       // Kontakt-/CRM-Felder mit Supabase syncen? auto-false, falls Spalten fehlen
@@ -1516,8 +1517,9 @@ function callCrmBlock(l){
 
 // Pipeline-Board (Pipedrive-Optik): Spalte je Status
 function renderBoard(){
+  var pool=searchedLeads();
   return '<div class="board">'+ STATUS.map(function(s){
-    var ls=S.leads.filter(function(l){return l.status===s;}).sort(function(a,b){return b.score-a.score;});
+    var ls=pool.filter(function(l){return l.status===s;}).sort(function(a,b){return b.score-a.score;});
     var sum=ls.reduce(function(a,l){return a+(kalkulation(l).ersparnis_jahr||0);},0);
     return '<div class="bcol" data-status="'+s+'"><div class="bch"><span>'+STATUS_LBL[s]+' · '+ls.length+'</span>'+
       '<span class="bsum">'+eur(sum)+'/J</span></div>'+
@@ -1538,7 +1540,7 @@ function boardCard(l){
 }
 // Termin-Agenda: alle offenen Wiedervorlagen chronologisch, gruppiert nach Fälligkeit
 function agendaLeads(){
-  return S.leads.filter(function(l){ return l.wiedervorlage && l.status!=='gewonnen' && l.status!=='verloren'; })
+  return searchedLeads().filter(function(l){ return l.wiedervorlage && l.status!=='gewonnen' && l.status!=='verloren'; })
     .sort(function(a,b){ return a.wiedervorlage<b.wiedervorlage?-1:(a.wiedervorlage>b.wiedervorlage?1:(b.score-a.score)); });
 }
 function agendaCard(l){
@@ -1596,8 +1598,26 @@ function followupBlock(){
     }).join('')+'</div>';
 }
 
+// Freitext-Treffer über Firma, Adresse, Ansprechpartner, Telefon, Entsorger, Notiz
+function matchLead(l,q){
+  if(!q) return true;
+  var hay=[l.firmenname,l.adresse,l.ap_name,l.ap_email,l.email,l.telefon,l.ap_telefon,l.entsorger,l.website,l.notiz]
+    .join(' ').toLowerCase();
+  return q.toLowerCase().split(/\s+/).filter(Boolean).every(function(w){ return hay.indexOf(w)>=0; });
+}
+// Suchgefilterte Basis für alle Leads-Ansichten (Liste/Pipeline/Termine)
+function searchedLeads(){ var q=(S.search||'').trim(); return q ? S.leads.filter(function(l){return matchLead(l,q);}) : S.leads.slice(); }
+function leadsForCount(q){ return S.leads.filter(function(l){return matchLead(l,q);}).length; }
+function searchBox(){
+  var q=S.search||'';
+  return '<div class="searchbar">'+
+    '<input type="search" id="leadsearch" data-act="search" class="txt" placeholder="🔍 Lead suchen (Firma, Ort, Ansprechpartner, Tel …)" value="'+esc(q)+'"/>'+
+    (q?'<button data-act="searchclear" title="Suche löschen">×</button>':'')+
+  '</div>';
+}
 function renderLeads(){
-  var leads=S.leads.slice();
+  var q=(S.search||'').trim();
+  var leads=searchedLeads();
   if(S.filter!=='alle') leads=leads.filter(function(l){ return l.status===S.filter; });
   if(S.sort==='score') leads.sort(function(a,b){ return b.score-a.score; });
   else leads.sort(function(a,b){ return (b.created_at)-(a.created_at); });
@@ -1619,8 +1639,11 @@ function renderLeads(){
 
   var list;
   if(!leads.length){
-    list='<div class="empty"><div class="big">Noch keine Leads</div>'+
-      '<div class="sm">Wechsle zu „Erfassen" und nimm die erste Tonne auf.</div></div>';
+    list = q
+      ? '<div class="empty"><div class="big">Kein Treffer für „'+esc(q)+'"</div>'+
+          '<div class="sm">Andere Schreibweise probieren oder Suche löschen.</div></div>'
+      : '<div class="empty"><div class="big">Noch keine Leads</div>'+
+          '<div class="sm">Wechsle zu „Erfassen" und nimm die erste Tonne auf.</div></div>';
   } else {
     list=leads.map(leadCard).join('');
   }
@@ -1638,8 +1661,9 @@ function renderLeads(){
 
   $app.innerHTML='<div class="screen'+(S.leadView==='board'?' board-screen':'')+'">'+
     '<h1 class="t">Leads</h1>'+
-    '<div class="sub">'+S.leads.length+' gesamt · '+hot+' hot · '+eur(sum)+'/J Marge-Potenzial</div>'+
-    viewbar+main+'</div>';
+    '<div class="sub">'+S.leads.length+' gesamt · '+hot+' hot · '+eur(sum)+'/J Marge-Potenzial'+
+      (q?' · <b>'+leadsForCount(q)+'</b> Treffer':'')+'</div>'+
+    searchBox()+viewbar+main+'</div>';
 }
 function leadCard(l){
   var u=photoURL(l);
@@ -2803,6 +2827,7 @@ document.addEventListener('click',function(e){
   else if(act==='export'){ doExport(v); }
   // ---- CRM ----
   else if(act==='leadview'){ S.leadView=v; render(); }
+  else if(act==='searchclear'){ S.search=''; renderLeads(); }
   else if(act==='callresult'){ logCall(id,v); }
   else if(act==='setwv'){ setWV(id, v==='clear'?null:parseInt(v,10)); }
   else if(act==='setwvdate'){ setWVDate(id); }
@@ -2887,6 +2912,13 @@ function boardUp(){
 // Inputs (no re-render to keep focus)
 document.addEventListener('input',function(e){
   var t=e.target;
+  if(t.dataset.act==='search'){
+    S.search=t.value; var pos=t.selectionStart;
+    renderLeads();
+    var s=document.getElementById('leadsearch');
+    if(s){ s.focus(); try{ s.setSelectionRange(pos,pos); }catch(_){ } }
+    return;
+  }
   if(t.dataset.act==='note'){ if(S.draft) S.draft.notiz=t.value; }
   if(t.dataset.act==='manualfirma'){ var d=S.draft; if(d){ d.preset=d.preset||{firmenname:'',adresse:'',telefon:'',website:'',place_id:'',ortsteil:''}; d.preset.firmenname=t.value; d.preset._manual=true; } }
   if(t.dataset.act==='manualadr'){ var da=S.draft; if(da){ da.preset=da.preset||{firmenname:'',adresse:'',telefon:'',website:'',place_id:'',ortsteil:''}; da.preset.adresse=t.value; da.preset._manual=true; } }
