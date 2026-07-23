@@ -83,7 +83,7 @@ var FRAKTION = {
 var VOLUMEN = [120,240,660,1100];
 var STATUS = ['neu','kontaktiert','angebot','gewonnen','verloren'];
 var STATUS_LBL = { neu:'Neu', kontaktiert:'Kontakt', angebot:'Angebot', gewonnen:'Gewonnen', verloren:'Verloren' };
-var APP_VERSION = 'v59 · „Vorstellung + Termin senden": Pitch-Mail (Wer wir sind) + One-Pager-Anhang + Buchungslink';
+var APP_VERSION = 'v60 · Termin-Reiter (Agenda) · „Nicht erreicht" zählt Versuche · Wiedervorlage mit eigenem Kalenderdatum';
 var WD = ['Sonntag','Montag','Dienstag','Mittwoch','Donnerstag','Freitag','Samstag'];
 // Places-Typen, die fast nie Gewerbekunden mit Tonne sind -> aus Route ausblenden
 var STOP_EXCLUDE = ['bus_stop','transit_station','locality','political','park','school',
@@ -1259,19 +1259,31 @@ var CALL_OUTCOMES=[
   { k:'spaeter',   lbl:'Später (30 T)',   status:'kontaktiert', wv:30, txt:'Wiedervorlage – später anrufen' },
   { k:'kein',      lbl:'Kein Interesse',  status:'verloren',    wv:-1, txt:'Kein Interesse' }
 ];
+// Anzahl bisheriger „nicht erreicht"-Versuche (für Zähler „2. Anruf nicht erreicht")
+function missedCount(l){ return histOf(l).filter(function(e){ return e.typ==='anruf' && /nicht erreicht/i.test(e.text||''); }).length; }
 function logCall(id,key){
   var l=S.leads.find(function(x){return x.id===id;}); if(!l) return;
   var o=CALL_OUTCOMES.find(function(x){return x.k===key;}); if(!o) return;
   l.status=o.status;
   l.wiedervorlage = o.wv<0 ? null : isoPlusDays(o.wv);
-  pushHist(l,'anruf',o.txt+(l.wiedervorlage?(' · WV '+wvLabel(l.wiedervorlage)):''));
-  crmSave(l,'Anruf geloggt · '+o.lbl); renderSheet(); if(S.tab!=='leads') render();
+  var txt=o.txt;
+  if(key==='nicht'){ var n=missedCount(l)+1; txt=n+'. Anruf – nicht erreicht'; }   // Versuche mitzählen
+  pushHist(l,'anruf',txt+(l.wiedervorlage?(' · WV '+wvLabel(l.wiedervorlage)):''));
+  crmSave(l,'Anruf geloggt · '+o.lbl+(l.wiedervorlage?(' · WV '+wvLabel(l.wiedervorlage)):'')); renderSheet(); if(S.tab!=='leads') render();
 }
 function setWV(id,days){
   var l=S.leads.find(function(x){return x.id===id;}); if(!l) return;
   l.wiedervorlage = days==null ? null : isoPlusDays(days);
   pushHist(l,'notiz', days==null?'Wiedervorlage entfernt':('Wiedervorlage gesetzt: '+wvLabel(l.wiedervorlage)));
   crmSave(l, days==null?'Wiedervorlage entfernt':('Wiedervorlage: '+wvLabel(l.wiedervorlage))); renderSheet();
+}
+// Wiedervorlage auf ein frei gewähltes Datum setzen (Kalender-Eingabe)
+function setWVDate(id){
+  var l=S.leads.find(function(x){return x.id===id;}); if(!l) return;
+  var inp=document.getElementById('wvdate-'+id); var v=inp?inp.value:''; if(!v){ toast('Kein Datum gewählt'); return; }
+  l.wiedervorlage=v;
+  pushHist(l,'notiz','Wiedervorlage gesetzt: '+wvLabel(v));
+  crmSave(l,'Wiedervorlage: '+wvLabel(v)); renderSheet();
 }
 function addHistNote(id){
   var l=S.leads.find(function(x){return x.id===id;}); if(!l) return;
@@ -1495,7 +1507,11 @@ function callCrmBlock(l){
     '<div class="wvset"><span>Wiedervorlage:</span>'+
       [['+1 T',1],['+4 T',4],['+7 T',7],['+14 T',14],['+30 T',30]].map(function(p){
         return '<button data-act="setwv" data-id="'+l.id+'" data-v="'+p[1]+'">'+p[0]+'</button>';
-      }).join('')+'</div>';
+      }).join('')+'</div>'+
+    '<div class="wvset"><span>Eigenes Datum:</span>'+
+      '<input type="date" id="wvdate-'+l.id+'" class="txt" style="flex:1;min-width:130px" min="'+todayISO()+'"'+(l.wiedervorlage?(' value="'+l.wiedervorlage+'"'):'')+'/>'+
+      '<button data-act="setwvdate" data-id="'+l.id+'">📅 Setzen</button>'+
+    '</div>';
 }
 
 // Pipeline-Board (Pipedrive-Optik): Spalte je Status
@@ -1519,6 +1535,44 @@ function boardCard(l){
     '<div class="bcontact">'+contactBadge(l)+'</div>'+
     (l.wiedervorlage?'<div class="bwv'+(wvDue(l)?' due':'')+'">WV '+wvLabel(l.wiedervorlage)+'</div>':'')+
   '</div>';
+}
+// Termin-Agenda: alle offenen Wiedervorlagen chronologisch, gruppiert nach Fälligkeit
+function agendaLeads(){
+  return S.leads.filter(function(l){ return l.wiedervorlage && l.status!=='gewonnen' && l.status!=='verloren'; })
+    .sort(function(a,b){ return a.wiedervorlage<b.wiedervorlage?-1:(a.wiedervorlage>b.wiedervorlage?1:(b.score-a.score)); });
+}
+function agendaCard(l){
+  return '<div class="lead" data-act="open" data-id="'+l.id+'" style="margin:8px 0 0">'+
+    '<div class="bd"><div class="co">'+esc(l.firmenname||'Unbekannt')+'</div>'+
+    '<div class="ad">'+esc(l.adresse||'')+'</div>'+
+    '<div class="meta"><span class="tag fill">'+STATUS_LBL[l.status]+'</span>'+
+      contactBadge(l)+
+      (l.telefon?'<span class="tag">☎ '+esc(l.telefon)+'</span>':'')+
+      '<div class="scorebox"><div class="n">'+l.score+'</div><div class="l">Score</div></div></div>'+
+    '</div></div>';
+}
+function renderAgenda(){
+  var t=todayISO(), wk=isoOf((function(){var d=new Date();d.setDate(d.getDate()+7);return d;})());
+  var ls=agendaLeads();
+  var groups=[
+    { key:'ueber', lbl:'⚠ Überfällig', hot:true,  ls:ls.filter(function(l){return l.wiedervorlage<t;}) },
+    { key:'heute', lbl:'☎ Heute',       hot:true,  ls:ls.filter(function(l){return l.wiedervorlage===t;}) },
+    { key:'woche', lbl:'Diese Woche',   hot:false, ls:ls.filter(function(l){return l.wiedervorlage>t && l.wiedervorlage<=wk;}) },
+    { key:'sp',    lbl:'Später',         hot:false, ls:ls.filter(function(l){return l.wiedervorlage>wk;}) }
+  ];
+  if(!ls.length){
+    return '<div class="empty"><div class="big">Keine Termine offen</div>'+
+      '<div class="sm">Wiedervorlagen aus dem Anruf-Log erscheinen hier chronologisch.</div></div>';
+  }
+  return groups.filter(function(g){return g.ls.length;}).map(function(g){
+    return '<div class="section" style="margin-bottom:14px'+(g.hot?';border-color:var(--hot)':'')+'">'+
+      '<h3'+(g.hot?' style="color:var(--hot)"':'')+'>'+g.lbl+' · '+g.ls.length+'</h3>'+
+      g.ls.map(function(l){
+        return '<div class="agrow">'+
+          '<div class="adate'+(l.wiedervorlage<=t?' due':'')+'">'+wvLabel(l.wiedervorlage)+'</div>'+
+          agendaCard(l)+'</div>';
+      }).join('')+'</div>';
+  }).join('');
 }
 // „Heute nachfassen" – fällige Wiedervorlagen (für Heute-Tab)
 function dueFollowups(){
@@ -1571,12 +1625,16 @@ function renderLeads(){
     list=leads.map(leadCard).join('');
   }
 
+  var due=agendaLeads().filter(function(l){return l.wiedervorlage<=todayISO();}).length;
   var viewbar='<div class="bar">'+
     '<button class="'+(S.leadView==='list'?'on':'')+'" data-act="leadview" data-v="list">≣ Liste</button>'+
     '<button class="'+(S.leadView==='board'?'on':'')+'" data-act="leadview" data-v="board">▦ Pipeline</button>'+
+    '<button class="'+(S.leadView==='termin'?'on':'')+'" data-act="leadview" data-v="termin">📅 Termine'+(due?' <b>'+due+'</b>':'')+'</button>'+
     '</div>';
 
-  var main = (S.leadView==='board') ? renderBoard() : (bar+sortbar+list);
+  var main = (S.leadView==='board') ? renderBoard()
+           : (S.leadView==='termin') ? renderAgenda()
+           : (bar+sortbar+list);
 
   $app.innerHTML='<div class="screen'+(S.leadView==='board'?' board-screen':'')+'">'+
     '<h1 class="t">Leads</h1>'+
@@ -2747,6 +2805,7 @@ document.addEventListener('click',function(e){
   else if(act==='leadview'){ S.leadView=v; render(); }
   else if(act==='callresult'){ logCall(id,v); }
   else if(act==='setwv'){ setWV(id, v==='clear'?null:parseInt(v,10)); }
+  else if(act==='setwvdate'){ setWVDate(id); }
   else if(act==='addhist'){ addHistNote(id); }
   else if(act==='mailoffer'){ mailOffer(id); }
   else if(act==='anreichern'){ enrichImpressum(id); }
