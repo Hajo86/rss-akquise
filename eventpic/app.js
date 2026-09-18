@@ -132,12 +132,12 @@
   }
   var api = {
     list: function (limit) {
-      var q = '/rest/v1/photos?select=*&event_id=eq.' + encodeURIComponent(CFG.eventId) +
+      var q = '/rest/v1/event_photos?select=*&event_id=eq.' + encodeURIComponent(CFG.eventId) +
         '&hidden=is.false&order=created_at.desc&limit=' + (limit || 400);
       return sbFetch(q, { headers: sbHeaders() });
     },
     insert: function (row) {
-      return sbFetch('/rest/v1/photos', {
+      return sbFetch('/rest/v1/event_photos', {
         method: 'POST',
         headers: sbHeaders({ 'Content-Type': 'application/json', Prefer: 'return=representation' }),
         body: JSON.stringify(row),
@@ -656,7 +656,7 @@
       }).then(after);
       return;
     }
-    api.rpc('delete_own_photo', { p_id: id, p_token: ownerToken }).then(after).catch(function (e) {
+    api.rpc('ep_delete_own_photo', { p_id: id, p_token: ownerToken }).then(after).catch(function (e) {
       toast('Löschen fehlgeschlagen: ' + e.message, 4200);
     });
   }
@@ -830,6 +830,9 @@
       '<div class="row" style="margin-top:14px"><button class="btn" id="save">Speichern &amp; prüfen</button></div>' +
       '<div class="hint">Status: ' + (online() ? '✅ verbunden mit ' + esc(SB.url) : '⚠️ Demo-Modus (nur lokal)') +
       (state.fetchError ? '<br>Letzter Fehler: ' + esc(state.fetchError) : '') + '</div>' +
+      '<div class="banner" style="margin-top:12px">Bitte ein <b>eigenes</b> Supabase-Projekt nur für dieses Fest ' +
+      'verwenden – nicht das einer anderen App. Der Anon-Key liegt bei jedem Gast im Browser und gilt für das ' +
+      'ganze Projekt: alles, was dort für <code>anon</code> offen ist, wäre für die Gäste offen.</div>' +
       '</div>';
 
     /* QR */
@@ -936,7 +939,7 @@
       var pin = ($('#pin').value || '').trim();
       lsSet(LS.pin, pin);
       if (!online()) { toast('Moderation braucht eine Verbindung.'); return; }
-      api.rpc('admin_list', { p_pin: pin, p_event: CFG.eventId }).then(function (rows) {
+      api.rpc('ep_admin_list', { p_pin: pin, p_event: CFG.eventId }).then(function (rows) {
         state.admin = true;
         adminRows = rows || [];
         renderModList();
@@ -982,7 +985,7 @@
     Array.prototype.forEach.call(box.querySelectorAll('[data-x]'), function (b) {
       b.onclick = function () {
         if (!confirm('Foto endgültig löschen?')) return;
-        api.rpc('admin_delete', { p_pin: lsGet(LS.pin, ''), p_id: b.dataset.x }).then(function () {
+        api.rpc('ep_admin_delete', { p_pin: lsGet(LS.pin, ''), p_id: b.dataset.x }).then(function () {
           adminRows = adminRows.filter(function (r) { return r.id !== b.dataset.x; });
           renderModList(); refresh(true); toast('Gelöscht.');
         }).catch(function (e) { toast('Fehler: ' + e.message, 4200); });
@@ -990,7 +993,7 @@
     });
   }
   function adminHide(id, hide) {
-    api.rpc('admin_set_hidden', { p_pin: lsGet(LS.pin, ''), p_id: id, p_hidden: hide }).then(function () {
+    api.rpc('ep_admin_set_hidden', { p_pin: lsGet(LS.pin, ''), p_id: id, p_hidden: hide }).then(function () {
       if (adminRows) adminRows.forEach(function (r) { if (r.id === id) r.hidden = hide; });
       renderModList(); refresh(true);
       toast(hide ? 'Foto verborgen.' : 'Foto wieder sichtbar.');

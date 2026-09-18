@@ -2,12 +2,24 @@
 --  eventpic — Supabase-Setup
 --  Einmal komplett in den SQL-Editor von Supabase einfügen und ausführen.
 --  Projekt-Region: EU (Frankfurt) wählen.
+--
+--  Alle Objekte sind mit "event_" / "ep_" / "eventpic" benannt, damit dieses
+--  Schema neben einer bestehenden Datenbank (z.B. der RSS-Akquise mit ihrer
+--  Tabelle "leads" und dem Bucket "lead-photos") laufen kann, ohne etwas
+--  anzufassen. Es wird nichts gelöscht und keine fremde Policy verändert.
+--
+--  ACHTUNG, bevor du dieses Schema in ein BESTEHENDES Projekt legst:
+--  Der Anon-Key steckt bei jedem Partygast im Browser. Er gilt für das ganze
+--  Projekt. Wenn in derselben Datenbank Tabellen mit offenen Policies liegen
+--  (bei der RSS-App ist "leads" per "using (true)" für anon voll lesbar UND
+--  schreibbar), bekäme jeder Gast damit Zugriff darauf. Für das Fest deshalb
+--  ein EIGENES, zweites Supabase-Projekt anlegen — ist kostenlos.
 -- ===========================================================================
 
 -- ---------------------------------------------------------------------------
 -- 1. Tabelle
 -- ---------------------------------------------------------------------------
-create table if not exists public.photos (
+create table if not exists public.event_photos (
   id          uuid primary key default gen_random_uuid(),
   event_id    text        not null,
   task_id     text        not null,
@@ -26,39 +38,39 @@ create table if not exists public.photos (
   constraint token_len     check (char_length(owner_token) between 8 and 64)
 );
 
-create index if not exists photos_event_created_idx
-  on public.photos (event_id, created_at desc);
+create index if not exists event_photos_created_idx
+  on public.event_photos (event_id, created_at desc);
 
 -- ---------------------------------------------------------------------------
 -- 2. Row Level Security
 --    anon darf: lesen (nur sichtbare) + einfügen.
 --    anon darf NICHT: ändern oder löschen — das läuft über die Funktionen unten.
 -- ---------------------------------------------------------------------------
-alter table public.photos enable row level security;
+alter table public.event_photos enable row level security;
 
-drop policy if exists "anon liest sichtbare fotos" on public.photos;
-create policy "anon liest sichtbare fotos"
-  on public.photos for select to anon
+drop policy if exists "eventpic anon liest sichtbare fotos" on public.event_photos;
+create policy "eventpic anon liest sichtbare fotos"
+  on public.event_photos for select to anon
   using (hidden = false);
 
-drop policy if exists "anon darf einfuegen" on public.photos;
-create policy "anon darf einfuegen"
-  on public.photos for insert to anon
+drop policy if exists "eventpic anon darf einfuegen" on public.event_photos;
+create policy "eventpic anon darf einfuegen"
+  on public.event_photos for insert to anon
   with check (hidden = false);
 
 -- ---------------------------------------------------------------------------
 -- 3. Admin-PIN (liegt in einem Schema, das die REST-API NICHT ausliefert)
 -- ---------------------------------------------------------------------------
-create schema if not exists private;
-revoke all on schema private from anon, authenticated;
+create schema if not exists eventpic_private;
+revoke all on schema eventpic_private from anon, authenticated;
 
-create table if not exists private.admin (
+create table if not exists eventpic_private.admin (
   event_id text primary key,
   pin      text not null
 );
 
 -- >>> PIN HIER ÄNDERN <<<
-insert into private.admin (event_id, pin)
+insert into eventpic_private.admin (event_id, pin)
 values ('thomas60-2026', 'BITTE-AENDERN-0000')
 on conflict (event_id) do update set pin = excluded.pin;
 
@@ -67,7 +79,7 @@ on conflict (event_id) do update set pin = excluded.pin;
 -- ---------------------------------------------------------------------------
 
 -- 4a. Gast löscht sein eigenes Foto (nur mit passendem owner_token)
-create or replace function public.delete_own_photo(p_id uuid, p_token text)
+create or replace function public.ep_delete_own_photo(p_id uuid, p_token text)
 returns integer
 language plpgsql
 security definer
@@ -78,56 +90,56 @@ begin
   if p_token is null or char_length(p_token) < 8 then
     raise exception 'ungueltiges Token';
   end if;
-  delete from public.photos where id = p_id and owner_token = p_token;
+  delete from public.event_photos where id = p_id and owner_token = p_token;
   get diagnostics n = row_count;
   return n;
 end;
 $$;
 
 -- 4b. PIN-Prüfung
-create or replace function private.pin_ok(p_pin text, p_event text)
+create or replace function eventpic_private.pin_ok(p_pin text, p_event text)
 returns boolean
 language sql
 security definer
-set search_path = private, pg_temp
+set search_path = eventpic_private, pg_temp
 as $$
   select exists (
-    select 1 from private.admin
+    select 1 from eventpic_private.admin
     where pin = p_pin and (p_event is null or event_id = p_event)
   );
 $$;
 
 -- 4c. Admin: alle Fotos inklusive verborgener
-create or replace function public.admin_list(p_pin text, p_event text)
-returns setof public.photos
+create or replace function public.ep_admin_list(p_pin text, p_event text)
+returns setof public.event_photos
 language plpgsql
 security definer
 set search_path = public, pg_temp
 as $$
 begin
-  if not private.pin_ok(p_pin, p_event) then raise exception 'PIN falsch'; end if;
+  if not eventpic_private.pin_ok(p_pin, p_event) then raise exception 'PIN falsch'; end if;
   return query
-    select * from public.photos
+    select * from public.event_photos
     where event_id = p_event
     order by created_at desc;
 end;
 $$;
 
 -- 4d. Admin: Foto verbergen / wieder zeigen
-create or replace function public.admin_set_hidden(p_pin text, p_id uuid, p_hidden boolean)
+create or replace function public.ep_admin_set_hidden(p_pin text, p_id uuid, p_hidden boolean)
 returns void
 language plpgsql
 security definer
 set search_path = public, pg_temp
 as $$
 begin
-  if not private.pin_ok(p_pin, null) then raise exception 'PIN falsch'; end if;
-  update public.photos set hidden = p_hidden where id = p_id;
+  if not eventpic_private.pin_ok(p_pin, null) then raise exception 'PIN falsch'; end if;
+  update public.event_photos set hidden = p_hidden where id = p_id;
 end;
 $$;
 
 -- 4e. Admin: Foto endgültig löschen (Datenbankzeile + Storage-Eintrag)
-create or replace function public.admin_delete(p_pin text, p_id uuid)
+create or replace function public.ep_admin_delete(p_pin text, p_id uuid)
 returns void
 language plpgsql
 security definer
@@ -135,9 +147,9 @@ set search_path = public, pg_temp
 as $$
 declare p text;
 begin
-  if not private.pin_ok(p_pin, null) then raise exception 'PIN falsch'; end if;
-  select path into p from public.photos where id = p_id;
-  delete from public.photos where id = p_id;
+  if not eventpic_private.pin_ok(p_pin, null) then raise exception 'PIN falsch'; end if;
+  select path into p from public.event_photos where id = p_id;
+  delete from public.event_photos where id = p_id;
   if p is not null then
     delete from storage.objects where bucket_id = 'eventpic' and name = p;
   end if;
@@ -145,14 +157,14 @@ end;
 $$;
 
 -- Rechte: nur diese Funktionen sind für die App erreichbar
-revoke all on function public.delete_own_photo(uuid, text)         from public;
-revoke all on function public.admin_list(text, text)               from public;
-revoke all on function public.admin_set_hidden(text, uuid, boolean) from public;
-revoke all on function public.admin_delete(text, uuid)             from public;
-grant execute on function public.delete_own_photo(uuid, text)          to anon;
-grant execute on function public.admin_list(text, text)                to anon;
-grant execute on function public.admin_set_hidden(text, uuid, boolean) to anon;
-grant execute on function public.admin_delete(text, uuid)              to anon;
+revoke all on function public.ep_delete_own_photo(uuid, text)         from public;
+revoke all on function public.ep_admin_list(text, text)               from public;
+revoke all on function public.ep_admin_set_hidden(text, uuid, boolean) from public;
+revoke all on function public.ep_admin_delete(text, uuid)             from public;
+grant execute on function public.ep_delete_own_photo(uuid, text)          to anon;
+grant execute on function public.ep_admin_list(text, text)                to anon;
+grant execute on function public.ep_admin_set_hidden(text, uuid, boolean) to anon;
+grant execute on function public.ep_admin_delete(text, uuid)              to anon;
 
 -- ---------------------------------------------------------------------------
 -- 5. Storage
@@ -177,6 +189,6 @@ create policy "eventpic hochladen"
 -- Erst die Fotos herunterladen (Admin-Bereich → "Alle Fotos als ZIP"), dann:
 --
 --   delete from storage.objects where bucket_id = 'eventpic';
---   delete from public.photos    where event_id = 'thomas60-2026';
+--   delete from public.event_photos where event_id = 'thomas60-2026';
 --
 -- Oder das gesamte Supabase-Projekt löschen.

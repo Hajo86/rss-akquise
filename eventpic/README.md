@@ -55,6 +55,16 @@ nur auf dem Gerät. So kannst du sie in Ruhe ausprobieren.
    auf eine eigene **Admin-PIN** ändern.
 3. Unter **Project Settings → API** notieren: **Project URL** und **anon public key**.
 
+> **Du hast schon ein Supabase-Projekt (RSS-Akquise)?** Technisch passt das Schema daneben:
+> alle Objekte heißen `event_photos`, `ep_*`, `eventpic_private` und Bucket `eventpic` — es
+> kollidiert nichts mit `leads` / `lead-photos`, und es wird nichts verändert oder gelöscht.
+>
+> **Trotzdem: nimm für das Fest ein zweites, eigenes Projekt** (Free Tier, 5 Minuten).
+> Grund: Der Anon-Key steckt bei *jedem Partygast* im Browser und gilt immer für das
+> **ganze Projekt**. In der RSS-Datenbank ist `leads` per `using (true)` für `anon` voll
+> lesbar *und* schreibbar — jeder Gast mit dem QR-Code hätte damit Zugriff auf den
+> kompletten Lead-Pool. Ein getrenntes Projekt löst das sauber und kostet nichts.
+
 ### 3 · App verbinden
 `#/admin` aufrufen (Link steht unten in „Meine Fotos" und in der Info-Seite),
 Projekt-URL + Anon-Key eintragen → **Speichern & prüfen**. Es muss „Verbindung steht ✅"
