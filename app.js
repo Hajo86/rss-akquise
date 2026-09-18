@@ -83,7 +83,7 @@ var FRAKTION = {
 var VOLUMEN = [120,240,660,1100];
 var STATUS = ['neu','kontaktiert','angebot','gewonnen','verloren'];
 var STATUS_LBL = { neu:'Neu', kontaktiert:'Kontakt', angebot:'Angebot', gewonnen:'Gewonnen', verloren:'Verloren' };
-var APP_VERSION = 'v70 · Gebiets-Filter Hamburg/LK Harburg · Kurzvorstellung: klarerer Einstieg („wie besprochen … Kurzvorstellung"), Betreff-Dopplung raus';
+var APP_VERSION = 'v71 · Absender auf Recycling Solution Service GmbH i. G., Seevetal · Signatur im Team-Format';
 var WD = ['Sonntag','Montag','Dienstag','Mittwoch','Donnerstag','Freitag','Samstag'];
 // Places-Typen, die fast nie Gewerbekunden mit Tonne sind -> aus Route ausblenden
 var STOP_EXCLUDE = ['bus_stop','transit_station','locality','political','park','school',
@@ -169,26 +169,33 @@ function eur(n){ return Math.round(n).toLocaleString('de-DE') + ' €'; }
 function eur2(n){ return (Number(n)||0).toLocaleString('de-DE',{minimumFractionDigits:2,maximumFractionDigits:2}) + ' €'; }
 function httpize(u){ u=(u||'').trim(); if(!u) return ''; return /^https?:\/\//i.test(u)?u:('https://'+u); }
 function hostOf(u){ try{ return new URL(httpize(u)).host.replace(/^www\./,''); }catch(e){ return (u||'').replace(/^https?:\/\//,'').replace(/^www\./,'').split('/')[0]; } }
-// Absender für Kunden-Angebote (RSS Recycling Solution Service UG i. Gr.)
+// Absender für Kunden-Angebote und Signatur (Stand 18.09.2026: GmbH in Gründung, Sitz Seevetal).
+// Nach der Handelsregister-Eintragung: zusatz leeren und Registergericht/HRB in signatur() ergänzen.
 var RSS_ABSENDER = {
-  firma:'RSS Recycling Solution Service UG',
-  zusatz:'(i. Gr.)',
-  strasse:'Barmbeker Straße 23a',
-  ort:'22303 Hamburg',
+  firma:'Recycling Solution Service GmbH',
+  zusatz:'i. G.',
+  strasse:'Horster Landstraße 102a',
+  ort:'21220 Seevetal',
+  sitz:'Seevetal',
   gf:'Sören Rohde',
   tel:'+49 176 14081987',
   mail:'rohde@rss-entsorgung.de',
   web:'rss-entsorgung.de'
 };
-// Einheitliche E-Mail-Signatur (in allen E-Mails außer dem bewusst minimalen Ghost-Follow-up)
+// Einheitliche E-Mail-Signatur (in allen E-Mails außer dem bewusst minimalen Ghost-Follow-up).
+// Textfassung der Team-Signatur aus RSS/E-Mail-Signatur — Aufbau dort und hier gleich halten.
 function signatur(gruss){
   var A=RSS_ABSENDER;
   return (gruss||'Mit freundlichen Grüßen')+'\n\n'
     +A.gf+'\n'
-    +'Geschäftsführer · '+A.firma+' '+A.zusatz+'\n'
-    +A.strasse+' · '+A.ort+'\n'
-    +'Tel. '+A.tel+'\n'
-    +A.mail+' · '+A.web;
+    +'Geschäftsführer\n\n'
+    +'Mobil  '+A.tel+'\n'
+    +'Mail   '+A.mail+'\n'
+    +'Web    '+A.web+'\n\n'
+    +'RSS. Recycling Solution Service\n'
+    +'Zuverlässig. Nachhaltig. Partnerschaftlich.\n\n'
+    +A.firma+' '+A.zusatz+' · '+A.strasse+' · '+A.ort+'\n'
+    +'Sitz: '+A.sitz+' · Geschäftsführer: '+A.gf;
 }
 // Termin/Video-Standard (RSS-Google-Konto). In Setup pro Gerät überschreibbar.
 var RSS_TERMIN = {
@@ -2701,7 +2708,7 @@ function buildAngebotPDF(snap){
   doc.setFontSize(8.5); g();
   doc.setFont('helvetica','bold'); doc.text(A.firma+' '+A.zusatz,M,yf+6);
   doc.setFont('helvetica','normal');
-  doc.text('Barmbeker Straße 23a · 22303 Hamburg · Geschäftsführer: '+A.gf,M,yf+11);
+  doc.text(A.strasse+' · '+A.ort+' · Geschäftsführer: '+A.gf,M,yf+11);
   doc.text('Tel. '+A.tel+' · '+A.mail+' · '+A.web,M,yf+15.5);
   doc.text('Angebot freibleibend. Preise netto zzgl. gesetzl. MwSt. Laufzeit und Kündigung nach Vereinbarung.',M,yf+20);
   return doc;
