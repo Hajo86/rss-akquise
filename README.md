@@ -242,10 +242,3 @@ Salzhausen, Seevetal, Stelle, Tostedt, Winsen).
 
 > Hinweis: Der LK Harburg hat **keine** Einwohnergleichwert-Tabelle; Behälter nach
 > Selbsteinschätzung (§22 ABS), Gebühr 40 €/Tonne + 3,79 €/Liter/Jahr (Stand 2026).
-
----
-
-## Nicht Teil der Akquise-App
-
-- [`eventpic/`](eventpic/) — eigenständige Fotoaufgaben-App („Thomas wird 60", Nachbau von eventpic.eu).
-  Liegt nur vorübergehend hier, bis ein eigenes Repository existiert. Siehe [`eventpic/README.md`](eventpic/README.md).
