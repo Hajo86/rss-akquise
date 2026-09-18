@@ -85,7 +85,7 @@ Priorisierung: **M** = Muss, **S** = Soll, **K** = Kann.
 |---|---|---|
 | F-10 | M | Die App zeigt den Aufgabenkatalog als Liste von Karten, gruppiert in thematische Kategorien. |
 | F-11 | M | Jede Aufgabe hat: Titel/Aufgabentext, Kategorie, Status (offen / erledigt), Anzahl bereits hochgeladener Fotos zu dieser Aufgabe (fest-weit). |
-| F-12 | M | Fortschrittsanzeige für den einzelnen Gast: „7 von 42 Aufgaben erledigt". |
+| F-12 | M | Fortschrittsanzeige für den einzelnen Gast: „7 von 19 Aufgaben erledigt". |
 | F-13 | S | Filter: „Alle" / „Noch offen" / „Von mir erledigt" + Kategorie-Filter. |
 | F-14 | S | Button **„Überrasch mich"** → springt zu einer zufälligen, für diesen Gast noch offenen Aufgabe. |
 | F-15 | M | Aufgaben sind **keine Pflicht und keine Reihenfolge** — jeder macht, was er will, so oft er will. |
@@ -195,20 +195,17 @@ Priorisierung: **M** = Muss, **S** = Soll, **K** = Kann.
 
 ## 6. Aufgabenkatalog (inhaltliche Anforderung)
 
-Der Katalog wurde vom Auftraggeber vorgegeben und in acht Kategorien geordnet:
+Der Katalog wurde vom Auftraggeber vorgegeben. Er umfasst **19 Aufgaben** in fünf
+Kategorien — bewusst knapp gehalten, damit jeder Gast den Katalog komplett überblickt
+und keine Aufgabe „übrig" bleibt.
 
-| Kategorie | Inhalt |
-|---|---|
-| **Thomas** | Fotos mit und von Thomas, Lachmomente, Menschen, die ihm wichtig sind |
-| **60 Jahre** | die Zahl 60 kreativ, „was für 60 Jahre Thomas steht" |
-| **Gäste & Gruppen** | Gruppenfotos, ernste Gesichter, unerwartete Paarungen, Anstoßfotos, Tanzfläche |
-| **Generationen & Kinder** | Drei-Generationen-Foto, Kinder mit Erwachsenen |
-| **Blasorchester** | Musiker in Aktion, besondere Momente mit dem Orchester |
-| **Eiswagen** | am Eiswagen, kreativ und lustig |
-| **Hüpfburg** | Action, Kinder, Thomas mit Bezug zur Hüpfburg |
-| **Gulaschkanone** | die Kanone selbst, Essende, Kinder + Kanone |
-| **Deko & Details** | schönste Deko, Detailaufnahmen, ein Foto ohne Menschen |
-| **Momente** | hinter den Kulissen, Unbemerktes, Spontanes, „das schaut Thomas mit 70 noch gerne an", persönlicher Lieblingsmoment |
+| Kategorie | Anzahl | Inhalt |
+|---|---|---|
+| 🎉 **Thomas** | 2 | Selfie mit dem Geburtstagskind, Moment mit den Enkelkindern |
+| 👥 **Gäste & Gruppen** | 8 | September-Geburtstagskinder, „alle 29", drei Generationen, 20 Jahre Freundschaft, verrücktes Gruppenfoto, Tanzen, Tischnachbar, Anstoßfoto |
+| 6️⃣ **60 & Zahlen** | 2 | Gruppenfoto „alle mindestens 60", jemand mit der Zahl 60 |
+| 🎪 **Programm** | 4 | Gulaschkanone, Blasorchester, Eiswagen, Hüpfburg — als Programmpunkt markiert |
+| 📸 **Deko & Momente** | 3 | schönste Dekoration, „das schaut Thomas mit 70 noch gerne an", persönlicher Lieblingsmoment |
 
 Anforderungen an den Katalog:
 - **A-01** Jede Aufgabe ist in **einem Satz** formuliert, im Du, ohne Fachsprache.
@@ -218,9 +215,10 @@ Anforderungen an den Katalog:
   müssen mitmachen können.
 - **A-05** Aufgaben sind über den ganzen Tag verteilt lösbar (Ankunft, Essen, Programm, Abend).
 - **A-06** Der Katalog ist erweiterbar, ohne dass Uploads zu bestehenden Aufgaben verloren gehen
-  (stabile IDs).
-
----
+  (stabile IDs). Aufgaben, die eine frühere Fassung schon enthielt, haben ihre ID behalten.
+- **A-07** Mehrere Aufgaben funktionieren zusätzlich als **Gesprächsanlass** (wer hat im
+  September Geburtstag, wer kennt sich seit 20 Jahren) — das ist gewollt: sie bringen Gäste
+  ins Gespräch, die sich sonst nicht ansprechen würden.
 
 ## 7. Abnahmekriterien
 
@@ -237,8 +235,8 @@ Die Lieferung gilt als abgenommen, wenn:
 5. **Datenschutz**: Ein hochgeladenes Foto enthält keine GPS-Daten mehr (nachweisbar per
    EXIF-Prüfung).
 6. **Demo-Modus**: Ohne Supabase-Konfiguration ist die App vollständig bedienbar.
-7. **Inhalt**: Der vollständige vorgegebene Aufgabenkatalog ist enthalten, kategorisiert,
-   mit stabilen IDs.
+7. **Inhalt**: Der vollständige vorgegebene Aufgabenkatalog (19 Aufgaben) ist enthalten,
+   kategorisiert, mit stabilen IDs.
 8. **Betriebskosten**: 0 € (GitHub Pages + Supabase Free Tier).
 
 ---

@@ -333,7 +333,7 @@
       ' stroke-dashoffset="' + (c * (1 - pct)).toFixed(1) + '"/></svg>' +
       '<b>' + done + '/' + total + '</b>';
     $('#hSub').textContent = done === 0
-      ? (CFG.subtitle || 'Mach mit!')
+      ? String(CFG.subtitle || 'Mach mit!').replace('{n}', total)
       : done + ' von ' + total + ' Aufgaben erledigt';
   }
 
@@ -448,7 +448,7 @@
   function taskCard(t, c) {
     var mine = myCount(t.id), total = countFor(t.id);
     return '<button class="task' + (mine ? ' done' : '') + '" data-task="' + t.id + '">' +
-      '<span class="ic">' + c.icon + '</span>' +
+      '<span class="ic">' + (t.icon || c.icon) + '</span>' +
       '<span class="tx"><span class="t">' + esc(t.text) + '</span>' +
       '<span class="meta">' +
       (c.timed ? '<span class="pill timed">⏱ nur beim Programmpunkt</span>' : '') +
@@ -474,7 +474,7 @@
 
     var h = '<button class="btn ghost" id="back" style="margin:10px 0 0">‹ Alle Aufgaben</button>' +
       '<div class="card" style="padding:18px;margin:8px 0 14px">' +
-      '<div class="pill">' + c.icon + ' ' + esc(c.label) + (c.timed ? ' · nur beim Programmpunkt' : '') + '</div>' +
+      '<div class="pill">' + (t.icon || c.icon) + ' ' + esc(c.label) + (c.timed ? ' · nur beim Programmpunkt' : '') + '</div>' +
       '<h2 style="margin:10px 0 0">' + esc(t.text) + '</h2>' +
       (mine ? '<div class="hint">✓ Du hast dazu schon ' + mine + ' Foto' + (mine === 1 ? '' : 's') + ' beigesteuert.</div>' : '') +
       '</div>';

@@ -5,7 +5,7 @@ Nachbau der Idee von [eventpic.eu](https://eventpic.eu/) als eigene, kostenlose 
 Ohne App-Installation, ohne Registrierung, ohne Werbung.
 
 - **Lastenheft:** [`LASTENHEFT.md`](LASTENHEFT.md) — Ziele, Anforderungen, Abnahmekriterien, Risiken
-- **Aufgabenkatalog:** [`tasks.js`](tasks.js) — 42 Aufgaben, auf Thomas und das Programm zugeschnitten
+- **Aufgabenkatalog:** [`tasks.js`](tasks.js) — 19 Aufgaben, auf Thomas und das Programm zugeschnitten
 - **Datenbank-Setup:** [`schema.sql`](schema.sql) — einmal in Supabase einfügen
 
 ---
@@ -14,7 +14,7 @@ Ohne App-Installation, ohne Registrierung, ohne Werbung.
 
 | | |
 |---|---|
-| 🎯 **42 Fotoaufgaben** | in 10 Kategorien, gruppiert und filterbar; „Überrasch mich" für Unentschlossene |
+| 🎯 **19 Fotoaufgaben** | in 5 Kategorien, gruppiert und filterbar; „Überrasch mich" für Unentschlossene |
 | 📷 **Foto in 3 Taps** | Aufgabe → Kamera → Absenden. Vorschau + optionaler Kommentar |
 | 🗜 **Automatische Komprimierung** | max. 1600 px, ~250 KB statt 4 MB — schont Datenvolumen und Speicher |
 | 🛡 **EXIF/GPS wird entfernt** | das Bild wird auf dem Handy neu gerendert, Standortdaten überleben das nicht |
@@ -141,7 +141,7 @@ npx http-server -p 8199 -s . &
 PLAYWRIGHT_BROWSERS_PATH=/opt/pw-browsers node tests/e2e.mjs
 ```
 
-Geprüft wurden u.a.: Onboarding, 42 Aufgaben, Kategoriefilter, Foto-Upload mit
+Geprüft wurden u.a.: Onboarding, 19 Aufgaben, Kategoriefilter, Foto-Upload mit
 Komprimierung auf JPEG ≤1600 px, Galerie, Lightbox, Slideshow, QR-Zeichnung,
 Live-Zahlen, Einstellungen, Löschen eigener Fotos, Abweisen von Nicht-Bildern.
 

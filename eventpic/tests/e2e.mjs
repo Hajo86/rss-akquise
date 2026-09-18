@@ -24,23 +24,24 @@ await page.waitForSelector('[data-task]');
 
 // --- Aufgabenliste ---
 const nOpen = await page.locator('[data-task]').count();
-ok(nOpen === 42, 'Alle 42 Aufgaben gelistet (gefunden: ' + nOpen + ')');
+ok(nOpen === 19, 'Alle 19 Aufgaben gelistet (gefunden: ' + nOpen + ')');
 ok((await page.locator('#hSub').textContent()).includes('Mach mit') || true, 'Kopfzeile da');
-await page.click('text=Alle 42');
-ok(await page.locator('text=🎺 Blasorchester').first().isVisible(), 'Kategorie Blasorchester sichtbar');
+await page.click('text=Alle 19');
+ok(await page.locator('#view >> text=🎪 Programm').first().isVisible(), 'Kategorie Programm sichtbar');
 ok((await page.content()).includes('nur beim Programmpunkt'), 'Programmpunkt-Hinweis vorhanden');
 await page.screenshot({ path: SD + '/s2-tasks.png', fullPage: false });
 
 // Kategorie-Filter
-await page.click('button[data-c="bounce"]');
+await page.click('button[data-c="programm"]');
 const nB = await page.locator('[data-task]').count();
-ok(nB === 3, 'Filter Hüpfburg zeigt 3 Aufgaben (gefunden: ' + nB + ')');
-await page.click('button[data-c="bounce"]');
+ok(nB === 4, 'Filter Programm zeigt 4 Aufgaben (gefunden: ' + nB + ')');
+ok((await page.locator('[data-task="e02"] .ic').textContent()).includes('🍦'), 'Eigenes Emoji je Aufgabe (Eiswagen)');
+await page.click('button[data-c="programm"]');
 
 // --- Foto hochladen (Demo-Modus) ---
 await page.click('[data-task="t01"]');
 await page.waitForSelector('#cam', { state: 'attached' });
-ok((await page.locator('#view h2').first().textContent()).includes('Geburtstagskind'), 'Aufgabendetail zeigt Text');
+ok((await page.locator('#view h2').first().textContent()).includes('Geburtstagskind Thomas'), 'Aufgabendetail zeigt Text');
 await page.setInputFiles('#cam', new URL('../icons/icon-512.png', import.meta.url).pathname);
 await page.waitForSelector('#send', { timeout: 8000 });
 ok(await page.locator('#pv').isVisible(), 'Vorschau erscheint');
@@ -51,7 +52,7 @@ await page.screenshot({ path: SD + '/s3-preview.png' });
 await page.click('#send');
 await page.waitForSelector('[data-task="t01"].done', { timeout: 8000 });
 ok(true, 'Aufgabe nach Upload als erledigt markiert');
-ok((await page.locator('#hSub').textContent()).includes('1 von 42'), 'Fortschritt 1 von 42');
+ok((await page.locator('#hSub').textContent()).includes('1 von 19'), 'Fortschritt 1 von 19');
 
 // Komprimierung: JPEG, max 1600px
 const stored = await page.evaluate(async () => {
@@ -70,7 +71,7 @@ ok(await page.locator('.grid figure').count() === 1, 'Foto in der Galerie');
 await page.screenshot({ path: SD + '/s4-gallery.png' });
 await page.click('.grid figure');
 await page.waitForSelector('.lb img');
-ok((await page.locator('.lb .bar .t').textContent()).includes('besonderen Moment'), 'Lightbox zeigt Aufgabentext');
+ok((await page.locator('.lb .bar .t').textContent()).includes('Geburtstagskind Thomas'), 'Lightbox zeigt Aufgabentext');
 ok((await page.locator('.lb .bar .m').textContent()).includes('Hajo'), 'Lightbox zeigt Gastnamen');
 await page.screenshot({ path: SD + '/s5-lightbox.png' });
 await page.click('.lb .x');
