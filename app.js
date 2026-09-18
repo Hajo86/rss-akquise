@@ -83,7 +83,7 @@ var FRAKTION = {
 var VOLUMEN = [120,240,660,1100];
 var STATUS = ['neu','kontaktiert','angebot','gewonnen','verloren'];
 var STATUS_LBL = { neu:'Neu', kontaktiert:'Kontakt', angebot:'Angebot', gewonnen:'Gewonnen', verloren:'Verloren' };
-var APP_VERSION = 'v71 · Absender auf Recycling Solution Service GmbH i. G., Seevetal · Signatur im Team-Format';
+var APP_VERSION = 'v72 · Absender pro Gerät wählbar (Setup): Signatur, Termin, Nachfass und Ansprechpartner im Angebot';
 var WD = ['Sonntag','Montag','Dienstag','Mittwoch','Donnerstag','Freitag','Samstag'];
 // Places-Typen, die fast nie Gewerbekunden mit Tonne sind -> aus Route ausblenden
 var STOP_EXCLUDE = ['bus_stop','transit_station','locality','political','park','school',
@@ -182,15 +182,25 @@ var RSS_ABSENDER = {
   mail:'rohde@rss-entsorgung.de',
   web:'rss-entsorgung.de'
 };
+// Wer auf diesem Gerät verschickt (Setup → Absender, gespeichert pro Gerät).
+// Signatur, Termin-Einladung, Nachfass-Mail und Ansprechpartner im Angebot laufen auf diese
+// Person; Firmierung und Geschäftsführer im Impressum bleiben RSS_ABSENDER.
+var RSS_TEAM = {
+  rohde:{ name:'Sören Rohde',    rolle:'Geschäftsführer', tel:'+49 176 14081987', mail:'rohde@rss-entsorgung.de' },
+  rath: { name:'Helge Rath',     rolle:'',                tel:'+49 160 92012147', mail:'rath@rss-entsorgung.de' },
+  holz: { name:'Sebastian Holz', rolle:'',                tel:'+49 176 32844192', mail:'holz@rss-entsorgung.de' }
+};
+function absenderId(){ var id=S.keys&&S.keys.absender; return RSS_TEAM[id]?id:'rohde'; }
+function absender(){ return RSS_TEAM[absenderId()]; }
 // Einheitliche E-Mail-Signatur (in allen E-Mails außer dem bewusst minimalen Ghost-Follow-up).
 // Textfassung der Team-Signatur aus RSS/E-Mail-Signatur — Aufbau dort und hier gleich halten.
 function signatur(gruss){
-  var A=RSS_ABSENDER;
+  var A=RSS_ABSENDER, P=absender();
   return (gruss||'Mit freundlichen Grüßen')+'\n\n'
-    +A.gf+'\n'
-    +'Geschäftsführer\n\n'
-    +'Mobil  '+A.tel+'\n'
-    +'Mail   '+A.mail+'\n'
+    +P.name+'\n'
+    +(P.rolle?P.rolle+'\n':'')+'\n'
+    +'Mobil  '+P.tel+'\n'
+    +'Mail   '+P.mail+'\n'
     +'Web    '+A.web+'\n\n'
     +'RSS. Recycling Solution Service\n'
     +'Zuverlässig. Nachhaltig. Partnerschaftlich.\n\n'
@@ -1516,7 +1526,7 @@ function buildICS(l,start,mins){
     'UID:'+l.id+'-'+start.getTime()+'@rss-entsorgung.de','DTSTAMP:'+icsStamp(new Date()),
     'DTSTART:'+icsStamp(start),'DTEND:'+icsStamp(end),
     'SUMMARY:'+icsEsc('Müll-Audit – RSS'),'LOCATION:'+icsEsc(loc),'DESCRIPTION:'+icsEsc(desc),
-    'ORGANIZER;CN=RSS Recycling Solution Service:mailto:'+RSS_ABSENDER.mail,
+    'ORGANIZER;CN="'+absender().name+' (RSS)":mailto:'+absender().mail,
     'END:VEVENT','END:VCALENDAR'].join('\r\n');
 }
 function terminBlock(l){
@@ -1640,7 +1650,7 @@ var TEMPLATES=[
       return anredeHallo(l)+'\n\n'
         +'ich habe '+line+' – aber bisher nichts von Ihnen gehört.\n\n'
         +'Wie machen wir hier weiter?\n\n'
-        +'Grüße\n'+RSS_ABSENDER.gf+'\n'+RSS_ABSENDER.tel;
+        +'Grüße\n'+absender().name+'\n'+absender().tel;
     } }
 ];
 function tplById(id){ return TEMPLATES.filter(function(t){return t.id===id;})[0]; }
@@ -2408,6 +2418,15 @@ function renderSettings(){
   $app.innerHTML='<div class="screen">'+
     '<h1 class="t">Setup</h1><div class="sub">Keys nur lokal im Browser – nie an einen Server</div>'+
 
+    '<div class="section"><h3>Absender auf diesem Gerät</h3>'+
+      '<div class="note">Wer verschickt von hier? Signatur, Termin-Einladungen, Nachfass-Mails und der Ansprechpartner im Angebot laufen auf diese Person. Firma und Geschäftsführer im Impressum bleiben gleich.</div>'+
+      '<div class="fld" style="margin-top:10px"><label>Absender</label>'+
+        '<select class="txt" data-key="absender" style="width:100%;border:1.5px solid var(--ink);padding:12px;background:#fff;font-weight:800">'+
+          Object.keys(RSS_TEAM).map(function(id){ var t=RSS_TEAM[id];
+            return '<option value="'+id+'"'+(absenderId()===id?' selected':'')+'>'+esc(t.name)+' · '+esc(t.mail)+'</option>'; }).join('')+
+        '</select></div>'+
+    '</div>'+
+
     '<div class="section"><h3>Google Maps Platform</h3>'+
       '<div class="note">Für Places Nearby (Firma + Adresse + Telefon). $200 Gratis-Guthaben/Monat.</div>'+
       '<div class="fld" style="margin-top:10px"><label>API-Key</label>'+
@@ -2634,7 +2653,7 @@ function offerBox(l){
 function jsPDFCtor(){ return (window.jspdf && window.jspdf.jsPDF) || null; }
 function buildAngebotPDF(snap){
   var J=jsPDFCtor(); if(!J) return null;
-  var A=RSS_ABSENDER;
+  var A=RSS_ABSENDER, P=absender();
   var doc=new J({unit:'mm',format:'a4'});
   var M=18, R=192;                         // Ränder: Inhalt von 18..192 mm
   var GRAY=[110,110,110], LIGHT=[242,242,242], LINE=[210,210,210], ORANGE=[232,117,43];
@@ -2709,7 +2728,7 @@ function buildAngebotPDF(snap){
   doc.setFont('helvetica','bold'); doc.text(A.firma+' '+A.zusatz,M,yf+6);
   doc.setFont('helvetica','normal');
   doc.text(A.strasse+' · '+A.ort+' · Geschäftsführer: '+A.gf,M,yf+11);
-  doc.text('Tel. '+A.tel+' · '+A.mail+' · '+A.web,M,yf+15.5);
+  doc.text('Ansprechpartner: '+P.name+' · Tel. '+P.tel+' · '+P.mail+' · '+A.web,M,yf+15.5);
   doc.text('Angebot freibleibend. Preise netto zzgl. gesetzl. MwSt. Laufzeit und Kündigung nach Vereinbarung.',M,yf+20);
   return doc;
 }
@@ -2789,7 +2808,8 @@ function buildAngebot(snap){
 
   '<div class="foot">'+
     '<b>'+esc(A.firma)+' '+esc(A.zusatz)+'</b> · '+esc(A.strasse)+' · '+esc(A.ort)+'<br>'+
-    'Geschäftsführer: '+esc(A.gf)+' · Tel. '+esc(A.tel)+' · '+esc(A.mail)+' · '+esc(A.web)+'<br>'+
+    'Geschäftsführer: '+esc(A.gf)+'<br>'+
+    'Ansprechpartner: '+esc(absender().name)+' · Tel. '+esc(absender().tel)+' · '+esc(absender().mail)+' · '+esc(A.web)+'<br>'+
     'Angebot freibleibend. Preise netto zzgl. gesetzl. MwSt. Laufzeit und Kündigung nach Vereinbarung. Keine Rechtsberatung.'+
   '</div>'+
   '</body></html>';
