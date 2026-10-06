@@ -83,7 +83,7 @@ var FRAKTION = {
 var VOLUMEN = [120,240,660,1100];
 var STATUS = ['neu','kontaktiert','angebot','gewonnen','verloren'];
 var STATUS_LBL = { neu:'Neu', kontaktiert:'Kontakt', angebot:'Angebot', gewonnen:'Gewonnen', verloren:'Verloren' };
-var APP_VERSION = 'v72 · Absender pro Gerät wählbar (Setup): Signatur, Termin, Nachfass und Ansprechpartner im Angebot';
+var APP_VERSION = 'v73 · GmbH eingetragen: HRB 214071, Amtsgericht Lüneburg in Signatur und Angebot';
 var WD = ['Sonntag','Montag','Dienstag','Mittwoch','Donnerstag','Freitag','Samstag'];
 // Places-Typen, die fast nie Gewerbekunden mit Tonne sind -> aus Route ausblenden
 var STOP_EXCLUDE = ['bus_stop','transit_station','locality','political','park','school',
@@ -169,14 +169,15 @@ function eur(n){ return Math.round(n).toLocaleString('de-DE') + ' €'; }
 function eur2(n){ return (Number(n)||0).toLocaleString('de-DE',{minimumFractionDigits:2,maximumFractionDigits:2}) + ' €'; }
 function httpize(u){ u=(u||'').trim(); if(!u) return ''; return /^https?:\/\//i.test(u)?u:('https://'+u); }
 function hostOf(u){ try{ return new URL(httpize(u)).host.replace(/^www\./,''); }catch(e){ return (u||'').replace(/^https?:\/\//,'').replace(/^www\./,'').split('/')[0]; } }
-// Absender für Kunden-Angebote und Signatur (Stand 18.09.2026: GmbH in Gründung, Sitz Seevetal).
-// Nach der Handelsregister-Eintragung: zusatz leeren und Registergericht/HRB in signatur() ergänzen.
+// Absender für Kunden-Angebote und Signatur. GmbH eingetragen (HRB 214071, Stand 06.10.2026);
+// Registergericht und HRB sind Pflichtangaben nach § 35a GmbHG.
 var RSS_ABSENDER = {
   firma:'Recycling Solution Service GmbH',
-  zusatz:'i. G.',
   strasse:'Horster Landstraße 102a',
   ort:'21220 Seevetal',
   sitz:'Seevetal',
+  registergericht:'Amtsgericht Lüneburg',
+  hrb:'HRB 214071',
   gf:'Sören Rohde',
   tel:'+49 176 14081987',
   mail:'rohde@rss-entsorgung.de',
@@ -204,8 +205,8 @@ function signatur(gruss){
     +'Web    '+A.web+'\n\n'
     +'RSS. Recycling Solution Service\n'
     +'Zuverlässig. Nachhaltig. Partnerschaftlich.\n\n'
-    +A.firma+' '+A.zusatz+' · '+A.strasse+' · '+A.ort+'\n'
-    +'Sitz: '+A.sitz+' · Geschäftsführer: '+A.gf;
+    +A.firma+' · '+A.strasse+' · '+A.ort+'\n'
+    +'Sitz: '+A.sitz+' · '+A.registergericht+' · '+A.hrb+' · Geschäftsführer: '+A.gf;
 }
 // Termin/Video-Standard (RSS-Google-Konto). In Setup pro Gerät überschreibbar.
 var RSS_TERMIN = {
@@ -2674,7 +2675,7 @@ function buildAngebotPDF(snap){
   doc.text('Nr. '+nr,R,24,{align:'right'}); doc.text(datum,R,29,{align:'right'});
 
   // Absender + Trennlinie
-  doc.setFont('helvetica','bold'); doc.setFontSize(11); blk(); doc.text(A.firma+' '+A.zusatz,M,48);
+  doc.setFont('helvetica','bold'); doc.setFontSize(11); blk(); doc.text(A.firma,M,48);
   doc.setFont('helvetica','normal'); doc.setFontSize(9.5); g(); doc.text(A.strasse+' · '+A.ort,M,53);
   doc.setDrawColor(0,0,0); doc.setLineWidth(0.5); doc.line(M,57,R,57);
 
@@ -2725,9 +2726,9 @@ function buildAngebotPDF(snap){
   // Fuß
   var yf=270; doc.setDrawColor(LINE[0],LINE[1],LINE[2]); doc.setLineWidth(0.3); doc.line(M,yf,R,yf);
   doc.setFontSize(8.5); g();
-  doc.setFont('helvetica','bold'); doc.text(A.firma+' '+A.zusatz,M,yf+6);
+  doc.setFont('helvetica','bold'); doc.text(A.firma,M,yf+6);
   doc.setFont('helvetica','normal');
-  doc.text(A.strasse+' · '+A.ort+' · Geschäftsführer: '+A.gf,M,yf+11);
+  doc.text(A.strasse+' · '+A.ort+' · '+A.registergericht+' · '+A.hrb+' · Geschäftsführer: '+A.gf,M,yf+11);
   doc.text('Ansprechpartner: '+P.name+' · Tel. '+P.tel+' · '+P.mail+' · '+A.web,M,yf+15.5);
   doc.text('Angebot freibleibend. Preise netto zzgl. gesetzl. MwSt. Laufzeit und Kündigung nach Vereinbarung.',M,yf+20);
   return doc;
@@ -2782,7 +2783,7 @@ function buildAngebot(snap){
 
   '<div class="head">'+
     '<div>'+logoHtml+
-      '<div class="brand" style="margin-top:8px"><b>'+esc(A.firma)+' '+esc(A.zusatz)+'</b><div>'+esc(A.strasse)+' · '+esc(A.ort)+'</div></div>'+
+      '<div class="brand" style="margin-top:8px"><b>'+esc(A.firma)+'</b><div>'+esc(A.strasse)+' · '+esc(A.ort)+'</div></div>'+
     '</div>'+
     '<div class="meta"><b>Angebot</b><br>Nr. '+esc(nr)+'<br>'+datum+'</div>'+
   '</div>'+
@@ -2807,8 +2808,8 @@ function buildAngebot(snap){
   '<button class="btn" onclick="window.print()">Als PDF speichern / Drucken</button>'+
 
   '<div class="foot">'+
-    '<b>'+esc(A.firma)+' '+esc(A.zusatz)+'</b> · '+esc(A.strasse)+' · '+esc(A.ort)+'<br>'+
-    'Geschäftsführer: '+esc(A.gf)+'<br>'+
+    '<b>'+esc(A.firma)+'</b> · '+esc(A.strasse)+' · '+esc(A.ort)+'<br>'+
+    'Sitz: '+esc(A.sitz)+' · '+esc(A.registergericht)+' · '+esc(A.hrb)+' · Geschäftsführer: '+esc(A.gf)+'<br>'+
     'Ansprechpartner: '+esc(absender().name)+' · Tel. '+esc(absender().tel)+' · '+esc(absender().mail)+' · '+esc(A.web)+'<br>'+
     'Angebot freibleibend. Preise netto zzgl. gesetzl. MwSt. Laufzeit und Kündigung nach Vereinbarung. Keine Rechtsberatung.'+
   '</div>'+
