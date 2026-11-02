@@ -2,3 +2,7 @@
 node_modules/
 scripts/__pycache__/
 scripts/scrape.log
+# Secrets – NIEMALS committen (öffentliches Repo!)
+.env
+scripts/.env
+scripts/data/*_scored.*

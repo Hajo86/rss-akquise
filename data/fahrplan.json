@@ -1,0 +1,271 @@
+{
+ "stand": "2026-11-02",
+ "hinweis": "Gefahren wird am Vorabend des Abfuhrtags. Beste Tage = 4-wöchentliche, 14-tägliche und wöchentliche Behälter zusammen. Nur Gewerbe- und große Mischgebiete.",
+ "routen": [
+  {
+   "id": "S1",
+   "titel": "S1 Stade-Süd + Horneburg",
+   "kreis": "LK Stade",
+   "km": "ca. 95 km, 2 h",
+   "note": "Stade-Süd: alle drei Container-Rhythmen an diesen Tagen, Tonnen erst mittwochs. Horneburg am selben Tag 14-tägl. + wöchentlich, 4-wöchentl. nur Di 17.11., Di 15.12..",
+   "stops": [
+    "Klarenstrecker Damm 46, 21680 Stade",
+    "Heidbecker Damm 20, 21684 Stade",
+    "Carl-Benz-Straße 5, 21684 Stade",
+    "Robert-Bosch-Straße 5, 21684 Stade",
+    "Airbus-Straße 1, 21684 Stade",
+    "Am Schwarzen Berg 10, 21680 Stade",
+    "Industriestraße 5, 21640 Horneburg"
+   ],
+   "link": "https://www.google.com/maps/dir/Horster%20Landstra%C3%9Fe%20102%2C%2021220%20Seevetal/Klarenstrecker%20Damm%2046%2C%2021680%20Stade/Heidbecker%20Damm%2020%2C%2021684%20Stade/Carl-Benz-Stra%C3%9Fe%205%2C%2021684%20Stade/Robert-Bosch-Stra%C3%9Fe%205%2C%2021684%20Stade/Airbus-Stra%C3%9Fe%201%2C%2021684%20Stade/Am%20Schwarzen%20Berg%2010%2C%2021680%20Stade/Industriestra%C3%9Fe%205%2C%2021640%20Horneburg/Horster%20Landstra%C3%9Fe%20102%2C%2021220%20Seevetal/?travelmode=driving&hl=de",
+   "best": [
+    "2026-11-03",
+    "2026-12-01",
+    "2026-12-29"
+   ],
+   "ok": [
+    "2026-11-17",
+    "2026-12-15"
+   ]
+  },
+  {
+   "id": "S2",
+   "titel": "S2 Buxtehude-Ost",
+   "kreis": "LK Stade",
+   "km": "ca. 25 km, 50 min",
+   "note": "Alter Postweg / Rudolf-Diesel-Str.: 14-tägl. + 4-wöchentl. Container an den fetten Tagen (zusammen mit den Tonnen). Wochencontainer in ganz Buxtehude immer mittwochs; Konrad-Adenauer-Allee hat alle drei Rhythmen am Mi 04.11., Mi 02.12., Mi 30.12.. Moisburger Landstr. donnerstags (Do 26.11., Do 24.12. alle Rhythmen).",
+   "stops": [
+    "Harburger Straße 30, 21614 Buxtehude",
+    "Alter Postweg 30, 21614 Buxtehude",
+    "Rudolf-Diesel-Straße 1, 21614 Buxtehude",
+    "Konrad-Zuse-Straße 1, 21614 Buxtehude",
+    "Konrad-Adenauer-Allee 1, 21614 Buxtehude",
+    "Moisburger Landstraße 61, 21614 Buxtehude"
+   ],
+   "link": "https://www.google.com/maps/dir/Horster%20Landstra%C3%9Fe%20102%2C%2021220%20Seevetal/Harburger%20Stra%C3%9Fe%2030%2C%2021614%20Buxtehude/Alter%20Postweg%2030%2C%2021614%20Buxtehude/Rudolf-Diesel-Stra%C3%9Fe%201%2C%2021614%20Buxtehude/Konrad-Zuse-Stra%C3%9Fe%201%2C%2021614%20Buxtehude/Konrad-Adenauer-Allee%201%2C%2021614%20Buxtehude/Moisburger%20Landstra%C3%9Fe%2061%2C%2021614%20Buxtehude/Horster%20Landstra%C3%9Fe%20102%2C%2021220%20Seevetal/?travelmode=driving&hl=de",
+   "best": [],
+   "ok": [
+    "2026-11-04",
+    "2026-11-11",
+    "2026-11-18",
+    "2026-11-25",
+    "2026-12-02",
+    "2026-12-09",
+    "2026-12-16",
+    "2026-12-23",
+    "2026-12-30"
+   ]
+  },
+  {
+   "id": "S3",
+   "titel": "S3 Stade-Nord + Bützfleth + Harsefeld",
+   "kreis": "LK Stade",
+   "km": "ca. 110 km, 2 h 15",
+   "note": "Hansestr., Bützflether Industriestr. (Mittelstand am Rand, Dow/AOS auslassen) und Harsefeld Weißenfelder Str. laufen im selben Freitagsrhythmus. Altländer Str. hat alle Rhythmen am Fr 27.11., Sa 19.12., Friedrich-Huth-Str. Harsefeld am Fr 20.11., Fr 18.12..",
+   "stops": [
+    "Hansestraße 10, 21680 Stade",
+    "Bützflether Industriestraße 10, 21683 Stade",
+    "Altländer Straße 100, 21680 Stade",
+    "Weißenfelder Straße 10, 21698 Harsefeld",
+    "Friedrich-Huth-Straße 1, 21698 Harsefeld"
+   ],
+   "link": "https://www.google.com/maps/dir/Horster%20Landstra%C3%9Fe%20102%2C%2021220%20Seevetal/Hansestra%C3%9Fe%2010%2C%2021680%20Stade/B%C3%BCtzflether%20Industriestra%C3%9Fe%2010%2C%2021683%20Stade/Altl%C3%A4nder%20Stra%C3%9Fe%20100%2C%2021680%20Stade/Wei%C3%9Fenfelder%20Stra%C3%9Fe%2010%2C%2021698%20Harsefeld/Friedrich-Huth-Stra%C3%9Fe%201%2C%2021698%20Harsefeld/Horster%20Landstra%C3%9Fe%20102%2C%2021220%20Seevetal/?travelmode=driving&hl=de",
+   "best": [
+    "2026-11-06",
+    "2026-12-04"
+   ],
+   "ok": [
+    "2026-11-20",
+    "2026-12-18"
+   ]
+  },
+  {
+   "id": "H1",
+   "titel": "H1 Buchholz + Dibbersen + Nenndorf",
+   "kreis": "LK Harburg",
+   "km": "ca. 55 km, 1 h 15",
+   "note": "Vaenser Heide, TIP Innovationspark, Meilsener Str., Bremer Str., Dibbersen und Rosengarten-Nenndorf (Ohepark) liegen im selben Dienstagsbezirk. Fett = 14-tägl. + 4-wöchentl. zusammen. Wöchentliche 1.100 l führt der Kreis nicht gesondert.",
+   "stops": [
+    "Im Innovationspark 1, 21244 Buchholz in der Nordheide",
+    "Vaenser Weg 1, 21244 Buchholz in der Nordheide",
+    "Meilsener Straße 1, 21244 Buchholz in der Nordheide",
+    "Dibberser Straße 1, 21244 Buchholz in der Nordheide",
+    "Ohepark 1, 21224 Rosengarten"
+   ],
+   "link": "https://www.google.com/maps/dir/Horster%20Landstra%C3%9Fe%20102%2C%2021220%20Seevetal/Im%20Innovationspark%201%2C%2021244%20Buchholz%20in%20der%20Nordheide/Vaenser%20Weg%201%2C%2021244%20Buchholz%20in%20der%20Nordheide/Meilsener%20Stra%C3%9Fe%201%2C%2021244%20Buchholz%20in%20der%20Nordheide/Dibberser%20Stra%C3%9Fe%201%2C%2021244%20Buchholz%20in%20der%20Nordheide/Ohepark%201%2C%2021224%20Rosengarten/Horster%20Landstra%C3%9Fe%20102%2C%2021220%20Seevetal/?travelmode=driving&hl=de",
+   "best": [
+    "2026-11-17",
+    "2026-12-15"
+   ],
+   "ok": [
+    "2026-11-03",
+    "2026-12-01",
+    "2026-12-29"
+   ]
+  },
+  {
+   "id": "H2",
+   "titel": "H2 Hollenstedt + Trelde (Montag)",
+   "kreis": "LK Harburg",
+   "km": "ca. 80 km, 1 h 40",
+   "note": "Gewerbegebiet Am Ahrensbusch (Hollenstedt) und Trelder Berg (Trelde) am selben Montag. Tostedt läuft eine Woche versetzt: Mo 09.11., Mo 23.11., Mo 07.12., Sa 19.12. (fett Mo 23.11., Sa 19.12.).",
+   "stops": [
+    "Am Ahrensbusch 1, 21279 Hollenstedt",
+    "Trelder Berg 1, 21244 Buchholz in der Nordheide",
+    "Bahnhofstraße 50, 21255 Tostedt"
+   ],
+   "link": "https://www.google.com/maps/dir/Horster%20Landstra%C3%9Fe%20102%2C%2021220%20Seevetal/Am%20Ahrensbusch%201%2C%2021279%20Hollenstedt/Trelder%20Berg%201%2C%2021244%20Buchholz%20in%20der%20Nordheide/Bahnhofstra%C3%9Fe%2050%2C%2021255%20Tostedt/Horster%20Landstra%C3%9Fe%20102%2C%2021220%20Seevetal/?travelmode=driving&hl=de",
+   "best": [
+    "2026-11-16",
+    "2026-12-14"
+   ],
+   "ok": [
+    "2026-11-02",
+    "2026-11-30",
+    "2026-12-28"
+   ]
+  },
+  {
+   "id": "H3",
+   "titel": "H3 Neu Wulmstorf + Elstorf + Mienenbüttel",
+   "kreis": "LK Harburg",
+   "km": "ca. 60 km, 1 h 20",
+   "note": "Prologis Park, Saint-Gobain-Umfeld, Elstorf und Mienenbüttel (A1) im selben Dienstagsbezirk. Wennerstorf mittwochs: Mi 11.11., Mi 25.11., Mi 09.12., Di 22.12..",
+   "stops": [
+    "Prologis Park 1, 21629 Neu Wulmstorf",
+    "Bahnhofstraße 1, 21629 Neu Wulmstorf",
+    "Mienenbüttel 1, 21629 Neu Wulmstorf",
+    "Wennerstorfer Straße 1, 21279 Wenzendorf"
+   ],
+   "link": "https://www.google.com/maps/dir/Horster%20Landstra%C3%9Fe%20102%2C%2021220%20Seevetal/Prologis%20Park%201%2C%2021629%20Neu%20Wulmstorf/Bahnhofstra%C3%9Fe%201%2C%2021629%20Neu%20Wulmstorf/Mienenb%C3%BCttel%201%2C%2021629%20Neu%20Wulmstorf/Wennerstorfer%20Stra%C3%9Fe%201%2C%2021279%20Wenzendorf/Horster%20Landstra%C3%9Fe%20102%2C%2021220%20Seevetal/?travelmode=driving&hl=de",
+   "best": [
+    "2026-11-24",
+    "2026-12-21"
+   ],
+   "ok": [
+    "2026-11-10",
+    "2026-12-08"
+   ]
+  },
+  {
+   "id": "H4",
+   "titel": "H4 Stelle + Ashausen (Freitag)",
+   "kreis": "LK Harburg",
+   "km": "ca. 35 km, 50 min",
+   "note": "Gewerbepark Eichholz und Stelle-Ort, kleiner Bezirk, mit S3 oder H1 am selben Tag nicht kombinierbar (Freitag).",
+   "stops": [
+    "Gewerbepark Eichholz 1, 21435 Stelle",
+    "Unter den Linden 1, 21435 Stelle"
+   ],
+   "link": "https://www.google.com/maps/dir/Horster%20Landstra%C3%9Fe%20102%2C%2021220%20Seevetal/Gewerbepark%20Eichholz%201%2C%2021435%20Stelle/Unter%20den%20Linden%201%2C%2021435%20Stelle/Horster%20Landstra%C3%9Fe%20102%2C%2021220%20Seevetal/?travelmode=driving&hl=de",
+   "best": [
+    "2026-11-27",
+    "2026-12-24"
+   ],
+   "ok": [
+    "2026-11-13",
+    "2026-12-11"
+   ]
+  },
+  {
+   "id": "R1",
+   "titel": "R1 Sittensen + Sottrum (Donnerstag)",
+   "kreis": "LK Rotenburg",
+   "km": "ca. 130 km, 2 h 20",
+   "note": "Beide A1-Gewerbegebiete im selben Donnerstagsrhythmus. Rotenburg führt keine Containerart, fett = 14-tägl. + 4-wöchentl. Tonnen und Container zusammen. Papiertonne Sittensen Mi 11.11., Sottrum Di 10.11.",
+   "stops": [
+    "Bahnhofstraße 1, 27419 Sittensen",
+    "Industriestraße 1, 27419 Sittensen",
+    "Industriestraße 1, 27367 Sottrum"
+   ],
+   "link": "https://www.google.com/maps/dir/Horster%20Landstra%C3%9Fe%20102%2C%2021220%20Seevetal/Bahnhofstra%C3%9Fe%201%2C%2027419%20Sittensen/Industriestra%C3%9Fe%201%2C%2027419%20Sittensen/Industriestra%C3%9Fe%201%2C%2027367%20Sottrum/Horster%20Landstra%C3%9Fe%20102%2C%2021220%20Seevetal/?travelmode=driving&hl=de",
+   "best": [
+    "2026-11-12",
+    "2026-12-10"
+   ],
+   "ok": [
+    "2026-11-26",
+    "2026-12-23"
+   ]
+  },
+  {
+   "id": "R2",
+   "titel": "R2 Elsdorf + Gyhum-Bockel (Freitag)",
+   "kreis": "LK Rotenburg",
+   "km": "ca. 120 km, 2 h",
+   "note": "LogIn Park Elsdorf = „An der Autobahn“, Bockel gehört zu Gyhum, beide am selben Freitag. Direkt nach R1 am Vortag fahrbar.",
+   "stops": [
+    "An der Autobahn 1, 27404 Elsdorf",
+    "An der Autobahn 1, 27404 Gyhum"
+   ],
+   "link": "https://www.google.com/maps/dir/Horster%20Landstra%C3%9Fe%20102%2C%2021220%20Seevetal/An%20der%20Autobahn%201%2C%2027404%20Elsdorf/An%20der%20Autobahn%201%2C%2027404%20Gyhum/Horster%20Landstra%C3%9Fe%20102%2C%2021220%20Seevetal/?travelmode=driving&hl=de",
+   "best": [
+    "2026-11-13",
+    "2026-12-11"
+   ],
+   "ok": [
+    "2026-11-27",
+    "2026-12-24"
+   ]
+  },
+  {
+   "id": "R3",
+   "titel": "R3 Zeven (Mittwoch)",
+   "kreis": "LK Rotenburg",
+   "km": "ca. 120 km, 2 h",
+   "note": "Industriestraße und Bremervörder Straße identisch. Papier Mo 16.11.",
+   "stops": [
+    "Industriestraße 10, 27404 Zeven",
+    "Bremervörder Straße 50, 27404 Zeven"
+   ],
+   "link": "https://www.google.com/maps/dir/Horster%20Landstra%C3%9Fe%20102%2C%2021220%20Seevetal/Industriestra%C3%9Fe%2010%2C%2027404%20Zeven/Bremerv%C3%B6rder%20Stra%C3%9Fe%2050%2C%2027404%20Zeven/Horster%20Landstra%C3%9Fe%20102%2C%2021220%20Seevetal/?travelmode=driving&hl=de",
+   "best": [
+    "2026-11-11",
+    "2026-12-09"
+   ],
+   "ok": [
+    "2026-11-25",
+    "2026-12-22"
+   ]
+  },
+  {
+   "id": "R4",
+   "titel": "R4 Rotenburg Stadt (Dienstag)",
+   "kreis": "LK Rotenburg",
+   "km": "ca. 150 km, 2 h 30",
+   "note": "Gewerbegebiet Hohenesch/Industriestraße. Kollidiert mit S1/H1 (Dienstag), deshalb Di 24.11. (nur 14-tägl.) oder Di 08.12.",
+   "stops": [
+    "Industriestraße 10, 27356 Rotenburg (Wümme)"
+   ],
+   "link": "https://www.google.com/maps/dir/Horster%20Landstra%C3%9Fe%20102%2C%2021220%20Seevetal/Industriestra%C3%9Fe%2010%2C%2027356%20Rotenburg%20%28W%C3%BCmme%29/Horster%20Landstra%C3%9Fe%20102%2C%2021220%20Seevetal/?travelmode=driving&hl=de",
+   "best": [
+    "2026-11-10",
+    "2026-12-08"
+   ],
+   "ok": [
+    "2026-11-24",
+    "2026-12-21"
+   ]
+  },
+  {
+   "id": "R5",
+   "titel": "R5 Bremervörde (Donnerstag)",
+   "kreis": "LK Rotenburg",
+   "km": "ca. 160 km, 2 h 40",
+   "note": "Thomas Unternehmensgruppe und Industriestraße. Mit S3/Harsefeld nicht am selben Tag (Freitag).",
+   "stops": [
+    "Industriestraße 10, 27432 Bremervörde"
+   ],
+   "link": "https://www.google.com/maps/dir/Horster%20Landstra%C3%9Fe%20102%2C%2021220%20Seevetal/Industriestra%C3%9Fe%2010%2C%2027432%20Bremerv%C3%B6rde/Horster%20Landstra%C3%9Fe%20102%2C%2021220%20Seevetal/?travelmode=driving&hl=de",
+   "best": [
+    "2026-11-19",
+    "2026-12-17"
+   ],
+   "ok": [
+    "2026-11-05",
+    "2026-12-03",
+    "2026-12-31"
+   ]
+  }
+ ]
+}

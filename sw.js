@@ -1,5 +1,5 @@
 /* RSS Akquise — Service Worker: App-Shell-Cache für Offline-Start */
-var CACHE = 'rss-akquise-v73';
+var CACHE = 'rss-akquise-v75';
 var SHELL = [
   './',
   './index.html',
@@ -11,7 +11,8 @@ var SHELL = [
   './manifest.json',
   './data/gemeinden.json',
   './data/termine-index.json',
-  './data/abfuhr-seevetal.json'
+  './data/abfuhr-seevetal.json',
+  './data/fahrplan.json'
 ];
 
 // Seite kann den wartenden Worker sofort aktivieren lassen

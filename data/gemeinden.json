@@ -106,5 +106,23 @@
     "lat": 53.35333,
     "lng": 10.20434,
     "ortsteile": 17
+  },
+  {
+    "id": "stade",
+    "name": "LK Stade · Gewerbe",
+    "file": "abfuhr-stade.json",
+    "jahr": 2026,
+    "lat": 53.55,
+    "lng": 9.55,
+    "ortsteile": 9
+  },
+  {
+    "id": "rotenburg",
+    "name": "LK Rotenburg · Gewerbe",
+    "file": "abfuhr-rotenburg.json",
+    "jahr": 2026,
+    "lat": 53.25,
+    "lng": 9.35,
+    "ortsteile": 7
   }
 ]

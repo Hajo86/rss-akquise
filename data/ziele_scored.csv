@@ -1,0 +1,21 @@
+score,name,kategorie,streetview,lat,lon
+A,Rewe Getränke Markt,shop=beverages,"https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=53.396306,10.041856",53.396306,10.041856
+A,Bäckerei Weiss,shop=bakery,"https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=53.240263,9.800982",53.240263,9.800982
+A,Bäckerei Weiss,shop=bakery,"https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=53.282978,9.734013",53.282978,9.734013
+A,Wistedter Dorfladen,shop=convenience,"https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=53.270578,9.682058",53.270578,9.682058
+A,Heide Bazar,shop=supermarket,"https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=53.327036,9.874915",53.327036,9.874915
+A,Autoschmiede Phoenix,shop=car_repair,"https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=53.283031,9.715081",53.283031,9.715081
+A,Bäckerei Cafe Johannsen,shop=bakery,"https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=53.367238,9.714028",53.367238,9.714028
+A,bauwelt,shop=doityourself,"https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=53.368124,9.710461",53.368124,9.710461
+A,EDEKA,shop=supermarket,"https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=53.366174,9.71065",53.366174,9.71065
+A,Bosch Kröger,shop=car_repair,"https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=53.281534,9.708643",53.281534,9.708643
+A,Aldi,shop=supermarket,"https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=53.227476,10.159755",53.227476,10.159755
+A,Bäcker Schrader,shop=bakery,"https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=53.425327,9.788373",53.425327,9.788373
+B,Hof Wörme,shop=farm,"https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=53.262508,9.865512",53.262508,9.865512
+B,REWE,shop=supermarket,"https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=53.269065,9.724281",53.269065,9.724281
+C,Buschs Hofladen,shop=farm,"https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=53.281587,9.734251",53.281587,9.734251
+C,Aldi,shop=supermarket,"https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=53.419014,10.018941",53.419014,10.018941
+C,Autoteile Tostedt,shop=car,"https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=53.291316,9.735012",53.291316,9.735012
+C,Edeka Meyer,shop=supermarket,"https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=53.378607,9.898228",53.378607,9.898228
+C,EDEKA aktiv markt,shop=supermarket,"https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=53.22701,10.160542",53.22701,10.160542
+C,EDEKA,shop=supermarket,"https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=53.432489,9.905565",53.432489,9.905565

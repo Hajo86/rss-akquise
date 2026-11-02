@@ -1,0 +1,1425 @@
+{
+ "gemeinde_id": "stade",
+ "gemeinde": "Landkreis Stade (Gewerbegebiete)",
+ "jahr": 2026,
+ "ortsteile": [
+  {
+   "name": "Stade-Süd (Heidbecker Damm, Carl-Benz, Airbus)",
+   "strukturID": "38",
+   "gebietID": "Heidbecker Damm",
+   "lat": 53.578,
+   "lng": 9.492,
+   "restmuell_wochentag": "Dienstag",
+   "restmuell_termine": [
+    {
+     "datum": "2026-11-03",
+     "wochentag": "Dienstag",
+     "art": "Container 14-täglich",
+     "strasse": "Heidbecker Damm"
+    },
+    {
+     "datum": "2026-11-03",
+     "wochentag": "Dienstag",
+     "art": "Container 4-wöchentlich",
+     "strasse": "Heidbecker Damm"
+    },
+    {
+     "datum": "2026-11-03",
+     "wochentag": "Dienstag",
+     "art": "Container wöchentlich",
+     "strasse": "Heidbecker Damm"
+    },
+    {
+     "datum": "2026-11-10",
+     "wochentag": "Dienstag",
+     "art": "Container wöchentlich",
+     "strasse": "Heidbecker Damm"
+    },
+    {
+     "datum": "2026-11-11",
+     "wochentag": "Mittwoch",
+     "art": "Restmülltonne 14-täglich",
+     "strasse": "Heidbecker Damm"
+    },
+    {
+     "datum": "2026-11-17",
+     "wochentag": "Dienstag",
+     "art": "Container 14-täglich",
+     "strasse": "Heidbecker Damm"
+    },
+    {
+     "datum": "2026-11-17",
+     "wochentag": "Dienstag",
+     "art": "Container wöchentlich",
+     "strasse": "Heidbecker Damm"
+    },
+    {
+     "datum": "2026-11-24",
+     "wochentag": "Dienstag",
+     "art": "Container wöchentlich",
+     "strasse": "Heidbecker Damm"
+    },
+    {
+     "datum": "2026-11-25",
+     "wochentag": "Mittwoch",
+     "art": "Restmülltonne 14-täglich",
+     "strasse": "Heidbecker Damm"
+    },
+    {
+     "datum": "2026-11-25",
+     "wochentag": "Mittwoch",
+     "art": "Restmülltonne 4-wöchentlich",
+     "strasse": "Heidbecker Damm"
+    },
+    {
+     "datum": "2026-12-01",
+     "wochentag": "Dienstag",
+     "art": "Container 14-täglich",
+     "strasse": "Heidbecker Damm"
+    },
+    {
+     "datum": "2026-12-01",
+     "wochentag": "Dienstag",
+     "art": "Container 4-wöchentlich",
+     "strasse": "Heidbecker Damm"
+    },
+    {
+     "datum": "2026-12-01",
+     "wochentag": "Dienstag",
+     "art": "Container wöchentlich",
+     "strasse": "Heidbecker Damm"
+    },
+    {
+     "datum": "2026-12-08",
+     "wochentag": "Dienstag",
+     "art": "Container wöchentlich",
+     "strasse": "Heidbecker Damm"
+    },
+    {
+     "datum": "2026-12-09",
+     "wochentag": "Mittwoch",
+     "art": "Restmülltonne 14-täglich",
+     "strasse": "Heidbecker Damm"
+    },
+    {
+     "datum": "2026-12-15",
+     "wochentag": "Dienstag",
+     "art": "Container 14-täglich",
+     "strasse": "Heidbecker Damm"
+    },
+    {
+     "datum": "2026-12-15",
+     "wochentag": "Dienstag",
+     "art": "Container wöchentlich",
+     "strasse": "Heidbecker Damm"
+    },
+    {
+     "datum": "2026-12-22",
+     "wochentag": "Dienstag",
+     "art": "Container wöchentlich",
+     "strasse": "Heidbecker Damm"
+    },
+    {
+     "datum": "2026-12-23",
+     "wochentag": "Mittwoch",
+     "art": "Restmülltonne 14-täglich",
+     "strasse": "Heidbecker Damm"
+    },
+    {
+     "datum": "2026-12-23",
+     "wochentag": "Mittwoch",
+     "art": "Restmülltonne 4-wöchentlich",
+     "strasse": "Heidbecker Damm"
+    },
+    {
+     "datum": "2026-12-29",
+     "wochentag": "Dienstag",
+     "art": "Container 14-täglich",
+     "strasse": "Heidbecker Damm"
+    },
+    {
+     "datum": "2026-12-29",
+     "wochentag": "Dienstag",
+     "art": "Container 4-wöchentlich",
+     "strasse": "Heidbecker Damm"
+    },
+    {
+     "datum": "2026-12-29",
+     "wochentag": "Dienstag",
+     "art": "Container wöchentlich",
+     "strasse": "Heidbecker Damm"
+    }
+   ],
+   "papier_wochentag": "Montag",
+   "papier_termine": [
+    {
+     "datum": "2026-11-09",
+     "wochentag": "Montag",
+     "art": "Altpapier",
+     "strasse": "Heidbecker Damm"
+    },
+    {
+     "datum": "2026-11-23",
+     "wochentag": "Montag",
+     "art": "Altpapier",
+     "strasse": "Am Schwarzen Berg"
+    },
+    {
+     "datum": "2026-12-07",
+     "wochentag": "Montag",
+     "art": "Altpapier",
+     "strasse": "Heidbecker Damm"
+    },
+    {
+     "datum": "2026-12-21",
+     "wochentag": "Montag",
+     "art": "Altpapier",
+     "strasse": "Am Schwarzen Berg"
+    }
+   ]
+  },
+  {
+   "name": "Stade-Nord (Hansestraße)",
+   "strukturID": "38",
+   "gebietID": "Hansestr.",
+   "lat": 53.605,
+   "lng": 9.468,
+   "restmuell_wochentag": "Freitag/Samstag",
+   "restmuell_termine": [
+    {
+     "datum": "2026-11-06",
+     "wochentag": "Freitag",
+     "art": "Container 14-täglich",
+     "strasse": "Hansestr."
+    },
+    {
+     "datum": "2026-11-06",
+     "wochentag": "Freitag",
+     "art": "Container 4-wöchentlich",
+     "strasse": "Hansestr."
+    },
+    {
+     "datum": "2026-11-06",
+     "wochentag": "Freitag",
+     "art": "Container wöchentlich",
+     "strasse": "Hansestr."
+    },
+    {
+     "datum": "2026-11-10",
+     "wochentag": "Dienstag",
+     "art": "Restmülltonne 14-täglich",
+     "strasse": "Hansestr."
+    },
+    {
+     "datum": "2026-11-13",
+     "wochentag": "Freitag",
+     "art": "Container 14-täglich",
+     "strasse": "Altländer Str."
+    },
+    {
+     "datum": "2026-11-13",
+     "wochentag": "Freitag",
+     "art": "Container wöchentlich",
+     "strasse": "Hansestr."
+    },
+    {
+     "datum": "2026-11-20",
+     "wochentag": "Freitag",
+     "art": "Container 14-täglich",
+     "strasse": "Hansestr."
+    },
+    {
+     "datum": "2026-11-20",
+     "wochentag": "Freitag",
+     "art": "Container wöchentlich",
+     "strasse": "Hansestr."
+    },
+    {
+     "datum": "2026-11-24",
+     "wochentag": "Dienstag",
+     "art": "Restmülltonne 14-täglich",
+     "strasse": "Hansestr."
+    },
+    {
+     "datum": "2026-11-24",
+     "wochentag": "Dienstag",
+     "art": "Restmülltonne 4-wöchentlich",
+     "strasse": "Hansestr."
+    },
+    {
+     "datum": "2026-11-27",
+     "wochentag": "Freitag",
+     "art": "Container 14-täglich",
+     "strasse": "Altländer Str."
+    },
+    {
+     "datum": "2026-11-27",
+     "wochentag": "Freitag",
+     "art": "Container 4-wöchentlich",
+     "strasse": "Altländer Str."
+    },
+    {
+     "datum": "2026-11-27",
+     "wochentag": "Freitag",
+     "art": "Container wöchentlich",
+     "strasse": "Hansestr."
+    },
+    {
+     "datum": "2026-12-04",
+     "wochentag": "Freitag",
+     "art": "Container 14-täglich",
+     "strasse": "Hansestr."
+    },
+    {
+     "datum": "2026-12-04",
+     "wochentag": "Freitag",
+     "art": "Container 4-wöchentlich",
+     "strasse": "Hansestr."
+    },
+    {
+     "datum": "2026-12-04",
+     "wochentag": "Freitag",
+     "art": "Container wöchentlich",
+     "strasse": "Hansestr."
+    },
+    {
+     "datum": "2026-12-08",
+     "wochentag": "Dienstag",
+     "art": "Restmülltonne 14-täglich",
+     "strasse": "Hansestr."
+    },
+    {
+     "datum": "2026-12-11",
+     "wochentag": "Freitag",
+     "art": "Container 14-täglich",
+     "strasse": "Altländer Str."
+    },
+    {
+     "datum": "2026-12-11",
+     "wochentag": "Freitag",
+     "art": "Container wöchentlich",
+     "strasse": "Hansestr."
+    },
+    {
+     "datum": "2026-12-18",
+     "wochentag": "Freitag",
+     "art": "Container 14-täglich",
+     "strasse": "Hansestr."
+    },
+    {
+     "datum": "2026-12-18",
+     "wochentag": "Freitag",
+     "art": "Container wöchentlich",
+     "strasse": "Hansestr."
+    },
+    {
+     "datum": "2026-12-19",
+     "wochentag": "Samstag",
+     "art": "Container 14-täglich",
+     "strasse": "Altländer Str."
+    },
+    {
+     "datum": "2026-12-19",
+     "wochentag": "Samstag",
+     "art": "Container 4-wöchentlich",
+     "strasse": "Altländer Str."
+    },
+    {
+     "datum": "2026-12-19",
+     "wochentag": "Samstag",
+     "art": "Container wöchentlich",
+     "strasse": "Hansestr."
+    },
+    {
+     "datum": "2026-12-22",
+     "wochentag": "Dienstag",
+     "art": "Restmülltonne 14-täglich",
+     "strasse": "Hansestr."
+    },
+    {
+     "datum": "2026-12-22",
+     "wochentag": "Dienstag",
+     "art": "Restmülltonne 4-wöchentlich",
+     "strasse": "Hansestr."
+    }
+   ],
+   "papier_wochentag": "Mittwoch",
+   "papier_termine": [
+    {
+     "datum": "2026-11-11",
+     "wochentag": "Mittwoch",
+     "art": "Altpapier",
+     "strasse": "Hansestr."
+    },
+    {
+     "datum": "2026-12-09",
+     "wochentag": "Mittwoch",
+     "art": "Altpapier",
+     "strasse": "Hansestr."
+    }
+   ]
+  },
+  {
+   "name": "Bützfleth Industriestraße",
+   "strukturID": "38",
+   "gebietID": "Bützflether Industriestr.",
+   "lat": 53.632,
+   "lng": 9.505,
+   "restmuell_wochentag": "Freitag/Samstag",
+   "restmuell_termine": [
+    {
+     "datum": "2026-11-06",
+     "wochentag": "Freitag",
+     "art": "Container 14-täglich",
+     "strasse": "Bützflether Industriestr."
+    },
+    {
+     "datum": "2026-11-06",
+     "wochentag": "Freitag",
+     "art": "Container 4-wöchentlich",
+     "strasse": "Bützflether Industriestr."
+    },
+    {
+     "datum": "2026-11-06",
+     "wochentag": "Freitag",
+     "art": "Container wöchentlich",
+     "strasse": "Bützflether Industriestr."
+    },
+    {
+     "datum": "2026-11-12",
+     "wochentag": "Donnerstag",
+     "art": "Restmülltonne 14-täglich",
+     "strasse": "Bützflether Industriestr."
+    },
+    {
+     "datum": "2026-11-13",
+     "wochentag": "Freitag",
+     "art": "Container wöchentlich",
+     "strasse": "Bützflether Industriestr."
+    },
+    {
+     "datum": "2026-11-20",
+     "wochentag": "Freitag",
+     "art": "Container 14-täglich",
+     "strasse": "Bützflether Industriestr."
+    },
+    {
+     "datum": "2026-11-20",
+     "wochentag": "Freitag",
+     "art": "Container wöchentlich",
+     "strasse": "Bützflether Industriestr."
+    },
+    {
+     "datum": "2026-11-26",
+     "wochentag": "Donnerstag",
+     "art": "Restmülltonne 14-täglich",
+     "strasse": "Bützflether Industriestr."
+    },
+    {
+     "datum": "2026-11-26",
+     "wochentag": "Donnerstag",
+     "art": "Restmülltonne 4-wöchentlich",
+     "strasse": "Bützflether Industriestr."
+    },
+    {
+     "datum": "2026-11-27",
+     "wochentag": "Freitag",
+     "art": "Container wöchentlich",
+     "strasse": "Bützflether Industriestr."
+    },
+    {
+     "datum": "2026-12-04",
+     "wochentag": "Freitag",
+     "art": "Container 14-täglich",
+     "strasse": "Bützflether Industriestr."
+    },
+    {
+     "datum": "2026-12-04",
+     "wochentag": "Freitag",
+     "art": "Container 4-wöchentlich",
+     "strasse": "Bützflether Industriestr."
+    },
+    {
+     "datum": "2026-12-04",
+     "wochentag": "Freitag",
+     "art": "Container wöchentlich",
+     "strasse": "Bützflether Industriestr."
+    },
+    {
+     "datum": "2026-12-10",
+     "wochentag": "Donnerstag",
+     "art": "Restmülltonne 14-täglich",
+     "strasse": "Bützflether Industriestr."
+    },
+    {
+     "datum": "2026-12-11",
+     "wochentag": "Freitag",
+     "art": "Container wöchentlich",
+     "strasse": "Bützflether Industriestr."
+    },
+    {
+     "datum": "2026-12-18",
+     "wochentag": "Freitag",
+     "art": "Container 14-täglich",
+     "strasse": "Bützflether Industriestr."
+    },
+    {
+     "datum": "2026-12-18",
+     "wochentag": "Freitag",
+     "art": "Container wöchentlich",
+     "strasse": "Bützflether Industriestr."
+    },
+    {
+     "datum": "2026-12-19",
+     "wochentag": "Samstag",
+     "art": "Container wöchentlich",
+     "strasse": "Bützflether Industriestr."
+    },
+    {
+     "datum": "2026-12-24",
+     "wochentag": "Donnerstag",
+     "art": "Restmülltonne 14-täglich",
+     "strasse": "Bützflether Industriestr."
+    },
+    {
+     "datum": "2026-12-24",
+     "wochentag": "Donnerstag",
+     "art": "Restmülltonne 4-wöchentlich",
+     "strasse": "Bützflether Industriestr."
+    }
+   ],
+   "papier_wochentag": "Freitag",
+   "papier_termine": [
+    {
+     "datum": "2026-11-13",
+     "wochentag": "Freitag",
+     "art": "Altpapier",
+     "strasse": "Bützflether Industriestr."
+    },
+    {
+     "datum": "2026-12-11",
+     "wochentag": "Freitag",
+     "art": "Altpapier",
+     "strasse": "Bützflether Industriestr."
+    }
+   ]
+  },
+  {
+   "name": "Buxtehude-Ost (Alter Postweg, Rudolf-Diesel)",
+   "strukturID": "10",
+   "gebietID": "Alter Postweg",
+   "lat": 53.463,
+   "lng": 9.717,
+   "restmuell_wochentag": "Dienstag/Mittwoch",
+   "restmuell_termine": [
+    {
+     "datum": "2026-11-03",
+     "wochentag": "Dienstag",
+     "art": "Container 14-täglich",
+     "strasse": "Alter Postweg"
+    },
+    {
+     "datum": "2026-11-03",
+     "wochentag": "Dienstag",
+     "art": "Container 4-wöchentlich",
+     "strasse": "Alter Postweg"
+    },
+    {
+     "datum": "2026-11-03",
+     "wochentag": "Dienstag",
+     "art": "Restmülltonne 14-täglich",
+     "strasse": "Alter Postweg"
+    },
+    {
+     "datum": "2026-11-03",
+     "wochentag": "Dienstag",
+     "art": "Restmülltonne 4-wöchentlich",
+     "strasse": "Alter Postweg"
+    },
+    {
+     "datum": "2026-11-04",
+     "wochentag": "Mittwoch",
+     "art": "Container wöchentlich",
+     "strasse": "Alter Postweg"
+    },
+    {
+     "datum": "2026-11-11",
+     "wochentag": "Mittwoch",
+     "art": "Container wöchentlich",
+     "strasse": "Alter Postweg"
+    },
+    {
+     "datum": "2026-11-17",
+     "wochentag": "Dienstag",
+     "art": "Container 14-täglich",
+     "strasse": "Alter Postweg"
+    },
+    {
+     "datum": "2026-11-17",
+     "wochentag": "Dienstag",
+     "art": "Restmülltonne 14-täglich",
+     "strasse": "Alter Postweg"
+    },
+    {
+     "datum": "2026-11-18",
+     "wochentag": "Mittwoch",
+     "art": "Container wöchentlich",
+     "strasse": "Alter Postweg"
+    },
+    {
+     "datum": "2026-11-25",
+     "wochentag": "Mittwoch",
+     "art": "Container wöchentlich",
+     "strasse": "Alter Postweg"
+    },
+    {
+     "datum": "2026-12-01",
+     "wochentag": "Dienstag",
+     "art": "Container 14-täglich",
+     "strasse": "Alter Postweg"
+    },
+    {
+     "datum": "2026-12-01",
+     "wochentag": "Dienstag",
+     "art": "Container 4-wöchentlich",
+     "strasse": "Alter Postweg"
+    },
+    {
+     "datum": "2026-12-01",
+     "wochentag": "Dienstag",
+     "art": "Restmülltonne 14-täglich",
+     "strasse": "Alter Postweg"
+    },
+    {
+     "datum": "2026-12-01",
+     "wochentag": "Dienstag",
+     "art": "Restmülltonne 4-wöchentlich",
+     "strasse": "Alter Postweg"
+    },
+    {
+     "datum": "2026-12-02",
+     "wochentag": "Mittwoch",
+     "art": "Container wöchentlich",
+     "strasse": "Alter Postweg"
+    },
+    {
+     "datum": "2026-12-09",
+     "wochentag": "Mittwoch",
+     "art": "Container wöchentlich",
+     "strasse": "Alter Postweg"
+    },
+    {
+     "datum": "2026-12-15",
+     "wochentag": "Dienstag",
+     "art": "Container 14-täglich",
+     "strasse": "Alter Postweg"
+    },
+    {
+     "datum": "2026-12-15",
+     "wochentag": "Dienstag",
+     "art": "Restmülltonne 14-täglich",
+     "strasse": "Alter Postweg"
+    },
+    {
+     "datum": "2026-12-16",
+     "wochentag": "Mittwoch",
+     "art": "Container wöchentlich",
+     "strasse": "Alter Postweg"
+    },
+    {
+     "datum": "2026-12-23",
+     "wochentag": "Mittwoch",
+     "art": "Container wöchentlich",
+     "strasse": "Alter Postweg"
+    },
+    {
+     "datum": "2026-12-29",
+     "wochentag": "Dienstag",
+     "art": "Container 14-täglich",
+     "strasse": "Alter Postweg"
+    },
+    {
+     "datum": "2026-12-29",
+     "wochentag": "Dienstag",
+     "art": "Container 4-wöchentlich",
+     "strasse": "Alter Postweg"
+    },
+    {
+     "datum": "2026-12-29",
+     "wochentag": "Dienstag",
+     "art": "Restmülltonne 14-täglich",
+     "strasse": "Alter Postweg"
+    },
+    {
+     "datum": "2026-12-29",
+     "wochentag": "Dienstag",
+     "art": "Restmülltonne 4-wöchentlich",
+     "strasse": "Alter Postweg"
+    },
+    {
+     "datum": "2026-12-30",
+     "wochentag": "Mittwoch",
+     "art": "Container wöchentlich",
+     "strasse": "Alter Postweg"
+    }
+   ],
+   "papier_wochentag": "Montag",
+   "papier_termine": [
+    {
+     "datum": "2026-11-16",
+     "wochentag": "Montag",
+     "art": "Altpapier",
+     "strasse": "Alter Postweg"
+    },
+    {
+     "datum": "2026-12-14",
+     "wochentag": "Montag",
+     "art": "Altpapier",
+     "strasse": "Alter Postweg"
+    }
+   ]
+  },
+  {
+   "name": "Buxtehude Harburger Straße",
+   "strukturID": "10",
+   "gebietID": "Harburger Str.",
+   "lat": 53.466,
+   "lng": 9.722,
+   "restmuell_wochentag": "Mittwoch",
+   "restmuell_termine": [
+    {
+     "datum": "2026-11-04",
+     "wochentag": "Mittwoch",
+     "art": "Container wöchentlich",
+     "strasse": "Harburger Str."
+    },
+    {
+     "datum": "2026-11-11",
+     "wochentag": "Mittwoch",
+     "art": "Container wöchentlich",
+     "strasse": "Harburger Str."
+    },
+    {
+     "datum": "2026-11-18",
+     "wochentag": "Mittwoch",
+     "art": "Container wöchentlich",
+     "strasse": "Harburger Str."
+    },
+    {
+     "datum": "2026-11-25",
+     "wochentag": "Mittwoch",
+     "art": "Container wöchentlich",
+     "strasse": "Harburger Str."
+    },
+    {
+     "datum": "2026-12-02",
+     "wochentag": "Mittwoch",
+     "art": "Container wöchentlich",
+     "strasse": "Harburger Str."
+    },
+    {
+     "datum": "2026-12-09",
+     "wochentag": "Mittwoch",
+     "art": "Container wöchentlich",
+     "strasse": "Harburger Str."
+    },
+    {
+     "datum": "2026-12-16",
+     "wochentag": "Mittwoch",
+     "art": "Container wöchentlich",
+     "strasse": "Harburger Str."
+    },
+    {
+     "datum": "2026-12-23",
+     "wochentag": "Mittwoch",
+     "art": "Container wöchentlich",
+     "strasse": "Harburger Str."
+    },
+    {
+     "datum": "2026-12-30",
+     "wochentag": "Mittwoch",
+     "art": "Container wöchentlich",
+     "strasse": "Harburger Str."
+    }
+   ],
+   "papier_wochentag": "",
+   "papier_termine": []
+  },
+  {
+   "name": "Buxtehude Konrad-Adenauer-Allee",
+   "strukturID": "10",
+   "gebietID": "Konrad-Adenauer-Allee",
+   "lat": 53.472,
+   "lng": 9.7,
+   "restmuell_wochentag": "Mittwoch",
+   "restmuell_termine": [
+    {
+     "datum": "2026-11-04",
+     "wochentag": "Mittwoch",
+     "art": "Container 14-täglich",
+     "strasse": "Konrad-Adenauer-Allee"
+    },
+    {
+     "datum": "2026-11-04",
+     "wochentag": "Mittwoch",
+     "art": "Container 4-wöchentlich",
+     "strasse": "Konrad-Adenauer-Allee"
+    },
+    {
+     "datum": "2026-11-04",
+     "wochentag": "Mittwoch",
+     "art": "Container wöchentlich",
+     "strasse": "Konrad-Adenauer-Allee"
+    },
+    {
+     "datum": "2026-11-04",
+     "wochentag": "Mittwoch",
+     "art": "Restmülltonne 14-täglich",
+     "strasse": "Konrad-Adenauer-Allee"
+    },
+    {
+     "datum": "2026-11-04",
+     "wochentag": "Mittwoch",
+     "art": "Restmülltonne 4-wöchentlich",
+     "strasse": "Konrad-Adenauer-Allee"
+    },
+    {
+     "datum": "2026-11-11",
+     "wochentag": "Mittwoch",
+     "art": "Container wöchentlich",
+     "strasse": "Konrad-Adenauer-Allee"
+    },
+    {
+     "datum": "2026-11-18",
+     "wochentag": "Mittwoch",
+     "art": "Container 14-täglich",
+     "strasse": "Konrad-Adenauer-Allee"
+    },
+    {
+     "datum": "2026-11-18",
+     "wochentag": "Mittwoch",
+     "art": "Container wöchentlich",
+     "strasse": "Konrad-Adenauer-Allee"
+    },
+    {
+     "datum": "2026-11-18",
+     "wochentag": "Mittwoch",
+     "art": "Restmülltonne 14-täglich",
+     "strasse": "Konrad-Adenauer-Allee"
+    },
+    {
+     "datum": "2026-11-25",
+     "wochentag": "Mittwoch",
+     "art": "Container wöchentlich",
+     "strasse": "Konrad-Adenauer-Allee"
+    },
+    {
+     "datum": "2026-12-02",
+     "wochentag": "Mittwoch",
+     "art": "Container 14-täglich",
+     "strasse": "Konrad-Adenauer-Allee"
+    },
+    {
+     "datum": "2026-12-02",
+     "wochentag": "Mittwoch",
+     "art": "Container 4-wöchentlich",
+     "strasse": "Konrad-Adenauer-Allee"
+    },
+    {
+     "datum": "2026-12-02",
+     "wochentag": "Mittwoch",
+     "art": "Container wöchentlich",
+     "strasse": "Konrad-Adenauer-Allee"
+    },
+    {
+     "datum": "2026-12-02",
+     "wochentag": "Mittwoch",
+     "art": "Restmülltonne 14-täglich",
+     "strasse": "Konrad-Adenauer-Allee"
+    },
+    {
+     "datum": "2026-12-02",
+     "wochentag": "Mittwoch",
+     "art": "Restmülltonne 4-wöchentlich",
+     "strasse": "Konrad-Adenauer-Allee"
+    },
+    {
+     "datum": "2026-12-09",
+     "wochentag": "Mittwoch",
+     "art": "Container wöchentlich",
+     "strasse": "Konrad-Adenauer-Allee"
+    },
+    {
+     "datum": "2026-12-16",
+     "wochentag": "Mittwoch",
+     "art": "Container 14-täglich",
+     "strasse": "Konrad-Adenauer-Allee"
+    },
+    {
+     "datum": "2026-12-16",
+     "wochentag": "Mittwoch",
+     "art": "Container wöchentlich",
+     "strasse": "Konrad-Adenauer-Allee"
+    },
+    {
+     "datum": "2026-12-16",
+     "wochentag": "Mittwoch",
+     "art": "Restmülltonne 14-täglich",
+     "strasse": "Konrad-Adenauer-Allee"
+    },
+    {
+     "datum": "2026-12-23",
+     "wochentag": "Mittwoch",
+     "art": "Container wöchentlich",
+     "strasse": "Konrad-Adenauer-Allee"
+    },
+    {
+     "datum": "2026-12-30",
+     "wochentag": "Mittwoch",
+     "art": "Container 14-täglich",
+     "strasse": "Konrad-Adenauer-Allee"
+    },
+    {
+     "datum": "2026-12-30",
+     "wochentag": "Mittwoch",
+     "art": "Container 4-wöchentlich",
+     "strasse": "Konrad-Adenauer-Allee"
+    },
+    {
+     "datum": "2026-12-30",
+     "wochentag": "Mittwoch",
+     "art": "Container wöchentlich",
+     "strasse": "Konrad-Adenauer-Allee"
+    },
+    {
+     "datum": "2026-12-30",
+     "wochentag": "Mittwoch",
+     "art": "Restmülltonne 14-täglich",
+     "strasse": "Konrad-Adenauer-Allee"
+    },
+    {
+     "datum": "2026-12-30",
+     "wochentag": "Mittwoch",
+     "art": "Restmülltonne 4-wöchentlich",
+     "strasse": "Konrad-Adenauer-Allee"
+    }
+   ],
+   "papier_wochentag": "Dienstag",
+   "papier_termine": [
+    {
+     "datum": "2026-11-03",
+     "wochentag": "Dienstag",
+     "art": "Altpapier",
+     "strasse": "Konrad-Adenauer-Allee"
+    },
+    {
+     "datum": "2026-12-01",
+     "wochentag": "Dienstag",
+     "art": "Altpapier",
+     "strasse": "Konrad-Adenauer-Allee"
+    },
+    {
+     "datum": "2026-12-29",
+     "wochentag": "Dienstag",
+     "art": "Altpapier",
+     "strasse": "Konrad-Adenauer-Allee"
+    }
+   ]
+  },
+  {
+   "name": "Buxtehude Moisburger Landstraße",
+   "strukturID": "10",
+   "gebietID": "Moisburger Landstr.",
+   "lat": 53.455,
+   "lng": 9.69,
+   "restmuell_wochentag": "Mittwoch/Donnerstag",
+   "restmuell_termine": [
+    {
+     "datum": "2026-11-04",
+     "wochentag": "Mittwoch",
+     "art": "Container wöchentlich",
+     "strasse": "Moisburger Landstr."
+    },
+    {
+     "datum": "2026-11-11",
+     "wochentag": "Mittwoch",
+     "art": "Container wöchentlich",
+     "strasse": "Moisburger Landstr."
+    },
+    {
+     "datum": "2026-11-12",
+     "wochentag": "Donnerstag",
+     "art": "Container 14-täglich",
+     "strasse": "Moisburger Landstr."
+    },
+    {
+     "datum": "2026-11-12",
+     "wochentag": "Donnerstag",
+     "art": "Restmülltonne 14-täglich",
+     "strasse": "Moisburger Landstr."
+    },
+    {
+     "datum": "2026-11-18",
+     "wochentag": "Mittwoch",
+     "art": "Container wöchentlich",
+     "strasse": "Moisburger Landstr."
+    },
+    {
+     "datum": "2026-11-25",
+     "wochentag": "Mittwoch",
+     "art": "Container wöchentlich",
+     "strasse": "Moisburger Landstr."
+    },
+    {
+     "datum": "2026-11-26",
+     "wochentag": "Donnerstag",
+     "art": "Container 14-täglich",
+     "strasse": "Moisburger Landstr."
+    },
+    {
+     "datum": "2026-11-26",
+     "wochentag": "Donnerstag",
+     "art": "Container 4-wöchentlich",
+     "strasse": "Moisburger Landstr."
+    },
+    {
+     "datum": "2026-11-26",
+     "wochentag": "Donnerstag",
+     "art": "Restmülltonne 14-täglich",
+     "strasse": "Moisburger Landstr."
+    },
+    {
+     "datum": "2026-11-26",
+     "wochentag": "Donnerstag",
+     "art": "Restmülltonne 4-wöchentlich",
+     "strasse": "Moisburger Landstr."
+    },
+    {
+     "datum": "2026-12-02",
+     "wochentag": "Mittwoch",
+     "art": "Container wöchentlich",
+     "strasse": "Moisburger Landstr."
+    },
+    {
+     "datum": "2026-12-09",
+     "wochentag": "Mittwoch",
+     "art": "Container wöchentlich",
+     "strasse": "Moisburger Landstr."
+    },
+    {
+     "datum": "2026-12-10",
+     "wochentag": "Donnerstag",
+     "art": "Container 14-täglich",
+     "strasse": "Moisburger Landstr."
+    },
+    {
+     "datum": "2026-12-10",
+     "wochentag": "Donnerstag",
+     "art": "Restmülltonne 14-täglich",
+     "strasse": "Moisburger Landstr."
+    },
+    {
+     "datum": "2026-12-16",
+     "wochentag": "Mittwoch",
+     "art": "Container wöchentlich",
+     "strasse": "Moisburger Landstr."
+    },
+    {
+     "datum": "2026-12-23",
+     "wochentag": "Mittwoch",
+     "art": "Container wöchentlich",
+     "strasse": "Moisburger Landstr."
+    },
+    {
+     "datum": "2026-12-24",
+     "wochentag": "Donnerstag",
+     "art": "Container 14-täglich",
+     "strasse": "Moisburger Landstr."
+    },
+    {
+     "datum": "2026-12-24",
+     "wochentag": "Donnerstag",
+     "art": "Container 4-wöchentlich",
+     "strasse": "Moisburger Landstr."
+    },
+    {
+     "datum": "2026-12-24",
+     "wochentag": "Donnerstag",
+     "art": "Restmülltonne 14-täglich",
+     "strasse": "Moisburger Landstr."
+    },
+    {
+     "datum": "2026-12-24",
+     "wochentag": "Donnerstag",
+     "art": "Restmülltonne 4-wöchentlich",
+     "strasse": "Moisburger Landstr."
+    },
+    {
+     "datum": "2026-12-30",
+     "wochentag": "Mittwoch",
+     "art": "Container wöchentlich",
+     "strasse": "Moisburger Landstr."
+    }
+   ],
+   "papier_wochentag": "Donnerstag",
+   "papier_termine": [
+    {
+     "datum": "2026-11-19",
+     "wochentag": "Donnerstag",
+     "art": "Altpapier",
+     "strasse": "Moisburger Landstr."
+    },
+    {
+     "datum": "2026-12-17",
+     "wochentag": "Donnerstag",
+     "art": "Altpapier",
+     "strasse": "Moisburger Landstr."
+    }
+   ]
+  },
+  {
+   "name": "Horneburg Industriestraße",
+   "strukturID": "27",
+   "gebietID": "Industriestr.",
+   "lat": 53.505,
+   "lng": 9.578,
+   "restmuell_wochentag": "Dienstag",
+   "restmuell_termine": [
+    {
+     "datum": "2026-11-03",
+     "wochentag": "Dienstag",
+     "art": "Container 14-täglich",
+     "strasse": "Industriestr."
+    },
+    {
+     "datum": "2026-11-03",
+     "wochentag": "Dienstag",
+     "art": "Container wöchentlich",
+     "strasse": "Industriestr."
+    },
+    {
+     "datum": "2026-11-03",
+     "wochentag": "Dienstag",
+     "art": "Restmülltonne 14-täglich",
+     "strasse": "Industriestr."
+    },
+    {
+     "datum": "2026-11-10",
+     "wochentag": "Dienstag",
+     "art": "Container wöchentlich",
+     "strasse": "Industriestr."
+    },
+    {
+     "datum": "2026-11-17",
+     "wochentag": "Dienstag",
+     "art": "Container 14-täglich",
+     "strasse": "Industriestr."
+    },
+    {
+     "datum": "2026-11-17",
+     "wochentag": "Dienstag",
+     "art": "Container 4-wöchentlich",
+     "strasse": "Industriestr."
+    },
+    {
+     "datum": "2026-11-17",
+     "wochentag": "Dienstag",
+     "art": "Container wöchentlich",
+     "strasse": "Industriestr."
+    },
+    {
+     "datum": "2026-11-17",
+     "wochentag": "Dienstag",
+     "art": "Restmülltonne 14-täglich",
+     "strasse": "Industriestr."
+    },
+    {
+     "datum": "2026-11-17",
+     "wochentag": "Dienstag",
+     "art": "Restmülltonne 4-wöchentlich",
+     "strasse": "Industriestr."
+    },
+    {
+     "datum": "2026-11-24",
+     "wochentag": "Dienstag",
+     "art": "Container wöchentlich",
+     "strasse": "Industriestr."
+    },
+    {
+     "datum": "2026-12-01",
+     "wochentag": "Dienstag",
+     "art": "Container 14-täglich",
+     "strasse": "Industriestr."
+    },
+    {
+     "datum": "2026-12-01",
+     "wochentag": "Dienstag",
+     "art": "Container wöchentlich",
+     "strasse": "Industriestr."
+    },
+    {
+     "datum": "2026-12-01",
+     "wochentag": "Dienstag",
+     "art": "Restmülltonne 14-täglich",
+     "strasse": "Industriestr."
+    },
+    {
+     "datum": "2026-12-08",
+     "wochentag": "Dienstag",
+     "art": "Container wöchentlich",
+     "strasse": "Industriestr."
+    },
+    {
+     "datum": "2026-12-15",
+     "wochentag": "Dienstag",
+     "art": "Container 14-täglich",
+     "strasse": "Industriestr."
+    },
+    {
+     "datum": "2026-12-15",
+     "wochentag": "Dienstag",
+     "art": "Container 4-wöchentlich",
+     "strasse": "Industriestr."
+    },
+    {
+     "datum": "2026-12-15",
+     "wochentag": "Dienstag",
+     "art": "Container wöchentlich",
+     "strasse": "Industriestr."
+    },
+    {
+     "datum": "2026-12-15",
+     "wochentag": "Dienstag",
+     "art": "Restmülltonne 14-täglich",
+     "strasse": "Industriestr."
+    },
+    {
+     "datum": "2026-12-15",
+     "wochentag": "Dienstag",
+     "art": "Restmülltonne 4-wöchentlich",
+     "strasse": "Industriestr."
+    },
+    {
+     "datum": "2026-12-22",
+     "wochentag": "Dienstag",
+     "art": "Container wöchentlich",
+     "strasse": "Industriestr."
+    },
+    {
+     "datum": "2026-12-29",
+     "wochentag": "Dienstag",
+     "art": "Container 14-täglich",
+     "strasse": "Industriestr."
+    },
+    {
+     "datum": "2026-12-29",
+     "wochentag": "Dienstag",
+     "art": "Container wöchentlich",
+     "strasse": "Industriestr."
+    },
+    {
+     "datum": "2026-12-29",
+     "wochentag": "Dienstag",
+     "art": "Restmülltonne 14-täglich",
+     "strasse": "Industriestr."
+    }
+   ],
+   "papier_wochentag": "Freitag",
+   "papier_termine": [
+    {
+     "datum": "2026-11-20",
+     "wochentag": "Freitag",
+     "art": "Altpapier",
+     "strasse": "Industriestr."
+    },
+    {
+     "datum": "2026-12-18",
+     "wochentag": "Freitag",
+     "art": "Altpapier",
+     "strasse": "Industriestr."
+    }
+   ]
+  },
+  {
+   "name": "Harsefeld Weißenfelder Straße",
+   "strukturID": "23",
+   "gebietID": "Weißenfelder Str.",
+   "lat": 53.452,
+   "lng": 9.515,
+   "restmuell_wochentag": "Freitag/Samstag",
+   "restmuell_termine": [
+    {
+     "datum": "2026-11-06",
+     "wochentag": "Freitag",
+     "art": "Container 14-täglich",
+     "strasse": "Weißenfelder Str."
+    },
+    {
+     "datum": "2026-11-06",
+     "wochentag": "Freitag",
+     "art": "Container 4-wöchentlich",
+     "strasse": "Weißenfelder Str."
+    },
+    {
+     "datum": "2026-11-06",
+     "wochentag": "Freitag",
+     "art": "Container wöchentlich",
+     "strasse": "Weißenfelder Str."
+    },
+    {
+     "datum": "2026-11-06",
+     "wochentag": "Freitag",
+     "art": "Restmülltonne 14-täglich",
+     "strasse": "Weißenfelder Str."
+    },
+    {
+     "datum": "2026-11-06",
+     "wochentag": "Freitag",
+     "art": "Restmülltonne 4-wöchentlich",
+     "strasse": "Weißenfelder Str."
+    },
+    {
+     "datum": "2026-11-13",
+     "wochentag": "Freitag",
+     "art": "Container wöchentlich",
+     "strasse": "Weißenfelder Str."
+    },
+    {
+     "datum": "2026-11-20",
+     "wochentag": "Freitag",
+     "art": "Container 14-täglich",
+     "strasse": "Weißenfelder Str."
+    },
+    {
+     "datum": "2026-11-20",
+     "wochentag": "Freitag",
+     "art": "Container 4-wöchentlich",
+     "strasse": "Friedrich-Huth-Str."
+    },
+    {
+     "datum": "2026-11-20",
+     "wochentag": "Freitag",
+     "art": "Container wöchentlich",
+     "strasse": "Weißenfelder Str."
+    },
+    {
+     "datum": "2026-11-20",
+     "wochentag": "Freitag",
+     "art": "Restmülltonne 14-täglich",
+     "strasse": "Weißenfelder Str."
+    },
+    {
+     "datum": "2026-11-20",
+     "wochentag": "Freitag",
+     "art": "Restmülltonne 4-wöchentlich",
+     "strasse": "Friedrich-Huth-Str."
+    },
+    {
+     "datum": "2026-11-27",
+     "wochentag": "Freitag",
+     "art": "Container wöchentlich",
+     "strasse": "Weißenfelder Str."
+    },
+    {
+     "datum": "2026-12-04",
+     "wochentag": "Freitag",
+     "art": "Container 14-täglich",
+     "strasse": "Weißenfelder Str."
+    },
+    {
+     "datum": "2026-12-04",
+     "wochentag": "Freitag",
+     "art": "Container 4-wöchentlich",
+     "strasse": "Weißenfelder Str."
+    },
+    {
+     "datum": "2026-12-04",
+     "wochentag": "Freitag",
+     "art": "Container wöchentlich",
+     "strasse": "Weißenfelder Str."
+    },
+    {
+     "datum": "2026-12-04",
+     "wochentag": "Freitag",
+     "art": "Restmülltonne 14-täglich",
+     "strasse": "Weißenfelder Str."
+    },
+    {
+     "datum": "2026-12-04",
+     "wochentag": "Freitag",
+     "art": "Restmülltonne 4-wöchentlich",
+     "strasse": "Weißenfelder Str."
+    },
+    {
+     "datum": "2026-12-11",
+     "wochentag": "Freitag",
+     "art": "Container wöchentlich",
+     "strasse": "Weißenfelder Str."
+    },
+    {
+     "datum": "2026-12-18",
+     "wochentag": "Freitag",
+     "art": "Container 14-täglich",
+     "strasse": "Weißenfelder Str."
+    },
+    {
+     "datum": "2026-12-18",
+     "wochentag": "Freitag",
+     "art": "Container 4-wöchentlich",
+     "strasse": "Friedrich-Huth-Str."
+    },
+    {
+     "datum": "2026-12-18",
+     "wochentag": "Freitag",
+     "art": "Container wöchentlich",
+     "strasse": "Weißenfelder Str."
+    },
+    {
+     "datum": "2026-12-18",
+     "wochentag": "Freitag",
+     "art": "Restmülltonne 14-täglich",
+     "strasse": "Weißenfelder Str."
+    },
+    {
+     "datum": "2026-12-18",
+     "wochentag": "Freitag",
+     "art": "Restmülltonne 4-wöchentlich",
+     "strasse": "Friedrich-Huth-Str."
+    },
+    {
+     "datum": "2026-12-19",
+     "wochentag": "Samstag",
+     "art": "Container wöchentlich",
+     "strasse": "Weißenfelder Str."
+    }
+   ],
+   "papier_wochentag": "Mittwoch",
+   "papier_termine": [
+    {
+     "datum": "2026-11-25",
+     "wochentag": "Mittwoch",
+     "art": "Altpapier",
+     "strasse": "Friedrich-Huth-Str."
+    },
+    {
+     "datum": "2026-11-26",
+     "wochentag": "Donnerstag",
+     "art": "Altpapier",
+     "strasse": "Weißenfelder Str."
+    },
+    {
+     "datum": "2026-12-23",
+     "wochentag": "Mittwoch",
+     "art": "Altpapier",
+     "strasse": "Friedrich-Huth-Str."
+    },
+    {
+     "datum": "2026-12-24",
+     "wochentag": "Donnerstag",
+     "art": "Altpapier",
+     "strasse": "Weißenfelder Str."
+    }
+   ]
+  }
+ ]
+}

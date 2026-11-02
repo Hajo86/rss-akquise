@@ -242,3 +242,54 @@ Salzhausen, Seevetal, Stelle, Tostedt, Winsen).
 
 > Hinweis: Der LK Harburg hat **keine** Einwohnergleichwert-Tabelle; Behälter nach
 > Selbsteinschätzung (§22 ABS), Gebühr 40 €/Tonne + 3,79 €/Liter/Jahr (Stand 2026).
+
+## Luftbild-Prescore-Pipeline (Desk-Vorqualifizierung)
+
+Automatisierte Vorstufe zum Feld-Tool: erzeugt aus offenen Daten eine nach
+Behälter-Wahrscheinlichkeit **gerankte Abfahrliste** für den ganzen Landkreis — bevor
+jemand losfährt. Zwei Skripte in `scripts/`:
+
+```
+① scripts/harvest_ziele.py     Overpass (OSM) → alle Gewerbe-Ziele des LK Harburg,
+   (frei, keine Keys)          priorisiert nach Typ → data/ziele.geojson
+                               ~2.560 Ziele, davon ~1.070 mit Bild-Prescore-Priorität
+        │
+        ▼
+② scripts/prescore_luftbild.py  je Ziel: DOP20-Luftbild (20 cm, LGLN, kostenlos) →
+   (Gemini-Key)                 Gemini-2.5-Flash-Vision → A/B/C-Score
+                               → data/ziele_scored.geojson + .csv (App-Import)
+```
+
+**Datenquelle Luftbild:** WMS `opendata.lgln.niedersachsen.de/doorman/noauth/dop_wms`,
+Layer `ni_dop20`, 20 cm/px, frei (dl-de/by-2.0), EPSG:25832.
+
+**Ehrliche Grenze:** Das Luftbild erkennt zuverlässig **große Container/Mulden/Trailer**
+und ob ein Entsorgungs-Hof existiert — **nicht** die exakte Volumenklasse kleiner
+240/1100-L-Tonnen (bei 20 cm nur 3–4 px). Der Prescore priorisiert also Ziele; die
+Endklassifikation macht **Street View** (Seitenansicht) bzw. das **Feldfoto am Abfuhrtag**.
+Street View bewusst *human-in-the-loop* (Maps-Platform-ToS verbieten Bulk-KI-Auswertung).
+
+```bash
+cd scripts
+python3 harvest_ziele.py ../data/ziele.geojson
+export GEMINI_API_KEY=AIza…
+python3 prescore_luftbild.py ../data/ziele.geojson --limit 20   # Testlauf
+python3 prescore_luftbild.py ../data/ziele.geojson              # voll (hoch+flaeche)
+```
+
+Kosten Vollauf: DOP20 gratis, ~1.070 Gemini-Flash-Calls ≈ einstelliger €-Betrag.
+
+## Fahrplan, Stade und Rotenburg (v75)
+
+- **Heute-Tab → „Fahrplan · Fahrt am Vorabend"**: je Fahrabend die Routen (S = Stade, H = Harburg,
+  R = Rotenburg) mit Abfuhrtag, Google-Maps-Link ab Seevetal und aufklappbaren Details. Fett = alle
+  Rhythmen (4-wöchentlich, 14-täglich, wöchentlich) am selben Morgen. Quelle `data/fahrplan.json`,
+  erzeugt aus `RSS/strategie/fahrplan.py`.
+- **Termine Stade und Rotenburg** als eigene „Gemeinden" (`LK Stade · Gewerbe`, `LK Rotenburg · Gewerbe`),
+  Ortsteile = Gewerbegebiete. Erzeugen/aktualisieren: `cd scripts && python3 build_gewerbe_kalender.py`
+  (Stade über die Kreis-Schnittstelle, ganzes Jahr; Rotenburg aus `scripts/row_days.json`, nur per
+  Browser aus dem AWR-plus-Kalender lesbar, Stand Nov/Dez 2026). Baut auch `termine-index.json` neu.
+- **GPS**: Tippen auf die GPS-Leiste startet das Tracking komplett neu (kein Aus-/Einloggen mehr nötig),
+  ebenso beim Zurückkommen aus dem Hintergrund.
+- **Foto-Kategorien**: Zusatzfotos (Mulde, Fremdcontainer, Presse, Aufkleber, Hof/Zufahrt, Firmenschild,
+  Sonstiges) im Erfassen-Tab und im Lead-Sheet; Kategorie steht unter dem Bild (`photoTags`, lokal).

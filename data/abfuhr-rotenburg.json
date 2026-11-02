@@ -1,0 +1,390 @@
+{
+ "gemeinde_id": "rotenburg",
+ "gemeinde": "Landkreis Rotenburg (Gewerbegebiete)",
+ "jahr": 2026,
+ "ortsteile": [
+  {
+   "name": "Zeven Industriestraße / Bremervörder Straße",
+   "strukturID": "row",
+   "gebietID": "Industriestraße",
+   "lat": 53.295,
+   "lng": 9.283,
+   "restmuell_wochentag": "Mittwoch",
+   "restmuell_termine": [
+    {
+     "datum": "2026-11-11",
+     "wochentag": "Mittwoch",
+     "art": "Hausmüll 14-täglich"
+    },
+    {
+     "datum": "2026-11-11",
+     "wochentag": "Mittwoch",
+     "art": "Hausmüll 4-wöchentlich"
+    },
+    {
+     "datum": "2026-11-25",
+     "wochentag": "Mittwoch",
+     "art": "Hausmüll 14-täglich"
+    },
+    {
+     "datum": "2026-12-09",
+     "wochentag": "Mittwoch",
+     "art": "Hausmüll 14-täglich"
+    },
+    {
+     "datum": "2026-12-09",
+     "wochentag": "Mittwoch",
+     "art": "Hausmüll 4-wöchentlich"
+    },
+    {
+     "datum": "2026-12-22",
+     "wochentag": "Dienstag",
+     "art": "Hausmüll 14-täglich"
+    }
+   ],
+   "papier_wochentag": "Montag",
+   "papier_termine": [
+    {
+     "datum": "2026-11-16",
+     "wochentag": "Montag",
+     "art": "Altpapier"
+    },
+    {
+     "datum": "2026-12-14",
+     "wochentag": "Montag",
+     "art": "Altpapier"
+    }
+   ],
+   "hinweis": "AWR-plus-Kalender, nur Nov/Dez 2026 gelesen; Bremervörder Straße (Zeven) identisch. 22.12. wegen Feiertagsverschiebung Dienstag statt Mittwoch."
+  },
+  {
+   "name": "Rotenburg Industriestraße / Hohenesch",
+   "strukturID": "row",
+   "gebietID": "Industriestraße",
+   "lat": 53.102,
+   "lng": 9.405,
+   "restmuell_wochentag": "Dienstag",
+   "restmuell_termine": [
+    {
+     "datum": "2026-11-10",
+     "wochentag": "Dienstag",
+     "art": "Hausmüll 14-täglich"
+    },
+    {
+     "datum": "2026-11-10",
+     "wochentag": "Dienstag",
+     "art": "Hausmüll 4-wöchentlich"
+    },
+    {
+     "datum": "2026-11-24",
+     "wochentag": "Dienstag",
+     "art": "Hausmüll 14-täglich"
+    },
+    {
+     "datum": "2026-12-08",
+     "wochentag": "Dienstag",
+     "art": "Hausmüll 14-täglich"
+    },
+    {
+     "datum": "2026-12-08",
+     "wochentag": "Dienstag",
+     "art": "Hausmüll 4-wöchentlich"
+    },
+    {
+     "datum": "2026-12-21",
+     "wochentag": "Montag",
+     "art": "Hausmüll 14-täglich"
+    }
+   ],
+   "papier_wochentag": "Donnerstag",
+   "papier_termine": [
+    {
+     "datum": "2026-11-12",
+     "wochentag": "Donnerstag",
+     "art": "Altpapier"
+    },
+    {
+     "datum": "2026-12-10",
+     "wochentag": "Donnerstag",
+     "art": "Altpapier"
+    }
+   ],
+   "hinweis": "AWR-plus-Kalender, nur Nov/Dez 2026 gelesen; Bezirk Rotenburg. 21.12. Montag statt Dienstag (Verschiebung)."
+  },
+  {
+   "name": "Sittensen Gewerbegebiet A1 (Bahnhof-/Industriestraße)",
+   "strukturID": "row",
+   "gebietID": "Bahnhofstraße",
+   "lat": 53.282,
+   "lng": 9.503,
+   "restmuell_wochentag": "Donnerstag",
+   "restmuell_termine": [
+    {
+     "datum": "2026-11-12",
+     "wochentag": "Donnerstag",
+     "art": "Hausmüll 14-täglich"
+    },
+    {
+     "datum": "2026-11-12",
+     "wochentag": "Donnerstag",
+     "art": "Hausmüll 4-wöchentlich"
+    },
+    {
+     "datum": "2026-11-26",
+     "wochentag": "Donnerstag",
+     "art": "Hausmüll 14-täglich"
+    },
+    {
+     "datum": "2026-12-10",
+     "wochentag": "Donnerstag",
+     "art": "Hausmüll 14-täglich"
+    },
+    {
+     "datum": "2026-12-10",
+     "wochentag": "Donnerstag",
+     "art": "Hausmüll 4-wöchentlich"
+    },
+    {
+     "datum": "2026-12-23",
+     "wochentag": "Mittwoch",
+     "art": "Hausmüll 14-täglich"
+    }
+   ],
+   "papier_wochentag": "Mittwoch",
+   "papier_termine": [
+    {
+     "datum": "2026-11-11",
+     "wochentag": "Mittwoch",
+     "art": "Altpapier"
+    },
+    {
+     "datum": "2026-12-09",
+     "wochentag": "Mittwoch",
+     "art": "Altpapier"
+    }
+   ],
+   "hinweis": "AWR-plus-Kalender, nur Nov/Dez 2026 gelesen; 'Am Bahnhof' existiert in Sittensen nicht. Industriestraße Sittensen: identische Termine."
+  },
+  {
+   "name": "Elsdorf LogIn Park (An der Autobahn)",
+   "strukturID": "row",
+   "gebietID": "An der Autobahn",
+   "lat": 53.232,
+   "lng": 9.343,
+   "restmuell_wochentag": "Freitag",
+   "restmuell_termine": [
+    {
+     "datum": "2026-11-13",
+     "wochentag": "Freitag",
+     "art": "Hausmüll 14-täglich"
+    },
+    {
+     "datum": "2026-11-13",
+     "wochentag": "Freitag",
+     "art": "Hausmüll 4-wöchentlich"
+    },
+    {
+     "datum": "2026-11-27",
+     "wochentag": "Freitag",
+     "art": "Hausmüll 14-täglich"
+    },
+    {
+     "datum": "2026-12-11",
+     "wochentag": "Freitag",
+     "art": "Hausmüll 14-täglich"
+    },
+    {
+     "datum": "2026-12-11",
+     "wochentag": "Freitag",
+     "art": "Hausmüll 4-wöchentlich"
+    },
+    {
+     "datum": "2026-12-24",
+     "wochentag": "Donnerstag",
+     "art": "Hausmüll 14-täglich"
+    }
+   ],
+   "papier_wochentag": "Montag",
+   "papier_termine": [
+    {
+     "datum": "2026-11-23",
+     "wochentag": "Montag",
+     "art": "Altpapier"
+    },
+    {
+     "datum": "2026-12-19",
+     "wochentag": "Samstag",
+     "art": "Altpapier"
+    }
+   ],
+   "hinweis": "AWR-plus-Kalender, nur Nov/Dez 2026 gelesen; Weder 'LogIn Park' noch 'Industriestraße' im Widget (Ortsteil Elsdorf, 37 Straßen); 'An der Autobahn' = Gewerbegebiet an der A1. 24.12. Donnerstag statt Freitag."
+  },
+  {
+   "name": "Sottrum Industriestraße (A1)",
+   "strukturID": "row",
+   "gebietID": "Industriestraße",
+   "lat": 53.116,
+   "lng": 9.236,
+   "restmuell_wochentag": "Donnerstag",
+   "restmuell_termine": [
+    {
+     "datum": "2026-11-12",
+     "wochentag": "Donnerstag",
+     "art": "Hausmüll 14-täglich"
+    },
+    {
+     "datum": "2026-11-12",
+     "wochentag": "Donnerstag",
+     "art": "Hausmüll 4-wöchentlich"
+    },
+    {
+     "datum": "2026-11-26",
+     "wochentag": "Donnerstag",
+     "art": "Hausmüll 14-täglich"
+    },
+    {
+     "datum": "2026-12-10",
+     "wochentag": "Donnerstag",
+     "art": "Hausmüll 14-täglich"
+    },
+    {
+     "datum": "2026-12-10",
+     "wochentag": "Donnerstag",
+     "art": "Hausmüll 4-wöchentlich"
+    },
+    {
+     "datum": "2026-12-23",
+     "wochentag": "Mittwoch",
+     "art": "Hausmüll 14-täglich"
+    }
+   ],
+   "papier_wochentag": "Dienstag",
+   "papier_termine": [
+    {
+     "datum": "2026-11-10",
+     "wochentag": "Dienstag",
+     "art": "Altpapier"
+    },
+    {
+     "datum": "2026-12-08",
+     "wochentag": "Dienstag",
+     "art": "Altpapier"
+    }
+   ],
+   "hinweis": "AWR-plus-Kalender, nur Nov/Dez 2026 gelesen; 'Hansalinie' nicht im Widget (Ortsteil Sottrum); Industriestraße als Gewerbegebiets-Straße genommen (Alternativen: Bertha-Benz-, Bosch-, Dieselstraße). 23.12. Mittwoch statt Donnerstag."
+  },
+  {
+   "name": "Bremervörde Industriestraße",
+   "strukturID": "row",
+   "gebietID": "Industriestraße",
+   "lat": 53.486,
+   "lng": 9.172,
+   "restmuell_wochentag": "Donnerstag",
+   "restmuell_termine": [
+    {
+     "datum": "2026-11-05",
+     "wochentag": "Donnerstag",
+     "art": "Hausmüll 14-täglich"
+    },
+    {
+     "datum": "2026-11-19",
+     "wochentag": "Donnerstag",
+     "art": "Hausmüll 14-täglich"
+    },
+    {
+     "datum": "2026-11-19",
+     "wochentag": "Donnerstag",
+     "art": "Hausmüll 4-wöchentlich"
+    },
+    {
+     "datum": "2026-12-03",
+     "wochentag": "Donnerstag",
+     "art": "Hausmüll 14-täglich"
+    },
+    {
+     "datum": "2026-12-17",
+     "wochentag": "Donnerstag",
+     "art": "Hausmüll 14-täglich"
+    },
+    {
+     "datum": "2026-12-17",
+     "wochentag": "Donnerstag",
+     "art": "Hausmüll 4-wöchentlich"
+    },
+    {
+     "datum": "2026-12-31",
+     "wochentag": "Donnerstag",
+     "art": "Hausmüll 14-täglich"
+    }
+   ],
+   "papier_wochentag": "Montag",
+   "papier_termine": [
+    {
+     "datum": "2026-11-09",
+     "wochentag": "Montag",
+     "art": "Altpapier"
+    },
+    {
+     "datum": "2026-12-07",
+     "wochentag": "Montag",
+     "art": "Altpapier"
+    }
+   ],
+   "hinweis": "AWR-plus-Kalender, nur Nov/Dez 2026 gelesen; Bezirk Bremervörde. Fünf 14-tägl. Termine im Zeitraum (inkl. 31.12.)."
+  },
+  {
+   "name": "Gyhum-Bockel Gewerbegebiet (An der Autobahn)",
+   "strukturID": "row",
+   "gebietID": "An der Autobahn",
+   "lat": 53.195,
+   "lng": 9.29,
+   "restmuell_wochentag": "Freitag",
+   "restmuell_termine": [
+    {
+     "datum": "2026-11-13",
+     "wochentag": "Freitag",
+     "art": "Hausmüll 14-täglich"
+    },
+    {
+     "datum": "2026-11-13",
+     "wochentag": "Freitag",
+     "art": "Hausmüll 4-wöchentlich"
+    },
+    {
+     "datum": "2026-11-27",
+     "wochentag": "Freitag",
+     "art": "Hausmüll 14-täglich"
+    },
+    {
+     "datum": "2026-12-11",
+     "wochentag": "Freitag",
+     "art": "Hausmüll 14-täglich"
+    },
+    {
+     "datum": "2026-12-11",
+     "wochentag": "Freitag",
+     "art": "Hausmüll 4-wöchentlich"
+    },
+    {
+     "datum": "2026-12-24",
+     "wochentag": "Donnerstag",
+     "art": "Hausmüll 14-täglich"
+    }
+   ],
+   "papier_wochentag": "Montag",
+   "papier_termine": [
+    {
+     "datum": "2026-11-23",
+     "wochentag": "Montag",
+     "art": "Altpapier"
+    },
+    {
+     "datum": "2026-12-19",
+     "wochentag": "Samstag",
+     "art": "Altpapier"
+    }
+   ],
+   "hinweis": "AWR-plus-Kalender, nur Nov/Dez 2026 gelesen; Bockel gehört zur Gemeinde Gyhum (nicht Gnarrenburg). Nur 8 Straßen im Ortsteil, Gewerbegebiet = 'An der Autobahn' / 'Bockeler Bundesstr.'. Termine identisch mit Elsdorf. 24.12. Donnerstag statt Freitag."
+  }
+ ]
+}

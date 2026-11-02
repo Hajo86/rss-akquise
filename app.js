@@ -83,7 +83,7 @@ var FRAKTION = {
 var VOLUMEN = [120,240,660,1100];
 var STATUS = ['neu','kontaktiert','angebot','gewonnen','verloren'];
 var STATUS_LBL = { neu:'Neu', kontaktiert:'Kontakt', angebot:'Angebot', gewonnen:'Gewonnen', verloren:'Verloren' };
-var APP_VERSION = 'v73 · GmbH eingetragen: HRB 214071, Amtsgericht Lüneburg in Signatur und Angebot';
+var APP_VERSION = 'v75 · Fahrplan (Vorabend) im Heute-Tab, Stade + Rotenburg Termine, GPS-Neustart, Foto-Kategorien';
 var WD = ['Sonntag','Montag','Dienstag','Mittwoch','Donnerstag','Freitag','Samstag'];
 // Places-Typen, die fast nie Gewerbekunden mit Tonne sind -> aus Route ausblenden
 var STOP_EXCLUDE = ['bus_stop','transit_station','locality','political','park','school',
@@ -147,10 +147,14 @@ var S = {
   lastSyncError: null,// letzter Sync-Fehler (sichtbar in Setup)
   watchId: null,      // navigator.geolocation.watchPosition-ID (Live-Tracking im Auto)
   gpsTick: null,      // Intervall, das das Fix-Alter in der GPS-Pille aktualisiert
-  gpsRefreshing: false// gerade ein frischer Fix angefordert (verhindert Doppel-Requests)
+  gpsRefreshing: false,// gerade ein frischer Fix angefordert (verhindert Doppel-Requests)
+  fahrplan: null,     // data/fahrplan.json: Routen mit Abfuhrtagen (Fahrt am Vorabend)
+  fpAll: false,       // Fahrplan: alle Abende zeigen statt der nächsten 6
+  fpOpen: {},         // Fahrplan: aufgeklappte Routen-Details
+  photoTag: 'Behälter'// Kategorie für das nächste Zusatzfoto (Mulde, Fremdcontainer, …)
 };
 function freshDraft(){
-  return { photoBlob:null, lat:null, lng:null, accuracy:null, gpsState:'wait', gpsMsg:'', gpsTime:null,
+  return { photoBlob:null, extraPhotos:[], lat:null, lng:null, accuracy:null, gpsState:'wait', gpsMsg:'', gpsTime:null,
            behaelter:[{fraktion:'restmuell',volumen:1100,anzahl:1}], rhythmus:'14t', rabatt:0.10,
            entsorger_logo:true, entsorger:'', notiz:'', analyzing:false, labelScanning:false,
            preset:null, fromStop:false,               // fromStop = aus Route-Stop (springt nach Speichern zu „Heute")
@@ -178,6 +182,7 @@ var RSS_ABSENDER = {
   sitz:'Seevetal',
   registergericht:'Amtsgericht Lüneburg',
   hrb:'HRB 214071',
+  ustid:'USt-IdNr. DE465565733',
   gf:'Sören Rohde',
   tel:'+49 176 14081987',
   mail:'rohde@rss-entsorgung.de',
@@ -206,7 +211,7 @@ function signatur(gruss){
     +'RSS. Recycling Solution Service\n'
     +'Zuverlässig. Nachhaltig. Partnerschaftlich.\n\n'
     +A.firma+' · '+A.strasse+' · '+A.ort+'\n'
-    +'Sitz: '+A.sitz+' · '+A.registergericht+' · '+A.hrb+' · Geschäftsführer: '+A.gf;
+    +'Sitz: '+A.sitz+' · '+A.registergericht+' · '+A.hrb+' · '+A.ustid+' · Geschäftsführer: '+A.gf;
 }
 // Termin/Video-Standard (RSS-Google-Konto). In Setup pro Gerät überschreibbar.
 var RSS_TERMIN = {
@@ -1069,7 +1074,8 @@ async function saveDraft(){
   var lead={
     id:'lead-'+Date.now()+'-'+Math.floor(Math.random()*1e4),
     created_at:Date.now(), updated_at:Date.now(), abfuhrtag:new Date().toISOString().slice(0,10),
-    lat:d.lat, lng:d.lng, accuracy:d.accuracy, photoBlob:d.photoBlob, photos:[],
+    lat:d.lat, lng:d.lng, accuracy:d.accuracy, photoBlob:d.photoBlob,
+    photos:d.extraPhotos.map(function(x){return x.blob;}), photoTags:d.extraPhotos.map(function(x){return x.tag;}),
     behaelter:d.behaelter.map(function(c){return {fraktion:c.fraktion,volumen:c.volumen,anzahl:c.anzahl||1};}),
     fraktion:dom.fraktion, volumen:dom.volumen, anzahl:totalAnzahl(d), entsorger_logo:d.entsorger_logo, entsorger:d.entsorger||'',
     firmenname:pre?pre.firmenname:'', telefon:pre?pre.telefon:'', website:pre?pre.website:'',
@@ -1167,6 +1173,22 @@ function renderErfassen(){
     // Vorher gemachte Fotos verwenden (ohne capture -> öffnet die Galerie statt Kamera)
     '<label class="cta ghost" style="margin-top:8px;cursor:pointer;display:flex;justify-content:center">📁 Foto aus Galerie wählen'+
       '<input type="file" accept="image/*" data-act="photogallery" style="display:none"/></label>'+
+
+    // Weitere Fotos (Mulde, Fremdcontainer, Presse …) mit Kategorie, werden mit dem Lead gespeichert
+    '<span class="lab">Weitere Fotos'+(d.extraPhotos.length?(' · '+d.extraPhotos.length):'')+'</span>'+
+    (d.extraPhotos.length?('<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:6px">'+d.extraPhotos.map(function(x,i){
+        if(!x.url) x.url=URL.createObjectURL(x.blob);
+        return '<div style="position:relative;width:84px"><img src="'+x.url+'" style="width:84px;height:84px;object-fit:cover;border:1.5px solid var(--ink)"/>'+
+          '<div style="font-size:10px;font-weight:800;text-align:center">'+esc(x.tag)+'</div>'+
+          '<button data-act="deldraftphoto" data-i="'+i+'" style="position:absolute;top:-6px;right:-6px;width:22px;height:22px;border-radius:50%;background:var(--hot);color:#fff;border:0;font-weight:800;line-height:1;font-size:13px">×</button></div>';
+      }).join('')+'</div>'):'')+
+    photoTagChips(S.photoTag,'ptag')+
+    '<div class="row two" style="margin-top:0">'+
+      '<label class="cta ghost" style="margin-top:0;cursor:pointer;display:flex;justify-content:center">📷 '+esc(S.photoTag)+' fotografieren'+
+        '<input type="file" accept="image/*" capture="environment" data-act="draftextra" style="display:none"/></label>'+
+      '<label class="cta ghost" style="margin-top:0;cursor:pointer;display:flex;justify-content:center">📁 aus Galerie'+
+        '<input type="file" accept="image/*" data-act="draftextra" style="display:none"/></label>'+
+    '</div>'+
 
     (d.photoBlob && S.keys.gemini ?
       ('<button class="mic'+(d.analyzing?' rec':'')+'" data-act="analyze"'+(d.analyzing?' disabled':'')+'>'+
@@ -2042,6 +2064,59 @@ async function loadTermineIndex(){
   catch(e){ /* offline / fehlt */ }
   if(!S.termineIndex) S.termineIndex={};
 }
+// Fahrplan (Routen + Abfuhrtage, gefahren wird am Vorabend) aus data/fahrplan.json
+async function loadFahrplan(){
+  if(S.fahrplan) return;
+  try{ var r=await fetch('data/fahrplan.json',{cache:'no-cache'}); if(r.ok) S.fahrplan=await r.json(); }
+  catch(e){ /* offline / fehlt */ }
+  if(!S.fahrplan) S.fahrplan={routen:[]};
+}
+var PHOTO_TAGS=['Behälter','Mulde','Fremdcontainer','Presse','Aufkleber','Hof/Zufahrt','Firmenschild','Sonstiges'];
+function photoTagChips(cur,act){
+  return '<div style="display:flex;gap:6px;flex-wrap:wrap;margin:6px 0 8px">'+PHOTO_TAGS.map(function(tg){
+    return '<button data-act="'+act+'" data-v="'+esc(tg)+'" style="padding:7px 10px;font-size:12px;font-weight:800;border:1.5px solid var(--ink);background:'+(tg===cur?'var(--ink)':'transparent')+';color:'+(tg===cur?'var(--paper)':'var(--ink)')+'">'+esc(tg)+'</button>';
+  }).join('')+'</div>';
+}
+// Fahrplan-Block für den Heute-Tab: je Fahrabend die Routen, Maps-Link, Details aufklappbar
+function fahrplanBlock(){
+  var fp=S.fahrplan; if(!fp||!fp.routen||!fp.routen.length) return '';
+  var today=todayISO(), byEve={};
+  fp.routen.forEach(function(r){
+    [['best',r.best||[]],['ok',r.ok||[]]].forEach(function(pair){
+      pair[1].forEach(function(iso){
+        var p=iso.split('-'), d=new Date(+p[0],+p[1]-1,+p[2]); d.setDate(d.getDate()-1);
+        var eve=isoOf(d); if(eve<today) return;
+        (byEve[eve]=byEve[eve]||[]).push({r:r,kind:pair[0],abfuhr:iso});
+      });
+    });
+  });
+  var eves=Object.keys(byEve).sort();
+  if(!eves.length) return '';
+  var shown=S.fpAll?eves:eves.slice(0,6);
+  var html='<div style="border:2px solid var(--ink);padding:10px 12px;margin:0 0 12px">'+
+    '<div style="display:flex;justify-content:space-between;align-items:center">'+
+      '<div style="font-size:11px;font-weight:800;letter-spacing:.12em;text-transform:uppercase">🚐 Fahrplan · Fahrt am Vorabend</div>'+
+      '<span style="font-size:11px;color:var(--muted)">Stand '+esc(fp.stand||'')+'</span></div>'+
+    '<div style="font-size:12px;color:var(--muted);margin:3px 0 6px">Fett = 4-wöchentliche, 14-tägliche und wöchentliche Behälter stehen am selben Morgen. Nur Gewerbe- und Mischgebiete.</div>';
+  shown.forEach(function(eve){
+    var head = eve===today ? 'HEUTE ABEND' : (function(){ var tm=new Date(); tm.setDate(tm.getDate()+1); return eve===isoOf(tm)?'MORGEN ABEND':''; })();
+    html+='<div style="margin-top:8px;padding-top:6px;border-top:1px solid #ddd">'+
+      '<div style="font-size:13px;font-weight:800">'+(head?head+' · ':'')+esc(dateLabel(eve))+' <span style="font-weight:400;color:var(--muted)">→ Abfuhr '+esc(dateLabel(byEve[eve][0].abfuhr))+'</span></div>';
+    byEve[eve].sort(function(a,b){ return (a.kind===b.kind?0:(a.kind==='best'?-1:1)); }).forEach(function(it){
+      var r=it.r, open=S.fpOpen[r.id+eve];
+      html+='<div style="display:flex;gap:8px;align-items:center;margin-top:6px">'+
+        '<button data-act="fpinfo" data-v="'+esc(r.id+eve)+'" style="flex:1;min-width:0;width:auto;text-align:left;background:transparent;border:0;padding:4px 0;font-size:14px;'+(it.kind==='best'?'font-weight:800':'font-weight:500;color:#444')+'">'+
+          esc(r.titel)+'<div style="font-size:11px;font-weight:400;color:var(--muted)">'+esc(r.kreis)+' · '+esc(r.km)+(it.kind==='best'?' · alle Rhythmen':' · nur 14-tägl./wöchentl.')+' · '+(open?'▲':'▼ Details')+'</div></button>'+
+        '<a style="flex:none;display:inline-block;width:auto;margin:0;padding:10px 12px;font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;border:1.5px solid var(--ink);color:var(--ink);text-decoration:none;white-space:nowrap" href="'+esc(r.link)+'" target="_blank">Route ▸</a>'+
+      '</div>';
+      if(open) html+='<div style="font-size:12px;color:#333;margin:2px 0 6px;padding:8px;background:#f3f3f3">'+esc(r.note||'')+'<br><b>Stationen:</b> '+esc((r.stops||[]).map(function(x){return x.split(',')[0];}).join(' → '))+'</div>';
+    });
+    html+='</div>';
+  });
+  if(eves.length>6) html+='<button class="cta ghost" data-act="fpall" style="margin-top:10px">'+(S.fpAll?'Weniger anzeigen':('Alle '+eves.length+' Fahrabende anzeigen'))+'</button>';
+  html+='</div>';
+  return html;
+}
 // Route einer Gemeinde laden und direkt auf ein Datum im Heute-Tab springen
 function gotoRoute(id,date){
   S.tab='heute'; S.showReminder=false; stopGPSWatch();
@@ -2247,7 +2322,7 @@ function renderReminderOverlay(){
   var html='<div id="rmd" data-act="rmdbg" style="position:fixed;inset:0;z-index:60;background:rgba(0,0,0,.55);display:flex;align-items:flex-end">'+
     '<div style="background:var(--ink);color:var(--paper);width:100%;max-height:82vh;overflow-y:auto;padding:18px 16px 26px">'+
       '<div style="display:flex;justify-content:space-between;align-items:center">'+
-        '<div style="font-size:11px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:#bbb">Nächste Restmüll-Abfuhr · Landkreis Harburg</div>'+
+        '<div style="font-size:11px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:#bbb">Nächste Restmüll-Abfuhr · Harburg, Stade, Rotenburg</div>'+
         '<button data-act="dismissreminder" style="background:var(--paper);color:var(--ink);font-size:16px;font-weight:800;padding:4px 11px;border:0;line-height:1">×</button>'+
       '</div>'+
       '<div style="font-size:12px;color:#cfcfcf;margin-top:4px">Tippe eine Gemeinde → direkt in die Route.</div>'+
@@ -2302,7 +2377,7 @@ function updateNavBadge(){
 function renderHeute(){
   var fu=followupBlock();
   if(!S.route){
-    $app.innerHTML='<div class="screen"><h1 class="t">Heute</h1>'+ fu +
+    $app.innerHTML='<div class="screen"><h1 class="t">Heute</h1>'+ fu + fahrplanBlock() +
       '<div class="sub">Abfuhrkalender wird geladen…</div>'+
       '<div class="empty"><div class="big">Keine Routendaten</div>'+
       '<div class="sm">Beim Offline-Erststart die App einmal online öffnen, damit der Kalender lädt.</div></div></div>';
@@ -2342,7 +2417,7 @@ function renderHeute(){
   var selLbl = sel===today ? ('heute · '+dateLabel(sel)) : dateLabel(sel);
 
   $app.innerHTML='<div class="screen">'+
-    '<h1 class="t">Heute</h1>'+ fu +
+    '<h1 class="t">Heute</h1>'+ fu + fahrplanBlock() +
     '<button class="cta ghost" data-act="openreminder" style="margin:0 0 10px">▤ Übersicht · alle Gemeinden</button>'+
     gemSel+
     '<div class="sub">'+esc(S.route.gemeinde)+' · '+esc(selLbl)+' · '+due.length+' Gebiete mit Restmüll</div>'+
@@ -2728,7 +2803,7 @@ function buildAngebotPDF(snap){
   doc.setFontSize(8.5); g();
   doc.setFont('helvetica','bold'); doc.text(A.firma,M,yf+6);
   doc.setFont('helvetica','normal');
-  doc.text(A.strasse+' · '+A.ort+' · '+A.registergericht+' · '+A.hrb+' · Geschäftsführer: '+A.gf,M,yf+11);
+  doc.text(A.strasse+' · '+A.ort+' · '+A.registergericht+' · '+A.hrb+' · '+A.ustid+' · Geschäftsführer: '+A.gf,M,yf+11);
   doc.text('Ansprechpartner: '+P.name+' · Tel. '+P.tel+' · '+P.mail+' · '+A.web,M,yf+15.5);
   doc.text('Angebot freibleibend. Preise netto zzgl. gesetzl. MwSt. Laufzeit und Kündigung nach Vereinbarung.',M,yf+20);
   return doc;
@@ -2809,7 +2884,7 @@ function buildAngebot(snap){
 
   '<div class="foot">'+
     '<b>'+esc(A.firma)+'</b> · '+esc(A.strasse)+' · '+esc(A.ort)+'<br>'+
-    'Sitz: '+esc(A.sitz)+' · '+esc(A.registergericht)+' · '+esc(A.hrb)+' · Geschäftsführer: '+esc(A.gf)+'<br>'+
+    'Sitz: '+esc(A.sitz)+' · '+esc(A.registergericht)+' · '+esc(A.hrb)+' · '+esc(A.ustid)+' · Geschäftsführer: '+esc(A.gf)+'<br>'+
     'Ansprechpartner: '+esc(absender().name)+' · Tel. '+esc(absender().tel)+' · '+esc(absender().mail)+' · '+esc(A.web)+'<br>'+
     'Angebot freibleibend. Preise netto zzgl. gesetzl. MwSt. Laufzeit und Kündigung nach Vereinbarung. Keine Rechtsberatung.'+
   '</div>'+
@@ -2914,13 +2989,15 @@ function photoGallery(l){
       extras.map(function(src,i){
         return '<div style="position:relative;width:84px;height:84px">'+
           '<img src="'+src+'" data-act="zoom" style="width:84px;height:84px;object-fit:cover;border:1.5px solid var(--ink);cursor:zoom-in"/>'+
+          '<div style="font-size:10px;font-weight:800;text-align:center">'+esc((l.photoTags&&l.photoTags[i])||'')+'</div>'+
           '<button data-act="delphoto" data-id="'+l.id+'" data-i="'+i+'" style="position:absolute;top:-6px;right:-6px;width:22px;height:22px;border-radius:50%;background:var(--hot);color:#fff;border:0;font-weight:800;line-height:1;font-size:13px">×</button>'+
         '</div>';
       }).join('')+'</div>';
   }
-  // Foto hinzufügen: Kamera ODER vorhandenes Galerie-Foto (ohne capture = Auswahl)
+  // Foto hinzufügen: Kategorie wählen (Mulde, Fremdcontainer, Presse …), dann Kamera ODER Galerie
+  html+='<span class="lab">Weiteres Foto als</span>'+photoTagChips(S.photoTag,'ptag');
   html+='<div class="row two" style="margin-top:0">'+
-    '<label class="cta ghost" style="margin-top:0;cursor:pointer;display:flex;justify-content:center">📷 Kamera'+
+    '<label class="cta ghost" style="margin-top:0;cursor:pointer;display:flex;justify-content:center">📷 '+esc(S.photoTag)+' fotografieren'+
       '<input type="file" accept="image/*" capture="environment" data-act="addphoto" data-id="'+l.id+'" style="display:none"/></label>'+
     '<label class="cta ghost" style="margin-top:0;cursor:pointer;display:flex;justify-content:center">📁 Galerie'+
       '<input type="file" accept="image/*" data-act="addphoto" data-id="'+l.id+'" style="display:none"/></label>'+
@@ -2946,11 +3023,13 @@ function openLightbox(src){
   ov.style.cssText='position:fixed;inset:0;z-index:9999;background:#000;overflow:hidden;touch-action:none';
   var hint=document.createElement('div');
   hint.style.cssText='position:absolute;left:0;right:0;bottom:0;z-index:2;text-align:center;color:#fff;pointer-events:none;padding:12px';
-  hint.innerHTML='<span style="font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;background:rgba(0,0,0,.5);padding:6px 10px;border-radius:4px">2 Finger zoomen · ziehen · Doppeltipp</span>';
+  hint.style.paddingBottom='calc(env(safe-area-inset-bottom,0px) + 12px)';
+  hint.innerHTML='<span style="font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;background:rgba(0,0,0,.5);padding:6px 10px;border-radius:4px">Antippen oder wischen schließt · 2 Finger zoomen · Doppeltipp</span>';
   var x=document.createElement('button');
-  x.textContent='✕';
-  x.style.cssText='position:absolute;top:12px;right:12px;z-index:3;background:#fff;color:#000;border:0;font-weight:800;font-size:20px;width:42px;height:42px;border-radius:50%;cursor:pointer';
-  x.onclick=closeLightbox;
+  x.textContent='✕  Schließen';
+  x.setAttribute('aria-label','Foto schließen');
+  x.style.cssText='position:absolute;top:calc(env(safe-area-inset-top,0px) + 12px);right:calc(env(safe-area-inset-right,0px) + 12px);z-index:3;background:#fff;color:#000;border:0;font-weight:800;font-size:16px;height:48px;padding:0 18px;border-radius:24px;cursor:pointer';
+  x.onclick=function(e){ e.stopPropagation(); closeLightbox(); };
   var img=document.createElement('img');
   img.src=src; img.draggable=false;
   img.style.cssText='position:absolute;top:50%;left:50%;max-width:100vw;max-height:100vh;will-change:transform;user-select:none;-webkit-user-drag:none';
@@ -2962,9 +3041,10 @@ function openLightbox(src){
   apply();
   function dist(t){ return Math.hypot(t[0].clientX-t[1].clientX, t[0].clientY-t[1].clientY); }
 
-  var mode=null, sDist=0, sScale=1, sx=0, sy=0, sTx=0, sTy=0, lastTap=0;
+  var mode=null, sDist=0, sScale=1, sx=0, sy=0, sTx=0, sTy=0, lastTap=0, moved=false, tapTimer=null;
   ov.addEventListener('touchstart',function(e){
     if(e.target===x) return;                         // Schließen-Button normal tippbar lassen
+    moved=false; if(tapTimer){ clearTimeout(tapTimer); tapTimer=null; }
     if(e.touches.length===2){
       mode='pinch'; sDist=dist(e.touches); sScale=scale; sTx=tx; sTy=ty;
     } else if(e.touches.length===1){
@@ -2975,6 +3055,7 @@ function openLightbox(src){
     e.preventDefault();
   },{passive:false});
   ov.addEventListener('touchmove',function(e){
+    if(e.touches.length===1 && Math.hypot(e.touches[0].clientX-sx, e.touches[0].clientY-sy)>10) moved=true;
     if(mode==='pinch' && e.touches.length===2){
       scale=Math.min(6,Math.max(1, sScale*(dist(e.touches)/(sDist||1)))); apply();
     } else if(mode==='pan' && e.touches.length===1 && scale>1){
@@ -2983,15 +3064,24 @@ function openLightbox(src){
     e.preventDefault();
   },{passive:false});
   ov.addEventListener('touchend',function(e){
+    var war=mode, t=e.changedTouches&&e.changedTouches[0];
     if(scale<=1){ scale=1; tx=0; ty=0; apply(); }
     if(!e.touches.length) mode=null;
+    if(war==='pan' && scale<=1 && t){
+      var dy=t.clientY-sy, dx=t.clientX-sx;
+      if(Math.abs(dy)>80 && Math.abs(dy)>Math.abs(dx)) return closeLightbox();               // nach oben oder unten wischen schließt
+      if(!moved) tapTimer=setTimeout(closeLightbox, 300);                                     // einmal tippen schließt (zweiter Tipp innerhalb 300 ms zoomt)
+    }
   });
   // Desktop
   img.addEventListener('dblclick',function(e){ if(scale>1){scale=1;tx=0;ty=0;}else{scale=2.5;} apply(); e.stopPropagation(); });
   ov.addEventListener('wheel',function(e){ e.preventDefault(); scale=Math.min(6,Math.max(1, scale - e.deltaY*0.0025)); if(scale<=1){tx=0;ty=0;} apply(); },{passive:false});
   ov.addEventListener('click',function(e){ if(e.target===ov && scale<=1) closeLightbox(); });   // Tippen auf schwarzen Rand schließt (nur unzoomed)
+  try{ history.pushState({lightbox:1},''); }catch(err){}                                     // Zurück am Handy schließt das Foto
 }
-function closeLightbox(){ var o=document.getElementById('lightbox'); if(o) o.remove(); }
+function closeLightbox(vonZurueck){ var o=document.getElementById('lightbox'); if(!o) return; o.remove();
+  if(vonZurueck!==true && history.state && history.state.lightbox) history.back(); }
+window.addEventListener('popstate',function(){ closeLightbox(true); });
 document.addEventListener('keydown',function(e){ if(e.key==='Escape') closeLightbox(); });
 
 function renderPicker(){
@@ -3022,7 +3112,7 @@ document.addEventListener('click',function(e){
   var t=e.target.closest('[data-act]'); if(!t) return;
   var act=t.dataset.act, v=t.dataset.v, id=t.dataset.id;
 
-  if(act==='gps'){ getGPS(S.draft); }
+  if(act==='gps'){ stopGPSWatch(); S.draft.gpsState='wait'; S.draft.gpsTime=null; startGPSWatch(S.draft); toast('Standort wird neu ermittelt…'); }
   else if(act==='retake'){ S.draft.photoBlob=null; render(); }
   else if(act==='frak'){ S.draft.behaelter[+t.dataset.i].fraktion=v; render(); }
   else if(act==='vol'){ S.draft.behaelter[+t.dataset.i].volumen=parseInt(v,10); render(); }
@@ -3063,6 +3153,10 @@ document.addEventListener('click',function(e){
   else if(act==='dismissfu'||(act==='fuovbg'&&e.target.id==='fuov')){ dismissFollowups(); }
   else if(act==='openfulead'){ S.showFollowups=false; S.tab='leads'; S.modal=id; S.leadTab='kontakt'; render(); renderSheet(); }
   else if(act==='openreminder'){ S.showReminder=true; render(); }   // Übersicht erneut öffnen
+  else if(act==='fpall'){ S.fpAll=!S.fpAll; render(); }
+  else if(act==='fpinfo'){ S.fpOpen[v]=!S.fpOpen[v]; render(); }
+  else if(act==='ptag'){ S.photoTag=v; if(S.modal) renderSheet(); else render(); }
+  else if(act==='deldraftphoto'){ S.draft.extraPhotos.splice(+t.dataset.i,1); render(); }
   else if(act==='remindgo'){ gotoRoute(t.dataset.id, v); }
   else if(act==='filter'){ S.filter=v; render(); }
   else if(act==='sort'){ S.sort=v; render(); }
@@ -3261,6 +3355,14 @@ document.addEventListener('change',async function(e){
     render();
     if(S.keys.gemini) analyzePhoto();  // Tonnen automatisch erkennen
   }
+  // Zusatzfoto im Erfassen (Mulde, Fremdcontainer …) mit Kategorie
+  else if(t.dataset.act==='draftextra' && t.files && t.files[0]){
+    toast(S.photoTag+'-Foto wird hinzugefügt…');
+    var xb=await compressPhoto(t.files[0]);
+    S.draft.extraPhotos.push({blob:xb, tag:S.photoTag});
+    if(!S.draft.photoBlob){ S.draft.photoBlob=xb; if(S.draft.gpsState!=='ok') refreshFix(S.draft); }  // noch kein Hauptfoto -> dieses nehmen
+    render();
+  }
   // Behälter-Aufkleber im Erfassen scannen -> Adresse + Firma + Tonne
   else if(t.dataset.act==='scanlabel' && t.files && t.files[0]){
     S.lastSaved=null;
@@ -3283,14 +3385,17 @@ document.addEventListener('change',async function(e){
     var le=S.leads.find(function(x){return x.id===t.dataset.id;}); if(!le) return;
     toast('Foto wird hinzugefügt…');
     var b=await compressPhoto(t.files[0]);
-    le.photos=le.photos||[]; le.photos.push(b);
-    await dbPut(stripRuntime(le)); renderSheet(); toast('Foto hinzugefügt');
+    le.photos=le.photos||[]; le.photoTags=le.photoTags||[];
+    while(le.photoTags.length<le.photos.length) le.photoTags.push('');
+    le.photos.push(b); le.photoTags.push(S.photoTag);
+    await dbPut(stripRuntime(le)); renderSheet(); toast(S.photoTag+'-Foto hinzugefügt');
   }
   // Firmenschild scannen -> Firma/Adresse per Gemini auslesen
   else if(t.dataset.act==='scansign' && t.files && t.files[0]){
     var lz=S.leads.find(function(x){return x.id===t.dataset.id;}); if(!lz) return;
     var bb=await compressPhoto(t.files[0]);
-    lz.photos=lz.photos||[]; lz.photos.push(bb);
+    lz.photos=lz.photos||[]; lz.photoTags=lz.photoTags||[]; while(lz.photoTags.length<lz.photos.length) lz.photoTags.push('');
+    lz.photos.push(bb); lz.photoTags.push('Firmenschild');
     await dbPut(stripRuntime(lz)); renderSheet();
     analyzeSign(lz, bb);
   }
@@ -3298,7 +3403,8 @@ document.addEventListener('change',async function(e){
   else if(t.dataset.act==='scanbinlabel' && t.files && t.files[0]){
     var lb=S.leads.find(function(x){return x.id===t.dataset.id;}); if(!lb) return;
     var lbb=await compressPhoto(t.files[0]);
-    lb.photos=lb.photos||[]; lb.photos.push(lbb);
+    lb.photos=lb.photos||[]; lb.photoTags=lb.photoTags||[]; while(lb.photoTags.length<lb.photos.length) lb.photoTags.push('');
+    lb.photos.push(lbb); lb.photoTags.push('Aufkleber');
     await dbPut(stripRuntime(lb)); renderSheet();
     scanBinLabel(lbb,'lead',lb.id);
   }
@@ -3321,6 +3427,7 @@ async function delLead(id){
 async function delLeadPhoto(id,i){
   var l=S.leads.find(function(x){return x.id===id;}); if(!l||!l.photos||!l.photos[i]) return;
   l.photos.splice(i,1);
+  if(l.photoTags && l.photoTags.length>i) l.photoTags.splice(i,1);
   if(l._purls){ if(l._purls[i]) URL.revokeObjectURL(l._purls[i]); l._purls.splice(i,1); }
   await dbPut(stripRuntime(l)); syncLead(l); renderSheet();
 }
@@ -3395,7 +3502,7 @@ window.addEventListener('offline',function(){ S.online=false; render(); });
 // Zurück aus Hintergrund (Bildschirm entsperrt / App gewechselt): Standort ist jetzt
 // fast sicher veraltet und der Watch oft tot -> sofort frisch orten.
 document.addEventListener('visibilitychange',function(){
-  if(document.visibilityState==='visible' && S.tab==='erfassen' && S.draft){ refreshFix(S.draft); }
+  if(document.visibilityState==='visible' && S.tab==='erfassen' && S.draft){ stopGPSWatch(); startGPSWatch(S.draft); }
 });
 
 /* ---------- Passcode-Gate ----------
@@ -3436,6 +3543,7 @@ async function boot(){
     render();
   });
   loadRoute().then(render);
+  loadFahrplan().then(render);           // Fahrplan (Routen, Vorabend) für den Heute-Tab
   if(S.online){ processOutbox().then(function(){ syncAll(); }); }
   // regelmäßig Team-Leads nachladen (alle 90 s), ohne Tipp-Eingaben zu stören
   setInterval(function(){ if(supaOn() && S.online) syncAll(); }, 90000);
