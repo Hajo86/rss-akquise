@@ -293,3 +293,24 @@ Kosten Vollauf: DOP20 gratis, ~1.070 Gemini-Flash-Calls ≈ einstelliger €-Bet
   ebenso beim Zurückkommen aus dem Hintergrund.
 - **Foto-Kategorien**: Zusatzfotos (Mulde, Fremdcontainer, Presse, Aufkleber, Hof/Zufahrt, Firmenschild,
   Sonstiges) im Erfassen-Tab und im Lead-Sheet; Kategorie steht unter dem Bild (`photoTags`, lokal).
+
+## v76: Feldgerät + Übertragung ans Lead-Tool (02.11.2026)
+
+Die App ist nur noch das **Feldgerät** für die Ist-Aufnahme. Wiedervorlagen, Status-Pipeline,
+Anrufprotokoll, Angebote/One-Pager, Mailvorlagen, Termin-ICS und der Supabase-Sync sind raus
+(ca. 1.400 Zeilen). Bearbeitung, Status und Nachfassen laufen im Lead-Tool (leads.rss-entsorgung.de).
+
+- **Setup → „Mit Lead-Tool verbinden"**: Benutzername + Lead-Tool-Passwort + Gerätename. Der Server
+  (`POST /v1/geraet`) gibt ein Gerätetoken zurück, nur das Token bleibt im Browser (`rss_keys.ltToken`),
+  das Passwort nie. „Gerät trennen" löscht das Token auf dem Server (`DELETE /v1/geraet/<name>`).
+- **Übertragung** (`syncLead`): `POST /v1/feld` (Lead mit Behältern, Entsorger, GPS, Score, Tour,
+  Fahrabend), dann `PUT /v1/feld/<id>/foto` (Hauptfoto) und `PUT /v1/feld/<id>/foto/<n>?kat=<Kategorie>`
+  (Zusatzfotos; Kategorie wird im Lead-Tool als Bildunterschrift gezeigt). Offline: `sync_state=pending`,
+  Nachsenden beim nächsten Online-Ereignis, alle 90 s und per „Jetzt übertragen". Der Server legt
+  nichts doppelt an (gleiche App-ID → derselbe Lead; gleiche Firma/Telefon → an den vorhandenen Lead gehängt).
+- **Tour/Fahrabend** kommen aus `data/fahrplan.json` (Route, deren Abfuhrtag morgen ist).
+- Leads-Tab heißt „Erfasst": heute erfasst, Übertragungsstatus, Score; Lead-Sheet = ein Panel
+  (Fotos, Tonnen, Firma, Entsorger, Notiz, „Im Lead-Tool öffnen").
+- Test gegen einen lokalen Lead-Tool-Server: in der Browser-Konsole `rss_keys.ltUrl` auf
+  `http://127.0.0.1:8787` setzen (siehe `lead-tool/server/README.md`, Tests mit `pytest`).
+- Alte Supabase-Daten werden nicht migriert; der JSON-Export (Setup) bleibt als Sicherung.
