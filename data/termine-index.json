@@ -13184,7 +13184,9 @@
     "Stade-Nord",
     "Stade-Süd"
    ],
-   "p": []
+   "p": [
+    "Stade-Süd"
+   ]
   },
   {
    "id": "1081",
@@ -13363,7 +13365,8 @@
    "name": "LK Stade · Gewerbe",
    "r": [
     "Buxtehude Moisburger Landstraße",
-    "Bützfleth Industriestraße"
+    "Bützfleth Industriestraße",
+    "Stade-Süd"
    ],
    "p": []
   },
@@ -14128,7 +14131,8 @@
    "name": "LK Stade · Gewerbe",
    "r": [
     "Buxtehude Moisburger Landstraße",
-    "Bützfleth Industriestraße"
+    "Bützfleth Industriestraße",
+    "Stade-Süd"
    ],
    "p": [
     "Harsefeld Weißenfelder Straße"
@@ -14662,7 +14666,9 @@
     "Stade-Nord",
     "Stade-Süd"
    ],
-   "p": []
+   "p": [
+    "Stade-Süd"
+   ]
   },
   {
    "id": "1081",
@@ -14841,7 +14847,8 @@
    "name": "LK Stade · Gewerbe",
    "r": [
     "Buxtehude Moisburger Landstraße",
-    "Bützfleth Industriestraße"
+    "Bützfleth Industriestraße",
+    "Stade-Süd"
    ],
    "p": []
   },
@@ -15653,7 +15660,8 @@
    "name": "LK Stade · Gewerbe",
    "r": [
     "Buxtehude Moisburger Landstraße",
-    "Bützfleth Industriestraße"
+    "Bützfleth Industriestraße",
+    "Stade-Süd"
    ],
    "p": [
     "Harsefeld Weißenfelder Straße"

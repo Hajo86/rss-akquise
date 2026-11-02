@@ -42,6 +42,12 @@
      "strasse": "Heidbecker Damm"
     },
     {
+     "datum": "2026-11-12",
+     "wochentag": "Donnerstag",
+     "art": "Restmülltonne 14-täglich",
+     "strasse": "Odamm"
+    },
+    {
      "datum": "2026-11-17",
      "wochentag": "Dienstag",
      "art": "Container 14-täglich",
@@ -70,6 +76,18 @@
      "wochentag": "Mittwoch",
      "art": "Restmülltonne 4-wöchentlich",
      "strasse": "Heidbecker Damm"
+    },
+    {
+     "datum": "2026-11-26",
+     "wochentag": "Donnerstag",
+     "art": "Restmülltonne 14-täglich",
+     "strasse": "Odamm"
+    },
+    {
+     "datum": "2026-11-26",
+     "wochentag": "Donnerstag",
+     "art": "Restmülltonne 4-wöchentlich",
+     "strasse": "Odamm"
     },
     {
      "datum": "2026-12-01",
@@ -102,6 +120,12 @@
      "strasse": "Heidbecker Damm"
     },
     {
+     "datum": "2026-12-10",
+     "wochentag": "Donnerstag",
+     "art": "Restmülltonne 14-täglich",
+     "strasse": "Odamm"
+    },
+    {
      "datum": "2026-12-15",
      "wochentag": "Dienstag",
      "art": "Container 14-täglich",
@@ -132,6 +156,18 @@
      "strasse": "Heidbecker Damm"
     },
     {
+     "datum": "2026-12-24",
+     "wochentag": "Donnerstag",
+     "art": "Restmülltonne 14-täglich",
+     "strasse": "Odamm"
+    },
+    {
+     "datum": "2026-12-24",
+     "wochentag": "Donnerstag",
+     "art": "Restmülltonne 4-wöchentlich",
+     "strasse": "Odamm"
+    },
+    {
      "datum": "2026-12-29",
      "wochentag": "Dienstag",
      "art": "Container 14-täglich",
@@ -159,6 +195,12 @@
      "strasse": "Heidbecker Damm"
     },
     {
+     "datum": "2026-11-10",
+     "wochentag": "Dienstag",
+     "art": "Altpapier",
+     "strasse": "Odamm"
+    },
+    {
      "datum": "2026-11-23",
      "wochentag": "Montag",
      "art": "Altpapier",
@@ -169,6 +211,12 @@
      "wochentag": "Montag",
      "art": "Altpapier",
      "strasse": "Heidbecker Damm"
+    },
+    {
+     "datum": "2026-12-08",
+     "wochentag": "Dienstag",
+     "art": "Altpapier",
+     "strasse": "Odamm"
     },
     {
      "datum": "2026-12-21",

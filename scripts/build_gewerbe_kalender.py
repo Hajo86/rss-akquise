@@ -34,10 +34,10 @@ ART = {'R02': 'Restmülltonne 14-täglich', 'R04': 'Restmülltonne 4-wöchentlic
 
 # Gewerbegebiet -> (Ort-ID, Leitstraße, lat, lng, weitere Straßen)
 STADE = [
-    ('Stade-Süd (Heidbecker Damm, Carl-Benz, Airbus)', 38, 'Heidbecker Damm', 53.578, 9.492, ['Carl-Benz-Str.', 'Robert-Bosch-Str.', 'Gottlieb-Daimler-Str.', 'Airbus-Str.', 'Klarenstrecker Damm', 'Am Schwarzen Berg']),
+    ('Stade-Süd (Heidbecker Damm, Carl-Benz, Airbus)', 38, 'Heidbecker Damm', 53.578, 9.492, ['Carl-Benz-Str.', 'Robert-Bosch-Str.', 'Gottlieb-Daimler-Str.', 'Rudolf-Diesel-Str.', 'Ottenbecker Damm', 'Odamm', 'Airbus-Str.', 'Klarenstrecker Damm', 'Am Schwarzen Berg']),
     ('Stade-Nord (Hansestraße)', 38, 'Hansestr.', 53.605, 9.468, ['Altländer Str.']),
     ('Bützfleth Industriestraße', 38, 'Bützflether Industriestr.', 53.632, 9.505, []),
-    ('Buxtehude-Ost (Alter Postweg, Rudolf-Diesel)', 10, 'Alter Postweg', 53.463, 9.717, ['Rudolf-Diesel-Str.', 'Konrad-Zuse-Str.']),
+    ('Buxtehude-Ost (Alter Postweg, Rudolf-Diesel)', 10, 'Alter Postweg', 53.463, 9.717, ['Rudolf-Diesel-Str.', 'Carl-Zeiss-Str.', 'Hamburger Chaussee']),
     ('Buxtehude Harburger Straße', 10, 'Harburger Str.', 53.466, 9.722, []),
     ('Buxtehude Konrad-Adenauer-Allee', 10, 'Konrad-Adenauer-Allee', 53.472, 9.700, []),
     ('Buxtehude Moisburger Landstraße', 10, 'Moisburger Landstr.', 53.455, 9.690, []),

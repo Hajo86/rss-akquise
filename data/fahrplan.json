@@ -6,18 +6,21 @@
    "id": "S1",
    "titel": "S1 Stade-Süd + Horneburg",
    "kreis": "LK Stade",
-   "km": "ca. 95 km, 2 h",
+   "km": "ca. 100 km, 2 h 10",
    "note": "Stade-Süd: alle drei Container-Rhythmen an diesen Tagen, Tonnen erst mittwochs. Horneburg am selben Tag 14-tägl. + wöchentlich, 4-wöchentl. nur Di 17.11., Di 15.12..",
    "stops": [
     "Klarenstrecker Damm 46, 21680 Stade",
     "Heidbecker Damm 20, 21684 Stade",
+    "Rudolf-Diesel-Straße 5, 21684 Stade",
     "Carl-Benz-Straße 5, 21684 Stade",
     "Robert-Bosch-Straße 5, 21684 Stade",
+    "Ottenbecker Damm 20, 21684 Stade",
     "Airbus-Straße 1, 21684 Stade",
     "Am Schwarzen Berg 10, 21680 Stade",
-    "Industriestraße 5, 21640 Horneburg"
+    "Industriestraße 5, 21640 Horneburg",
+    "Straße zum Güterbahnhof 1, 21640 Horneburg"
    ],
-   "link": "https://www.google.com/maps/dir/Horster%20Landstra%C3%9Fe%20102%2C%2021220%20Seevetal/Klarenstrecker%20Damm%2046%2C%2021680%20Stade/Heidbecker%20Damm%2020%2C%2021684%20Stade/Carl-Benz-Stra%C3%9Fe%205%2C%2021684%20Stade/Robert-Bosch-Stra%C3%9Fe%205%2C%2021684%20Stade/Airbus-Stra%C3%9Fe%201%2C%2021684%20Stade/Am%20Schwarzen%20Berg%2010%2C%2021680%20Stade/Industriestra%C3%9Fe%205%2C%2021640%20Horneburg/Horster%20Landstra%C3%9Fe%20102%2C%2021220%20Seevetal/?travelmode=driving&hl=de",
+   "link": "https://www.google.com/maps/dir/Horster%20Landstra%C3%9Fe%20102%2C%2021220%20Seevetal/Klarenstrecker%20Damm%2046%2C%2021680%20Stade/Heidbecker%20Damm%2020%2C%2021684%20Stade/Rudolf-Diesel-Stra%C3%9Fe%205%2C%2021684%20Stade/Carl-Benz-Stra%C3%9Fe%205%2C%2021684%20Stade/Robert-Bosch-Stra%C3%9Fe%205%2C%2021684%20Stade/Ottenbecker%20Damm%2020%2C%2021684%20Stade/Airbus-Stra%C3%9Fe%201%2C%2021684%20Stade/Am%20Schwarzen%20Berg%2010%2C%2021680%20Stade/Industriestra%C3%9Fe%205%2C%2021640%20Horneburg/Stra%C3%9Fe%20zum%20G%C3%BCterbahnhof%201%2C%2021640%20Horneburg/Horster%20Landstra%C3%9Fe%20102%2C%2021220%20Seevetal/?travelmode=driving&hl=de",
    "best": [
     "2026-11-03",
     "2026-12-01",
@@ -38,11 +41,13 @@
     "Harburger Straße 30, 21614 Buxtehude",
     "Alter Postweg 30, 21614 Buxtehude",
     "Rudolf-Diesel-Straße 1, 21614 Buxtehude",
+    "Carl-Zeiss-Straße 1, 21614 Buxtehude",
     "Konrad-Zuse-Straße 1, 21614 Buxtehude",
+    "Hamburger Chaussee 50, 21614 Buxtehude",
     "Konrad-Adenauer-Allee 1, 21614 Buxtehude",
     "Moisburger Landstraße 61, 21614 Buxtehude"
    ],
-   "link": "https://www.google.com/maps/dir/Horster%20Landstra%C3%9Fe%20102%2C%2021220%20Seevetal/Harburger%20Stra%C3%9Fe%2030%2C%2021614%20Buxtehude/Alter%20Postweg%2030%2C%2021614%20Buxtehude/Rudolf-Diesel-Stra%C3%9Fe%201%2C%2021614%20Buxtehude/Konrad-Zuse-Stra%C3%9Fe%201%2C%2021614%20Buxtehude/Konrad-Adenauer-Allee%201%2C%2021614%20Buxtehude/Moisburger%20Landstra%C3%9Fe%2061%2C%2021614%20Buxtehude/Horster%20Landstra%C3%9Fe%20102%2C%2021220%20Seevetal/?travelmode=driving&hl=de",
+   "link": "https://www.google.com/maps/dir/Horster%20Landstra%C3%9Fe%20102%2C%2021220%20Seevetal/Harburger%20Stra%C3%9Fe%2030%2C%2021614%20Buxtehude/Alter%20Postweg%2030%2C%2021614%20Buxtehude/Rudolf-Diesel-Stra%C3%9Fe%201%2C%2021614%20Buxtehude/Carl-Zeiss-Stra%C3%9Fe%201%2C%2021614%20Buxtehude/Konrad-Zuse-Stra%C3%9Fe%201%2C%2021614%20Buxtehude/Hamburger%20Chaussee%2050%2C%2021614%20Buxtehude/Konrad-Adenauer-Allee%201%2C%2021614%20Buxtehude/Moisburger%20Landstra%C3%9Fe%2061%2C%2021614%20Buxtehude/Horster%20Landstra%C3%9Fe%20102%2C%2021220%20Seevetal/?travelmode=driving&hl=de",
    "best": [],
    "ok": [
     "2026-11-04",
